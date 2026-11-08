@@ -2,7 +2,7 @@
 
 > **Status:** Active. M0 is merged, and M1 is in progress.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-08 (M1 on `feat/normalize`: MIDI I/O, tempo and the drum track choice built, ADRs 0013 to 0018 proposed; the map machinery, vocabulary, conversion and the General MIDI and Sleep Token II maps built, ADRs 0019 to 0024 proposed; local-only files kept in a gitignored `private/`, with ADR 0007 rewritten for it; maps for nine more libraries built in `private/`, the `sample` family and conversion collisions added, ADR 0025 proposed).
+> Last updated: 2026-11-08 (M1 on `feat/normalize`: MIDI I/O, tempo and the drum track choice built, ADRs 0013 to 0018 proposed; the map machinery, vocabulary, conversion and the General MIDI and Sleep Token II maps built, ADRs 0019 to 0024 proposed; local-only files kept in a gitignored `private/`, with ADR 0007 rewritten for it; maps for nine more libraries built in `private/`, the `sample` family and conversion collisions added, ADR 0025 proposed; the normalizer built: a grid per beat, graces, limbs on one grid point, ambiguous bars, hit types and the score, ADRs 0026 to 0031 proposed).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 
@@ -119,7 +119,12 @@ Questions come from the agent, not the server. The server provides facts, sugges
     maps/kit.py           a kit checked against the vocabulary, read and written
     maps/loader.py        the built-in vocabulary and maps, validated as they load
     maps/convert.py       conversion between kits with fallbacks, its report and decision requests
-    normalize/            per-beat grid inference, flam/drag detection, hit types, ambiguity list
+    normalize/read.py     the drum track through a kit into canonical hits, and the unmapped notes
+    normalize/grid.py     each beat's grid and its points, and the ambiguous bars
+    normalize/quantize.py graces, limbs on one grid point, and each hit's tick and offset
+    normalize/hit_types.py soft, normal and accent from each family's velocities
+    normalize/score.py    the score: canonical hits on a grid, with hit types and source notes
+    normalize/pipeline.py normalize(): the steps in turn, and their decision requests
     analyze/sections.py   bar features, similarity matrix, novelty peaks, repeat groups
     analyze/facts.py      per-section facts and compact ASCII pattern for the agent
     controls.py           pydantic ControlVector, SectionPlan, SessionPlan
@@ -227,6 +232,11 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
   - Still open: the `tempo_map` argument and its format.
 - **Quantizer:** choose a grid per beat among 16th, 8th triplet, 16th triplet and 32nd, with a penalty for complex grids. Treat hits on one drum under about 45 ms apart as grace plus main, and keep them linked. Merge near-simultaneous limbs onto one grid point. Report ambiguous bars instead of guessing silently.
 - **Hit types:** cluster velocities per drum family. Clear clusters become soft, normal or accent. Flat input gets inferred types marked low confidence, so the agent asks.
+- **Normalize, as built:**
+  - `normalize()` reads the drum track through a built-in kit into a frozen score of canonical hits, each with its source note, quantized tick, offset in milliseconds, beat and grid, grace link and hit type ([ADR 0031](../decisions/0031-the-score-is-frozen-canonical-hits-with-their-source-notes.md)). Unmapped notes wait outside the score for an `unmapped_notes` request, and notes read through low-confidence names are counted.
+  - Each beat takes the 16th, 8th triplet, 16th triplet or 32nd with the least timing error in milliseconds plus a penalty of 0, 6, 10 and 10 ms ([ADR 0026](../decisions/0026-a-grid-per-beat-by-timing-error-and-complexity.md)). Two hits on one drum from 5 ms to under 45 ms apart are a grace and its main unless the gap is a grid step, and the grace keeps its gap before the main ([ADR 0027](../decisions/0027-hits-on-one-drum-under-45-ms-apart-are-a-grace-and-its-main.md)). Hits on different drums within 20 ms, or half a 32nd, share a grid point ([ADR 0028](../decisions/0028-limbs-within-20-ms-share-a-grid-point.md)).
+  - A beat whose grid is a close call, or with an onset over 20 ms from its point, keeps its best guess and goes into one `ambiguous_bars` request ([ADR 0029](../decisions/0029-unclear-beats-are-one-ambiguous-bars-request.md)). Hit types come from clear velocity groups per family, and anything else is normal at low confidence, in one `hit_types` request ([ADR 0030](../decisions/0030-hit-types-cluster-each-familys-velocities.md)). Each request is answered by calling again with `unmapped`, `grids` or `hit_types`.
+  - Exit, as tested: grooves built in code that mix all four grids, from 60 to 240 BPM and across tempo changes, with jitter from a normal spread of 4 ms capped at 12 ms, come back to at least 99.5% of their grid positions. With a spread of 6 ms, 99% holds up to 160 BPM but not at 240 BPM. A `private` test does the same with the performed MIDI in `private/midi/` that is already on a grid.
 - **Maps:** library-neutral, for most modern drum libraries, and no library is special in the code ([ADR 0008](../decisions/0008-library-neutral-drum-maps.md)).
   - A map file is one library and its kits. Each kit lists its articulations, each with its MIDI notes, velocity behavior, CC behavior, channel, and a source and confidence.
   - Canonical articulation names act as the pivot, because General MIDI has no articulations and the same number differs by library: note 39 is a snare variant in one library and a flam in another. Use `family.articulation` names such as `snare.center`, `hat.closed.tip`, `crash.1.choke`. Conversion tries the exact name, then piece substitution, then drops the variant, then the family default, and reports every inexact step ([ADR 0021](../decisions/0021-conversion-falls-back-within-a-family.md)).
@@ -237,7 +247,7 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
   - Conversion never changes a hit's family on its own. A target that lacks the family, a missing choke, a controller-driven articulation and notes the source doesn't map are decision requests (`conversion` and `unmapped_notes`), with positions as bar and beat. A request may suggest a substitute from another family, from a fixed list in the vocabulary, used only when the user picks it ([ADR 0021](../decisions/0021-conversion-falls-back-within-a-family.md)).
   - Shipped: `gm`, from the General MIDI Level 1 key map ([ADR 0022](../decisions/0022-the-general-midi-map-follows-the-standard.md)), and `sleep-token-ii`, 58 articulations on 68 pitches, written by hand from the library's own mapping and checked against it by a test in `private/`. Nine more are built in `private/` from local sources, every name inferred at low confidence until it is checked ([ADR 0025](../decisions/0025-proposed-names-ship-at-low-confidence.md)): `iof-drummer` (kits `default` and `old`), `ezdrummer-3`, `superior-drummer-3`, `addictive-drums-2`, `ssd5`, `ggd-modern-and-massive`, `ni-abbey-road`, `logic-pro-drums` and `garageband-drums`. A test in `private/` checks that building them again gives the committed files. Each articulation's `source` says what kind of evidence names it, and only names from a standard are kept as labels. Library ids follow [ADR 0023](../decisions/0023-built-in-library-ids.md), and the data is found by one function ([ADR 0024](../decisions/0024-built-in-data-is-found-beside-the-source.md)).
   - Notes whose sound the instrument chooses are the numbered `sample` family, which converting always asks about on a kit without it ([ADR 0019](../decisions/0019-canonical-names-follow-one-grammar.md)). Notes a conversion puts on one pitch and channel at one tick keep their pitches and are reported as collisions ([ADR 0021](../decisions/0021-conversion-falls-back-within-a-family.md)).
-  - Still to build: the quantizer, hit types and `human-o-matic analyze`.
+  - Still to build: `human-o-matic analyze`.
 - **Exit:**
   - Add known jitter to quantized MIDI files and recover at least 99% of grid positions.
   - Round trips keep all notes and non-note events.
