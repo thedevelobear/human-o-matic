@@ -59,3 +59,4 @@ What was decided, specifically enough to check the code against.
 | [0021](decisions/0021-conversion-falls-back-within-a-family.md) | Conversion falls back within a family, and asks instead of changing family | Proposed |
 | [0022](decisions/0022-the-general-midi-map-follows-the-standard.md) | The General MIDI map follows the GM Level 1 percussion key map | Proposed |
 | [0023](decisions/0023-built-in-library-ids.md) | Built-in libraries have short kebab-case ids | Proposed |
+| [0024](decisions/0024-built-in-data-is-found-beside-the-source.md) | Built-in data is found in `data/` beside the source, by one function | Proposed |
