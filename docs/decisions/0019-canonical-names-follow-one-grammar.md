@@ -10,6 +10,6 @@
 - Hat openness is in words: `hat.open.quarter`, `hat.open.half` and `hat.open.three_quarter`, and a bare `hat.open` is fully open. `hat.variable` is a hat whose openness a controller sets.
 - A kit that has a variant has its parent, and each piece it has includes that piece's default, so a kit with `crash.2.choke` has `crash.2.hit`. Fallback then only ever moves up a name.
 
-**Why:** One grammar lets a conversion move between libraries by meaning rather than by note number. Leaving the number off a first snare keeps the plan's `snare.center`, and openness in words converts by meaning, where one library's "Open 1" and another's first degree need not match.
+**Why:** One grammar lets a conversion move between libraries by meaning rather than by note number. Leaving the number off a first snare keeps the plan's `snare.center`, and openness in words converts by meaning, where one library's first open degree and another's need not match.
 
 **Consequences:** A map can name only what the vocabulary has, so a map that needs a new articulation adds it to the vocabulary first.

@@ -46,7 +46,7 @@ What was decided, specifically enough to check the code against.
 | [0008](decisions/0008-library-neutral-drum-maps.md) | Drum maps are library-neutral: library, kit and articulation | Proposed |
 | [0009](decisions/0009-m1-resolves-notes-channels-and-velocity-ranges.md) | M1 resolves notes, channels and velocity ranges, and CC-driven articulations wait for M3 | Proposed |
 | [0010](decisions/0010-built-in-maps-only.md) | Maps are built in, and this version loads no user-supplied map file | Proposed |
-| [0011](decisions/0011-m1-maps-from-general-midi-and-the-available-map-files.md) | M1 ships a General MIDI map and maps built from the IOF map files and a Cubase drum map | Proposed |
+| [0011](decisions/0011-m1-maps-for-general-midi-and-eight-libraries.md) | M1 ships a General MIDI map and maps for eight drum libraries | Proposed |
 | [0012](decisions/0012-runtime-dependencies-arrive-with-their-milestone.md) | M1 adds mido, numpy, pydantic and typer, and other runtime dependencies wait for their milestone | Proposed |
 | [0013](decisions/0013-midi-is-read-into-notes-and-raw-events.md) | MIDI files are read into paired notes and raw events at absolute ticks | Proposed |
 | [0014](decisions/0014-work-at-a-whole-multiple-of-the-source-ppq.md) | Songs are worked on and written at the smallest multiple of their PPQ that is at least 960 | Proposed |

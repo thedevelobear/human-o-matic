@@ -4,7 +4,7 @@
 - **Date:** 2026-11-08
 
 - M1's runtime dependencies are `mido` (MIDI I/O), `numpy` (quantizer and hit types), `pydantic` (map validation) and `typer` (the `human-o-matic analyze` CLI).
-- `scipy` waits for M2 (sections), `python-rtmidi` and `symusic` for M3 (preview and scanning the library data), and `mcp` for M4 (the server). PyTorch stays in M5.
+- `scipy` waits for M2 (sections), `python-rtmidi` and `symusic` for M3 (preview and scanning performed MIDI), and `mcp` for M4 (the server). PyTorch stays in M5.
 - Each is added with `uv add` at an exact version ([ADR 0004](0004-exact-dependency-versions.md)), in the milestone whose code first imports it.
 
 **Why:** A dependency added before the code that uses it is unexercised weight, and adding it with that code means every version in `pyproject.toml` is one something runs.
