@@ -64,3 +64,4 @@ What was decided, specifically enough to check the code against.
 | [0026](decisions/0026-a-grid-per-beat-by-timing-error-and-complexity.md) | Each beat takes one of four grids, by its timing error in milliseconds plus a complexity penalty | Proposed |
 | [0027](decisions/0027-hits-on-one-drum-under-45-ms-apart-are-a-grace-and-its-main.md) | Two hits on one drum from 5 ms to under 45 ms apart are a grace and its main, unless the gap is a grid step | Proposed |
 | [0028](decisions/0028-limbs-within-20-ms-share-a-grid-point.md) | Hits on different drums within 20 ms, or half a 32nd at a fast tempo, share one grid point | Proposed |
+| [0029](decisions/0029-unclear-beats-are-one-ambiguous-bars-request.md) | A beat whose grid is unclear keeps its best guess, and all of them are one `ambiguous_bars` request | Proposed |
