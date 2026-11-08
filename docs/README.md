@@ -46,3 +46,4 @@ What was decided, specifically enough to check the code against.
 | [0008](decisions/0008-library-neutral-drum-maps.md) | Drum maps are library-neutral: library, kit and articulation | Proposed |
 | [0009](decisions/0009-m1-resolves-notes-channels-and-velocity-ranges.md) | M1 resolves notes, channels and velocity ranges, and CC-driven articulations wait for M3 | Proposed |
 | [0010](decisions/0010-built-in-maps-only.md) | Maps are built in, and this version loads no user-supplied map file | Proposed |
+| [0011](decisions/0011-m1-maps-from-general-midi-and-the-available-map-files.md) | M1 ships a General MIDI map and maps built from the IOF map files and a Cubase drum map | Proposed |
