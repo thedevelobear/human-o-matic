@@ -47,3 +47,4 @@ What was decided, specifically enough to check the code against.
 | [0009](decisions/0009-m1-resolves-notes-channels-and-velocity-ranges.md) | M1 resolves notes, channels and velocity ranges, and CC-driven articulations wait for M3 | Proposed |
 | [0010](decisions/0010-built-in-maps-only.md) | Maps are built in, and this version loads no user-supplied map file | Proposed |
 | [0011](decisions/0011-m1-maps-from-general-midi-and-the-available-map-files.md) | M1 ships a General MIDI map and maps built from the IOF map files and a Cubase drum map | Proposed |
+| [0012](decisions/0012-runtime-dependencies-arrive-with-their-milestone.md) | M1 adds mido, numpy, pydantic and typer, and other runtime dependencies wait for their milestone | Proposed |
