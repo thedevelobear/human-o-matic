@@ -12,6 +12,9 @@ dependencies = [
     "typer==0.28.0",
 ]
 
+[project.scripts]
+human-o-matic = "human_o_matic.cli:app"
+
 [build-system]
 requires = ["uv_build>=0.13.7,<0.14.0"]
 build-backend = "uv_build"
