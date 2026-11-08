@@ -1,0 +1,345 @@
+# General MIDI, from the General MIDI Level 1 percussion key map: notes 35 to 81 on channel 10
+# (ADR 0022). Each label is the standard's name for the note. GM names no articulations, so each
+# note is its own articulation, and note 40, "Electric Snare", is a second snare, as the standard
+# says, not a rimshot.
+schema = 1
+id = "gm"
+name = "General MIDI"
+
+[sources.gm1]
+kind = "standard"
+title = "General MIDI Level 1 percussion key map (MMA RP-003)"
+
+[[kits]]
+id = "default"
+name = "Percussion key map"
+channel = 10
+
+  [[kits.articulations]]
+  name = "kick.hit"
+  notes = [36]
+  label = "Bass Drum 1"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "kick.2.hit"
+  notes = [35]
+  label = "Acoustic Bass Drum"
+  source = "gm1"
+  confidence = "medium"       # read as a second kick drum
+
+  [[kits.articulations]]
+  name = "snare.center"
+  notes = [38]
+  label = "Acoustic Snare"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "snare.sidestick"
+  notes = [37]
+  label = "Side Stick"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "snare.2.center"
+  notes = [40]
+  label = "Electric Snare"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "clap.hit"
+  notes = [39]
+  label = "Hand Clap"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "hat.closed"
+  notes = [42]
+  label = "Closed Hi-Hat"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "hat.pedal"
+  notes = [44]
+  label = "Pedal Hi-Hat"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "hat.open"
+  notes = [46]
+  label = "Open Hi-Hat"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.1.hit"
+  notes = [50]
+  label = "High Tom"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.2.hit"
+  notes = [48]
+  label = "Hi-Mid Tom"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.3.hit"
+  notes = [47]
+  label = "Low-Mid Tom"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.4.hit"
+  notes = [45]
+  label = "Low Tom"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.5.hit"
+  notes = [43]
+  label = "High Floor Tom"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.6.hit"
+  notes = [41]
+  label = "Low Floor Tom"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "ride.1.bow"
+  notes = [51]
+  label = "Ride Cymbal 1"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "ride.1.bell"
+  notes = [53]
+  label = "Ride Bell"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "ride.2.bow"
+  notes = [59]
+  label = "Ride Cymbal 2"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "crash.1.hit"
+  notes = [49]
+  label = "Crash Cymbal 1"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "crash.2.hit"
+  notes = [57]
+  label = "Crash Cymbal 2"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "china.1.hit"
+  notes = [52]
+  label = "Chinese Cymbal"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "splash.1.hit"
+  notes = [55]
+  label = "Splash Cymbal"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tambourine.hit"
+  notes = [54]
+  label = "Tambourine"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "cowbell.hit"
+  notes = [56]
+  label = "Cowbell"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "vibraslap.hit"
+  notes = [58]
+  label = "Vibraslap"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "bongo.1.hit"
+  notes = [60]
+  label = "Hi Bongo"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "bongo.2.hit"
+  notes = [61]
+  label = "Low Bongo"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "conga.1.open"
+  notes = [63]
+  label = "Open Hi Conga"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "conga.1.mute"
+  notes = [62]
+  label = "Mute Hi Conga"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "conga.2.open"
+  notes = [64]
+  label = "Low Conga"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "timbale.1.hit"
+  notes = [65]
+  label = "High Timbale"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "timbale.2.hit"
+  notes = [66]
+  label = "Low Timbale"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "agogo.1.hit"
+  notes = [67]
+  label = "High Agogo"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "agogo.2.hit"
+  notes = [68]
+  label = "Low Agogo"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "cabasa.hit"
+  notes = [69]
+  label = "Cabasa"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "maracas.hit"
+  notes = [70]
+  label = "Maracas"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "whistle.short"
+  notes = [71]
+  label = "Short Whistle"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "whistle.long"
+  notes = [72]
+  label = "Long Whistle"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "guiro.short"
+  notes = [73]
+  label = "Short Guiro"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "guiro.long"
+  notes = [74]
+  label = "Long Guiro"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "claves.hit"
+  notes = [75]
+  label = "Claves"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "woodblock.1.hit"
+  notes = [76]
+  label = "Hi Wood Block"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "woodblock.2.hit"
+  notes = [77]
+  label = "Low Wood Block"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "cuica.open"
+  notes = [79]
+  label = "Open Cuica"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "cuica.mute"
+  notes = [78]
+  label = "Mute Cuica"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "triangle.open"
+  notes = [81]
+  label = "Open Triangle"
+  source = "gm1"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "triangle.mute"
+  notes = [80]
+  label = "Mute Triangle"
+  source = "gm1"
+  confidence = "high"
