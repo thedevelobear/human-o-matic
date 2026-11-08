@@ -1,8 +1,8 @@
 # human-o-matic: guided MIDI drum performance
 
-> **Status:** Active. M0 is in review.
+> **Status:** Active. M0 is merged.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-08 (M0 done on `chore/project-setup`, ADRs 0001 to 0007 proposed).
+> Last updated: 2026-11-08 (M0 merged, ADRs 0001 to 0007 accepted).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 
@@ -12,7 +12,7 @@ Milestones are done in order, and work stops at each gate ([`AGENTS.md`](../../A
 
 | # | Milestone | Gate | Status |
 |---|---|---|---|
-| M0 | Setup | The checks pass on the scaffolding | In review |
+| M0 | Setup | The checks pass on the scaffolding | Merged ([#1](https://github.com/thedevelobear/human-o-matic/pull/1)) |
 | M1 | Normalize | The M1 exit tests | Not started |
 | M2 | Sections | Boundary F1 of at least 0.70 on at least 10 tracks the owner has hand-labelled | Not started. Needs the owner's labelled tracks |
 | M3 | Parametric engine and calibration | Each control moves its statistic the right way, and the property tests pass | Not started |

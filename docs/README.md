@@ -36,10 +36,10 @@ What was decided, specifically enough to check the code against.
 ### Decisions
 | # | Decision | Status |
 |---|---|---|
-| [0001](decisions/0001-python-312-with-uv-ruff-pyright-and-pytest.md) | Python 3.12 with uv, ruff, pyright and pytest | Proposed |
-| [0002](decisions/0002-docs-as-decision-record.md) | docs/ is the decision record | Proposed |
-| [0003](decisions/0003-branches-off-main-merged-without-squashing.md) | Work branches off `main` and merges without squashing | Proposed |
-| [0004](decisions/0004-exact-dependency-versions.md) | Dependencies use exact versions | Proposed |
-| [0005](decisions/0005-orchestrated-agents.md) | Claude Code works through an orchestrator, a developer and QA | Proposed |
-| [0006](decisions/0006-settings-block-pushes-and-publishing.md) | Claude Code's settings block pushes and publishing | Proposed |
-| [0007](decisions/0007-library-data-stays-out-of-the-repo.md) | Library data stays out of the repo | Proposed |
+| [0001](decisions/0001-python-312-with-uv-ruff-pyright-and-pytest.md) | Python 3.12 with uv, ruff, pyright and pytest | Accepted |
+| [0002](decisions/0002-docs-as-decision-record.md) | docs/ is the decision record | Accepted |
+| [0003](decisions/0003-branches-off-main-merged-without-squashing.md) | Work branches off `main` and merges without squashing | Accepted |
+| [0004](decisions/0004-exact-dependency-versions.md) | Dependencies use exact versions | Accepted |
+| [0005](decisions/0005-orchestrated-agents.md) | Claude Code works through an orchestrator, a developer and QA | Accepted |
+| [0006](decisions/0006-settings-block-pushes-and-publishing.md) | Claude Code's settings block pushes and publishing | Accepted |
+| [0007](decisions/0007-library-data-stays-out-of-the-repo.md) | Library data stays out of the repo | Accepted |

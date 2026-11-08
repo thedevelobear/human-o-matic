@@ -1,6 +1,6 @@
 # 0006. Claude Code's settings block pushes and publishing
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - `.claude/settings.json` denies `git push`, `git -C <path> push` and `uv publish`, each with and without arguments. Deny rules apply to the orchestrator and to every subagent.

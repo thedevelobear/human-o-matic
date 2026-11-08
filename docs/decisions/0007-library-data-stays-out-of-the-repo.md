@@ -1,6 +1,6 @@
 # 0007. Library data stays out of the repo
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - Library MIDI and vendor map files are used for learning only. They are read in place, never copied into the repo, and never redistributed. `.gitignore` excludes `*.mid`, `*.midi`, `*.map` and `*.drm`.
