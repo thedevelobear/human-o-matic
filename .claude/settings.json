@@ -1,0 +1,13 @@
+{
+  "agent": "orchestrator",
+  "permissions": {
+    "deny": [
+      "Bash(git push)",
+      "Bash(git push *)",
+      "Bash(git -C * push)",
+      "Bash(git -C * push *)",
+      "Bash(uv publish)",
+      "Bash(uv publish *)"
+    ]
+  }
+}

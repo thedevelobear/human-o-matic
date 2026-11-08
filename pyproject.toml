@@ -1,0 +1,61 @@
+[project]
+name = "human-o-matic"
+version = "0.0.0"
+description = "An MCP server that re-performs a drum MIDI file section by section, guided by questions put to the user through the connected agent."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "thedevelobear" }]
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.13.7,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "hypothesis==6.170.15",
+    "pyright==1.1.414",
+    "pytest==9.2.0",
+    "ruff==0.17.4",
+]
+
+[tool.uv]
+# Direct dependencies are pinned to exact versions (ADR 0004).
+add-bounds = "exact"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+  "E",    # pycodestyle errors
+  "W",    # pycodestyle warnings
+  "F",    # pyflakes
+  "I",    # import order
+  "N",    # naming
+  "UP",   # modern syntax
+  "B",    # bugbear
+  "C4",   # comprehensions
+  "SIM",  # simplifications
+  "PT",   # pytest style
+  "PERF", # performance
+  "NPY",  # numpy: use Generator and SeedSequence, never the legacy global state
+  "RUF",
+]
+
+[tool.pyright]
+pythonVersion = "3.12"
+include = ["src", "tests"]
+typeCheckingMode = "standard"
+strict = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+xfail_strict = true
+filterwarnings = ["error"]
+markers = [
+  "library: reads the local Kontakt library MIDI in place. Skips when the files are missing, and CI leaves it out (ADR 0007)",
+]

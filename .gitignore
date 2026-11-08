@@ -1,0 +1,28 @@
+# Library data stays out of the repo (ADR 0007). Tests build their MIDI in code.
+*.mid
+*.midi
+*.map
+*.drm
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+
+# Tool caches and output
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# Claude Code's local overrides
+.claude/settings.local.json
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
