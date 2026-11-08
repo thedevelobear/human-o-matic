@@ -43,3 +43,4 @@ What was decided, specifically enough to check the code against.
 | [0005](decisions/0005-orchestrated-agents.md) | Claude Code works through an orchestrator, a developer and QA | Accepted |
 | [0006](decisions/0006-settings-block-pushes-and-publishing.md) | Claude Code's settings block pushes and publishing | Accepted |
 | [0007](decisions/0007-library-data-stays-out-of-the-repo.md) | Library data stays out of the repo | Accepted |
+| [0008](decisions/0008-library-neutral-drum-maps.md) | Drum maps are library-neutral: library, kit and articulation | Proposed |
