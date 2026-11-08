@@ -55,6 +55,8 @@ pythonVersion = "3.12"
 include = ["src", "tests"]
 typeCheckingMode = "standard"
 strict = ["src"]
+# Local stubs for untyped libraries, such as typings/mido.
+stubPath = "typings"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
