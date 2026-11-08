@@ -250,11 +250,12 @@ def recovered(path: Path, bpms: list[float], jitter_sd: float, seeds: int) -> tu
     ids=lambda bpms: "-".join(f"{bpm:g}" for bpm in bpms) + "bpm",
 )
 def test_jittered_grooves_come_back_to_their_grid(tmp_path: Path, bpms: list[float]) -> None:
-    # Jitter with a spread of 4 ms, the plan's default tightness, capped at 12 ms.
+    # Jitter with a spread of 4 ms, the plan's default tightness, capped at 12 ms. The seeds are
+    # fixed, and the lowest recovery, at 240 BPM, is about 99.6%.
     found, total = recovered(tmp_path, bpms, jitter_sd=4.0, seeds=4)
 
     assert total > 2500
-    assert found / total >= 0.99
+    assert found / total >= 0.995
 
 
 @pytest.mark.parametrize("bpm", [60, 120, 160])
