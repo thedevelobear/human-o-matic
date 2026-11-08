@@ -2,7 +2,7 @@
 
 > **Status:** Active. M0 is merged, and M1 is in progress.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-08 (M1 on `feat/normalize`: MIDI I/O, tempo and the drum track choice built, ADRs 0013 to 0018 proposed; the map machinery, vocabulary, conversion and the General MIDI and Sleep Token II maps built, ADRs 0019 to 0024 proposed).
+> Last updated: 2026-11-08 (M1 on `feat/normalize`: MIDI I/O, tempo and the drum track choice built, ADRs 0013 to 0018 proposed; the map machinery, vocabulary, conversion and the General MIDI and Sleep Token II maps built, ADRs 0019 to 0024 proposed; local-only files kept in a gitignored `private/`, with ADR 0007 rewritten for it).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 
@@ -32,7 +32,7 @@ Programmed drum MIDI sounds robotic, and existing tools mostly fix that with bli
 
 **Product:** an MCP server that re-performs a drum MIDI file section by section. An agent such as Claude Code loads the file, the server divides it into sections, the agent asks the user about each one ("what's the energy here?"), and the user's answers steer the render. Answers like "it's a breakdown, full power" or "it's a bridge, low energy and high groove" become numeric controls. The result is a new MIDI file. Drums first; the design must allow piano, guitar and others later.
 
-**Scope:** a normal, public app, built in this repo. Library MIDI is used for learning only: it is read locally, never copied into the repo, and nothing is redistributed.
+**Scope:** a normal, public app, built in this repo. Local-only files stay in a gitignored `private/` folder, and nothing in it is committed or redistributed ([ADR 0007](../decisions/0007-local-only-files-live-in-private.md)).
 
 ## Decisions already made
 
@@ -45,8 +45,8 @@ Programmed drum MIDI sounds robotic, and existing tools mostly fix that with bli
 | What survives from the input | The notes and each note's **hit type only**: soft, normal or accent, confirmed with the user. If the input has one flat velocity, infer hit types and ask |
 | Adding notes | Version 1 never adds notes. Ghosts, flams, rimshots and chokes come later, opt-in |
 | Loudness | At high energy: kick and backbeats about 118 to 127. At every energy level: never the same velocity twice in a row on one drum |
-| Performance engine | Parametric engine calibrated from library data first. A trained model is a separate experiment, adopted only if it wins a blind listening test |
-| Training data | Kontakt library performances only |
+| Performance engine | Parametric engine calibrated from performed drum MIDI first. A trained model is a separate experiment, adopted only if it wins a blind listening test |
+| Model data | Performed drum MIDI only, kept in `private/` |
 | Drum libraries | Most modern drum libraries, through library-neutral maps: library, kit and articulation, with canonical articulation names as the pivot. No library is special in the code ([ADR 0008](../decisions/0008-library-neutral-drum-maps.md)) |
 | Map files | Built in only in this version, with no user-supplied maps ([ADR 0010](../decisions/0010-built-in-maps-only.md)) |
 
@@ -62,7 +62,7 @@ Tooling: `uv`, `ruff`, `pyright`, `pytest`, `hypothesis`.
 
 ## Does this make sense? Yes
 
-**Guided beats black box, and the library data supports it.** Across 1,682 performed Kontakt library grooves:
+**Guided beats black box, and measurements of performed drum MIDI support it.**
 - **Energy is not readable from note density.** Within a song, one drummer's snare level varies by a standard deviation of 8 to 20 velocity between grooves, yet its correlation with note density is only -0.06 to +0.30. Only density was tested, so another score feature might predict it, but asking the user is a direct way to get this information.
 - **Dynamics are what change per section; timing mostly is not.** Within a song, timing spread moves by only 0.3 to 3.1 ms between grooves, while between drummers it runs from 3 to 12 ms. So set tightness or drummer style once per song, and steer dynamics per section.
 - **The engine can work some things out itself.** Denser kick playing is often softer (r down to -0.76), so that needs no question.
@@ -84,31 +84,10 @@ Tooling: `uv`, `ruff`, `pyright`, `pytest`, `hypothesis`.
 3. **Question fatigue:** research on when agents should ask finds [targeted questions as ambiguity arises do better than broad ones, with fewer questions overall](https://www.alphaxiv.org/abs/2603.26233), and [models tend to assume rather than ask](https://aitopics.org/doc/arxivorg:B54044BF). Most of this work is preprints, and no firm limit on tolerable questions was found, so use an explicit policy and measure it.
 4. **Section detection errors:** the agent reviews sections with the user first, so errors are cheap to fix.
 
-## Library data findings
-
-Measured with a read-only stdlib script (not saved; M3 rebuilds it). "Performed" means under 70% of notes sit exactly on a 32nd, 8th-triplet or 16th-triplet grid, which proves a file is not quantized, not that it was played unedited. Kick and snare were assumed to be pitches 36 and 38 in the packs measured, and riders were detected heuristically. Treat all of this as design input until M3 verifies the maps.
-
-**Dataset:** 1,682 performed files, 246,130 notes, 7.8 hours (for scale, [Google's Groove dataset](https://magenta.withgoogle.com/datasets/groove) is 13.6 hours with no metal among its genres). Files are short: median 8 bars, p90 16, max 48, only 10 reach 32 bars. A model can learn local groove from this, but not song-long dynamics or slow drift, so those stay explicit. Filenames mark groove versus fill and some styles, but explicit section labels are rare (about 125 of 3,313 files, many in one largely quantized pack). Section conditioning must therefore use attributes computed from the performances, not labels.
-
-| Measure | Range across drummers |
-|---|---|
-| Timing SD at quarter positions | 3 to 12 ms |
-| Snare minus kick, mean | -0.3 to +2.4 ms (typically about +1) |
-| Rider minus kick, mean | -0.6 to +2.7 ms |
-| Kick hits at velocity 127 | 0 to 99% |
-| On-beat snare hits at 127 | 0 to 92% |
-| Rider mean velocity | 107 to 123 |
-| Rider with snare minus without | -9 to +14, usually +4 to +14 |
-| Rider loud/soft direction flips per hit (random 0.67, strict 1.0) | 0.67 to 0.83 |
-
-**Hit types are not recoverable from position.** Share of snare hits under velocity 60: quarter 10%, 8th 34%, 16th 51%, off-grid 49%. This is why hit type must survive from the input or come from the user.
-
-**Quantizing performances is not trivial.** Best per-bar grid: 16th 75%, 8th triplet 10.5%, 16th triplet 7.8%, 32nd 7%. In 17% of bars a note still sits over 20 ms from the chosen grid, and 1.1% of consecutive snare pairs are under 45 ms apart (flams and drags). A per-bar grid is not enough.
-
 ## Product flow
 
 ```
-Agent: opens song.mid (from IOF to Sleep Token II)
+Agent: opens song.mid (from iof-drummer to sleep-token-ii)
 Agent: I found 6 sections. A: bars 1-8, sparse crashes. B: bars 9-24, crash riding, half-time.
        C: bars 25-40, china and busy kick. B repeats at 41-56, then D: bars 57-64, toms and hats.
        I also found 34 soft snare notes and 2 bars that could be triplets or loose 16ths. Do these look right?
@@ -159,6 +138,7 @@ Questions come from the agent, not the server. The server provides facts, sugges
   data/maps/*.toml                    built-in maps, one library per file: its kits and their articulations
   data/styles/*.toml                  generated by calibration
   tools/                              infer_map, calibrate, make_ab, train
+  private/                            gitignored: local-only files, never committed (ADR 0007)
   typings/mido/                       local type stubs for the part of mido the code uses
   tests/
 ```
@@ -229,7 +209,7 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
 ### M0 Setup
 - Machine has Python 3.10.3 with no numpy or torch; M1 Pro, 32 GB. `uv` 0.13.7 is installed in `~/.local/bin`, and provides Python 3.12.
 - `~/Projects/human-o-matic` is the app's repo, with a GitHub remote, `origin`. Only the owner pushes ([ADR 0006](../decisions/0006-settings-block-pushes-and-publishing.md)).
-- The scaffolding is the toolchain ([ADR 0001](../decisions/0001-python-312-with-uv-ruff-pyright-and-pytest.md)), the docs, the orchestrator, developer and qa agents ([ADR 0005](../decisions/0005-orchestrated-agents.md)) and CI. Library data stays out of the repo ([ADR 0007](../decisions/0007-local-only-files-live-in-private.md)).
+- The scaffolding is the toolchain ([ADR 0001](../decisions/0001-python-312-with-uv-ruff-pyright-and-pytest.md)), the docs, the orchestrator, developer and qa agents ([ADR 0005](../decisions/0005-orchestrated-agents.md)) and CI. Local-only files stay in the gitignored `private/` ([ADR 0007](../decisions/0007-local-only-files-live-in-private.md)).
 
 ### M1 Normalize
 - Build MIDI I/O, tempo handling, maps and normalization, plus `human-o-matic analyze`.
@@ -243,24 +223,24 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
 - **MIDI, as built:**
   - A file becomes paired notes and raw events at absolute ticks, and a round trip keeps every message in order ([ADR 0013](../decisions/0013-midi-is-read-into-notes-and-raw-events.md)). Songs are worked on and written at the smallest multiple of the source PPQ that is at least 960 ([ADR 0014](../decisions/0014-work-at-a-whole-multiple-of-the-source-ppq.md)).
   - Unclear input is a `DecisionRequest`, raised as `DecisionRequired` ([ADR 0015](../decisions/0015-unclear-input-is-a-decision-request.md)). Tempo and time signatures follow [ADR 0016](../decisions/0016-tempo-and-time-signatures.md): a given `bpm` replaces the file's tempo, and a missing time signature is 4/4, flagged as assumed. The drums are one whole track ([ADR 0017](../decisions/0017-the-drums-are-one-whole-track.md)). mido is typed by a local stub ([ADR 0018](../decisions/0018-mido-is-typed-by-a-local-stub.md)).
-  - All 3,313 library files read, and round-trip with every message unchanged apart from note-ons at velocity 0, written as note-offs. 901 (Drum Lab) have no tempo event, 96 PPQ and the same time signature twice at tick 0. 1,657 are format 0, 160 change time signature, and every file has exactly one track with notes. No file has more than 47 tempo events, so dense tempo maps are tested on files built in code.
+  - Performed MIDI in `private/midi/` round-trips with every message unchanged apart from note-ons at velocity 0, written as note-offs, which a `private` test checks on a sample. Dense tempo maps are tested on files built in code.
   - Still open: the `tempo_map` argument and its format.
 - **Quantizer:** choose a grid per beat among 16th, 8th triplet, 16th triplet and 32nd, with a penalty for complex grids. Treat hits on one drum under about 45 ms apart as grace plus main, and keep them linked. Merge near-simultaneous limbs onto one grid point. Report ambiguous bars instead of guessing silently.
 - **Hit types:** cluster velocities per drum family. Clear clusters become soft, normal or accent. Flat input gets inferred types marked low confidence, so the agent asks.
 - **Maps:** library-neutral, for most modern drum libraries, and no library is special in the code ([ADR 0008](../decisions/0008-library-neutral-drum-maps.md)).
   - A map file is one library and its kits. Each kit lists its articulations, each with its MIDI notes, velocity behavior, CC behavior, channel, and a source and confidence.
-  - Canonical articulation names act as the pivot, because General MIDI has no articulations and the same number differs by library: note 39 is a variant snare hit in IOF Drummer but a flam in Sleep Token II. Use `family.articulation` names such as `snare.center`, `hat.closed.tip`, `crash.1.choke`. Conversion tries the exact name, then piece substitution, then drops the variant, then the family default, and reports every inexact step ([ADR 0021](../decisions/0021-conversion-falls-back-within-a-family.md)).
+  - Canonical articulation names act as the pivot, because General MIDI has no articulations and the same number differs by library: note 39 is a snare variant in one library and a flam in another. Use `family.articulation` names such as `snare.center`, `hat.closed.tip`, `crash.1.choke`. Conversion tries the exact name, then piece substitution, then drops the variant, then the family default, and reports every inexact step ([ADR 0021](../decisions/0021-conversion-falls-back-within-a-family.md)).
   - M1 reads and writes notes, channels and velocity ranges, and output stays inside an articulation's velocity range. CC behavior is stored, validated and preserved, and CC-driven articulations are resolved in M3 ([ADR 0009](../decisions/0009-m1-resolves-notes-channels-and-velocity-ranges.md)).
-  - Maps are built in, with no user-supplied map files ([ADR 0010](../decisions/0010-built-in-maps-only.md)). M1 ships General MIDI plus maps built from the sources in the appendix ([ADR 0011](../decisions/0011-m1-maps-for-general-midi-and-eight-libraries.md)). **Build maps from those sources, never from memory, and cover every slot.**
+  - Maps are built in, with no user-supplied map files ([ADR 0010](../decisions/0010-built-in-maps-only.md)). M1 ships General MIDI plus maps for eight libraries ([ADR 0011](../decisions/0011-m1-maps-for-general-midi-and-eight-libraries.md)). **Build each map from its sources, never from memory.**
 - **Maps, as built:**
   - The vocabulary is `data/vocabulary.toml`, and names follow `family[.piece].articulation[.variant...]` ([ADR 0019](../decisions/0019-canonical-names-follow-one-grammar.md)). A map file is one library in TOML, and a map with an unknown name, a missing parent or default, a gap in its pieces, or two overlapping bindings fails to load ([ADR 0020](../decisions/0020-map-files-are-toml-checked-when-they-load.md)).
   - Conversion never changes a hit's family on its own. A target that lacks the family, a missing choke, a controller-driven articulation and notes the source doesn't map are decision requests (`conversion` and `unmapped_notes`), with positions as bar and beat. A request may suggest a substitute from another family, from a fixed list in the vocabulary, used only when the user picks it ([ADR 0021](../decisions/0021-conversion-falls-back-within-a-family.md)).
-  - Shipped so far: `gm`, from the General MIDI Level 1 key map ([ADR 0022](../decisions/0022-the-general-midi-map-follows-the-standard.md)), and `sleep-token-ii`, 58 articulations on 68 pitches, written by hand from the proposal's inventory of its Cubase drum map. A `library` test reads the drum map in place and checks every pitch and label against the TOML. Library ids follow [ADR 0023](../decisions/0023-built-in-library-ids.md), and the data is found by one function ([ADR 0024](../decisions/0024-built-in-data-is-found-beside-the-source.md)).
-  - Still to build: the maps from the IOF files, and the quantizer, hit types and `human-o-matic analyze`.
+  - Shipped so far: `gm`, from the General MIDI Level 1 key map ([ADR 0022](../decisions/0022-the-general-midi-map-follows-the-standard.md)), and `sleep-token-ii`, 58 articulations on 68 pitches, written by hand from the library's own mapping and checked against it by a test in `private/`. Each articulation's `source` says what kind of evidence names it, and only names from a standard are kept as labels. Library ids follow [ADR 0023](../decisions/0023-built-in-library-ids.md), and the data is found by one function ([ADR 0024](../decisions/0024-built-in-data-is-found-beside-the-source.md)).
+  - Still to build: the other seven libraries' maps, and the quantizer, hit types and `human-o-matic analyze`.
 - **Exit:**
-  - Add known jitter to quantized library files and recover at least 99% of grid positions.
+  - Add known jitter to quantized MIDI files and recover at least 99% of grid positions.
   - Round trips keep all notes and non-note events.
-  - Converting between any two shipped maps never moves a hit to a different drum family. Where the target lacks an articulation, the fallback is the exact name, then piece substitution, then the name without its variant, then the family default, and every inexact step is reported. A hit whose family the target lacks is a decision request. Tests build any other map they need in code, in `tmp_path`, and never read the vendor files.
+  - Converting between any two shipped maps never moves a hit to a different drum family. Where the target lacks an articulation, the fallback is the exact name, then piece substitution, then the name without its variant, then the family default, and every inexact step is reported. A hit whose family the target lacks is a decision request. Tests build any other map they need in code, in `tmp_path`.
 
 ### M2 Sections
 - Bar features: per-family onset patterns on the grid, density, cymbal type, fill flag.
@@ -270,8 +250,8 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
 
 ### M3 Parametric engine and calibration
 - Implement the control vector, compiler, sampler, guards, `generic` mode and preview, using the appendix defaults.
-- `tools/infer_map.py` prints per-pack pitch statistics so roles can be assigned. **Maps differ between packs and need verifying:** some GGD folders look General-MIDI-like (42/46 hats, 49/57 crashes, 51 ride) while IOF's GGD map file says hats are 49 to 55; Modern & Massive has pitch 74 at 20% of notes and velocity 76; Sleep Token's Groove Pack uses pitches 1, 2, 14, 3, 41 that do not match the library's default map. Exclude and report any pack that cannot be resolved.
-- `tools/calibrate.py` computes attributes per groove (energy as velocity level, dynamic range, tightness, feel), then fits per-role distributions conditioned on those attributes, by metric level and tempo band. Writes `data/styles/*.toml`: `tight` (default), `medium`, `loose` and named drummers. Commit aggregate statistics only.
+- `tools/infer_map.py` prints pitch statistics for each folder of performed MIDI in `private/midi/`, so roles can be assigned. **A folder's notes can disagree with its library's map, so each needs verifying.** Exclude and report any folder that cannot be resolved.
+- `tools/calibrate.py` computes attributes per groove of the performed MIDI in `private/midi/` (energy as velocity level, dynamic range, tightness, feel), then fits per-role distributions conditioned on those attributes, by metric level and tempo band. Writes `data/styles/*.toml`: `tight` (default), `medium`, `loose` and named drummers. Commit aggregate statistics only.
 - **Exit:** raising each control moves its measured statistic in the right direction, and all property tests below pass.
 
 ### M4 MCP, skill and the main gate
@@ -290,7 +270,7 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
   - Record how many questions a real song took and whether they felt worth it.
 
 ### M5 Trained model experiment (gate)
-- **Data:** performed files normalized through M3's maps. Split by song and hold out one whole drummer. Many files share a song, so a file-level split would leak.
+- **Data:** the performed MIDI in `private/midi/`, normalized through M3's maps. Split by song and hold out one whole drummer. Many files share a song, so a file-level split would leak.
 - **Task:** flat quantized score plus hit types and control vector, to per-note timing offset and velocity. Controls come from the target performance's own attributes, so training is self-supervised, as in MuseCoco.
 - **Output must be sampled** (for example a mixture density head). Predicting the mean flattens dynamics and recreates the robotic sound.
 - **Model:** small sequence model, up to about 500k parameters. PyTorch on MPS. It plugs in as `backends/neural.py`. Song-level drift stays explicit, and guards still apply.
@@ -319,7 +299,7 @@ Ghosts, flams, rimshots and chokes, asked about as ordinary questions ("add ghos
 - Build a DAW bridge, web UI or built-in LLM in this version. The session format keeps them possible later.
 - Pass note arrays through MCP.
 - Train before M4 exists: without a baseline, "better" means nothing.
-- Commit or redistribute library MIDI.
+- Commit, copy out of or redistribute anything in `private/` ([ADR 0007](../decisions/0007-local-only-files-live-in-private.md)).
 - Load user-supplied map files in this version: maps are built in ([ADR 0010](../decisions/0010-built-in-maps-only.md)).
 - Special-case a library in the code: libraries differ only in their map data ([ADR 0008](../decisions/0008-library-neutral-drum-maps.md)).
 - Let timing exceed performed magnitudes by default.
@@ -347,28 +327,13 @@ Placeholders until M3 replaces them. Velocity anchors are at energy 1.0, 0.5 and
 - **Near the ceiling, reflect samples rather than clip,** or everything piles up at 127. Then forbid identical consecutive values per pitch (nudge ±1, or -1 at 127).
 
 **Timing** (ms, converted with the local tempo)
-- **Drift:** sum of slow processes at time constants of 16, 64 and 256 beats, total SD about 2.5, for long memory. Library loops are too short to fit this, so it stays modelled.
+- **Drift:** sum of slow processes at time constants of 16, 64 and 256 beats, total SD about 2.5, for long memory. Performed loops are too short to fit this, so it stays modelled.
 - **Shared offset per onset:** SD about 2.2, scaled by tightness.
 - **Limb offsets:** snare about +1, riders about +0.7, others 0, jitter SD 1.8 to 3 clipped to ±4, then replaced by M3's values.
 - **Overall spread:** about 3 to 4 ms at the default `tight` style. Cap ±12 ms.
 - **Feel:** up to about +6 ms laid back (with a loudness increase on snare) and about -3 ms pushed.
 - **Guards:** each same-pitch note keeps at least 60% of its grid gap. Trim durations so same-pitch notes never overlap. Clamp at tick 0 and report it. Grace notes take their main note's offset.
 
-## Appendix B: Data sources
+## Appendix B: Python libraries
 
-**Map sources** (the data the maps are built from, never their model: [ADR 0011](../decisions/0011-m1-maps-for-general-midi-and-eight-libraries.md))
-- General MIDI Level 1 percussion key map (MMA RP-003), notes 35 to 81 on channel 10, a published standard, for the General MIDI map.
-- IOF Drummer 6: `~/Library/Application Support/IOF Sounds/IOF Drummer 6/User Presets/MAP/*.map`, 13 files including GM, EZdrummer 3, Superior Drummer 3, Addictive Drums 2, SSD5, GGD Modern & Massive and Abbey Road. JSON where slot `RemapCBnData`, for slots 1 to 63, is one IOF articulation and the value is note + 2 (value 1 means unset). Every file uses the same slots, so each one maps the slots for one library. `DEFAULT.map` is IOF's own map. Slot names are not in the files, so each slot's canonical articulation is proposed with low confidence, and raised to high once the owner confirms it in the plugin.
-- MixWave Sleep Token II default map: `~/Music/Templates/Sleep Token Songwriting Template/Cubase/_Cubase Drum Map/MixWave Sleep Token - II.drm`, a Cubase drum map that names its pitches.
-- Format reference: [Drum-Mapper](https://github.com/insomnimus/drum-mapper) (MIT).
-
-**Library MIDI** (read in place, never copy)
-- `/Users/Shared/GetGood Drums - P V Matt Halpern Signature Pack/MIDIFiles` (1,935 files; despite the name also Anup, Krimh, Kolstad, Sandnes, Richardson, Rudi and Free Vols 1/2)
-- `/Users/Shared/Bogren Digital - Krimh Drums/MIDIfiles` (103, all performed)
-- `/Users/Shared/GetGood Drums - Modern and Massive Pack/Modern & Massive/MIDIFiles` (31)
-- `/Users/jakubszewczyk/Documents/SleepTokenII/MIDI Files` (172)
-- `/Users/Shared/SoundBlind Drums - Counterkit/MIDI` (159, mostly quantized, useful for quantizer tests; has the clearest section labels)
-- `/Users/Shared/Drum Lab Library/MIDI Files` (901, mostly quantized, useful for quantizer tests)
-- `/Users/Shared/Krimh Drums Free/MIDIfiles` (12)
-
-**Libraries:** `mido` and `python-rtmidi` (lossless I/O, preview), [`symusic`](https://symusic.readthedocs.io/en/latest/introduction.html) (fast batch scanning of the dataset; its speed claims are the maintainers' own), `numpy`, `scipy`, `pydantic`, `typer`, the official `mcp` Python SDK (check current docs, as the spec is moving), `pytest`, `hypothesis`, and PyTorch in M5 only. Each runtime dependency is added in the milestone that first needs it: `mido`, `numpy`, `pydantic` and `typer` in M1, `scipy` in M2, `python-rtmidi` and `symusic` in M3, and `mcp` in M4 ([ADR 0012](../decisions/0012-runtime-dependencies-arrive-with-their-milestone.md)).
+`mido` and `python-rtmidi` (lossless I/O, preview), [`symusic`](https://symusic.readthedocs.io/en/latest/introduction.html) (fast batch scanning of MIDI; its speed claims are the maintainers' own), `numpy`, `scipy`, `pydantic`, `typer`, the official `mcp` Python SDK (check current docs, as the spec is moving), `pytest`, `hypothesis`, and PyTorch in M5 only. Each runtime dependency is added in the milestone that first needs it: `mido`, `numpy`, `pydantic` and `typer` in M1, `scipy` in M2, `python-rtmidi` and `symusic` in M3, and `mcp` in M4 ([ADR 0012](../decisions/0012-runtime-dependencies-arrive-with-their-milestone.md)).
