@@ -229,7 +229,7 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
 ### M0 Setup
 - Machine has Python 3.10.3 with no numpy or torch; M1 Pro, 32 GB. `uv` 0.13.7 is installed in `~/.local/bin`, and provides Python 3.12.
 - `~/Projects/human-o-matic` is the app's repo, with a GitHub remote, `origin`. Only the owner pushes ([ADR 0006](../decisions/0006-settings-block-pushes-and-publishing.md)).
-- The scaffolding is the toolchain ([ADR 0001](../decisions/0001-python-312-with-uv-ruff-pyright-and-pytest.md)), the docs, the orchestrator, developer and qa agents ([ADR 0005](../decisions/0005-orchestrated-agents.md)) and CI. Library data stays out of the repo ([ADR 0007](../decisions/0007-library-data-stays-out-of-the-repo.md)).
+- The scaffolding is the toolchain ([ADR 0001](../decisions/0001-python-312-with-uv-ruff-pyright-and-pytest.md)), the docs, the orchestrator, developer and qa agents ([ADR 0005](../decisions/0005-orchestrated-agents.md)) and CI. Library data stays out of the repo ([ADR 0007](../decisions/0007-local-only-files-live-in-private.md)).
 
 ### M1 Normalize
 - Build MIDI I/O, tempo handling, maps and normalization, plus `human-o-matic analyze`.

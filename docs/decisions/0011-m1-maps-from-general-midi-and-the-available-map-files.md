@@ -9,4 +9,4 @@
 
 **Why:** These are the map files at hand. Once their slots are named, the IOF files cover several common libraries at once. General MIDI is a published standard, so it needs no vendor file.
 
-**Consequences:** A conversion that relies on an unconfirmed slot name says so in its report until the slots are checked in the plugin. The maps are written in the project's own format, never copied from the vendor files ([ADR 0007](0007-library-data-stays-out-of-the-repo.md)).
+**Consequences:** A conversion that relies on an unconfirmed slot name says so in its report until the slots are checked in the plugin. The maps are written in the project's own format, never copied from the vendor files ([ADR 0007](0007-local-only-files-live-in-private.md)).

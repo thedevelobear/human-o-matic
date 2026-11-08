@@ -24,7 +24,7 @@ Run them once, on the branch's tip. Commits before it don't have to pass on thei
 
 ## The review
 Read the whole diff, not only the stat, then check it against the plan:
-- **Library data.** `git diff --name-only <base>...HEAD` and `git ls-files` show no `.mid`, `.midi`, `.map` or `.drm` file, and no copied library content in data or docs. Calibration output holds aggregate statistics only ([ADR 0007](../../docs/decisions/0007-library-data-stays-out-of-the-repo.md)).
+- **`private/`.** `git ls-files private` is empty, and `git diff --name-only <base>...HEAD` and `git ls-files` show no `.mid` or `.midi` file. No tracked file copies anything from `private/`, or names the files it holds or where they come from. Calibration output holds aggregate statistics only ([ADR 0007](../../docs/decisions/0007-local-only-files-live-in-private.md)).
 - **The plan's rules.** Nothing from the "Do not" list: no DAW bridge, web UI or built-in LLM, no note arrays through MCP tools, no training before M4, no user-supplied map files, no library special-cased in the code, no piano or guitar logic, and no timing past performed magnitudes by default.
 - **Determinism.** No `random` module and no numpy global state. Randomness comes from a `Generator` built from a `SeedSequence`.
 - **The milestone's exit criteria.** Go through each one and say whether the diff and the tests show it met. Name the criteria that only the owner can judge, such as anything a listener must hear, and don't call those passing.
