@@ -52,3 +52,4 @@ What was decided, specifically enough to check the code against.
 | [0014](decisions/0014-work-at-a-whole-multiple-of-the-source-ppq.md) | Songs are worked on and written at the smallest multiple of their PPQ that is at least 960 | Proposed |
 | [0015](decisions/0015-unclear-input-is-a-decision-request.md) | Unclear input is a decision request, raised as `DecisionRequired` | Proposed |
 | [0016](decisions/0016-tempo-and-time-signatures.md) | Tempo and time signatures come from every track, and a missing tempo is asked for | Proposed |
+| [0017](decisions/0017-the-drums-are-one-whole-track.md) | The drums are one whole track, chosen by rules in turn | Proposed |
