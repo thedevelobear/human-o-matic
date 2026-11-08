@@ -16,7 +16,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
-type DecisionKind = Literal["tempo", "drum_track"]
+type DecisionKind = Literal["tempo", "drum_track", "unmapped_notes", "conversion"]
 """What is being asked. Later steps add their own kinds."""
 
 
