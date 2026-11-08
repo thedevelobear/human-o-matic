@@ -133,6 +133,8 @@ def test_converting_between_shipped_maps_never_changes_family(
     asked_about = sum(int(str(request.details.get("count", 0))) for request in conversion.decisions)
     assert asked_about == len(conversion.pending)
     assert all(request.kind == "conversion" for request in conversion.decisions)
+    # Every note starts at its own tick, so none can meet another.
+    assert conversion.collisions == ()
 
 
 def test_general_midi_onto_sleep_token_ii_reports_each_step() -> None:

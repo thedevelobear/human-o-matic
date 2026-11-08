@@ -10,10 +10,12 @@ kit by the fallback order. It stops at the first name the target kit has:
    `hat.open.quarter`, then `hat.open`;
 4. the piece's default, so `snare.flam` becomes `snare.center`, except for an articulation the
    vocabulary lists in `ask_if_missing`, such as a choke.
-Every step after the first is reported. A hit never leaves its family unless the user picks a
-substitute. These are decision requests instead: a target that lacks the family, a target that
-lacks an `ask_if_missing` articulation, an articulation that depends on a controller value,
-which M1 doesn't follow (ADR 0009), and notes the source kit doesn't map at all.
+Every step after the first is reported, and so are collisions: converted notes from different
+source notes that start on one target pitch and channel at the same tick, as when several toms
+are re-spread onto fewer. They keep their pitches. A hit never leaves its family unless the user
+picks a substitute. These are decision requests instead: a target that lacks the family, a
+target that lacks an `ask_if_missing` articulation, an articulation that depends on a controller
+value, which M1 doesn't follow (ADR 0009), and notes the source kit doesn't map at all.
 
 The answers come back as `substitutions`, from a source articulation to the target articulation
 it becomes, and `unmapped`, from a source pitch to the target articulation. Either may be `DROP`,
@@ -76,6 +78,25 @@ class Row(BaseModel):
     """How many of the notes had their velocity moved into the target's velocity range."""
 
 
+class Collision(BaseModel):
+    """Converted notes from different source notes that start on one target pitch and channel at
+    the same tick. They keep the pitches the conversion gave them."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    pitch: int
+    channel: int
+    """0 to 15."""
+    count: int
+    """How many ticks such notes start at."""
+    notes: int
+    """How many notes start at those ticks."""
+    sources: tuple[str, ...]
+    """The source articulations that meet there, in the order they first appear."""
+    positions: tuple[tuple[int, float], ...]
+    """The first of those ticks as `(bar, beat)`, counted from 0, at most `MAX_POSITIONS`."""
+
+
 @dataclass(frozen=True, slots=True)
 class Resolution:
     """Where a source articulation goes in the target kit."""
@@ -97,6 +118,8 @@ class Conversion:
     """The notes waiting for a decision, as they came."""
     rows: tuple[Row, ...]
     """How each source articulation was converted, in the order they first appear."""
+    collisions: tuple[Collision, ...]
+    """Where converted notes meet on one pitch and channel at one tick, by pitch and channel."""
     decisions: tuple[DecisionRequest, ...]
 
     @property
@@ -215,6 +238,8 @@ def convert(
     same_kit = source.ref == target.ref
     resolutions: dict[str, Resolution] = {}
     converted: list[Note] = []
+    origins: list[tuple[str, int, int]] = []
+    """For each converted note, its source key, channel and pitch."""
     pending: list[Note] = []
     tallies: dict[tuple[str, str], _Tally] = {}
     waiting: dict[tuple[Reason, str], list[Note]] = {}
@@ -244,6 +269,7 @@ def convert(
             tally = tallies.setdefault((key, key), _Tally((), confidence, confidence))
             tally.count += 1
             converted.append(note)
+            origins.append((key, note.channel, note.pitch))
             continue
         elif controlled:
             wait("cc", key, note)
@@ -272,6 +298,7 @@ def convert(
         tally.clamped += velocity != note.velocity
         channel = output.channel if output.channel is not None else note.channel
         converted.append(replace(note, pitch=output.pitch, channel=channel, velocity=velocity))
+        origins.append((key, note.channel, note.pitch))
 
     decisions: list[DecisionRequest] = []
     if unknown:
@@ -294,7 +321,38 @@ def convert(
         for (key, choice), tally in tallies.items()
     )
     return Conversion(
-        notes=tuple(converted), pending=tuple(pending), rows=rows, decisions=tuple(decisions)
+        notes=tuple(converted),
+        pending=tuple(pending),
+        rows=rows,
+        collisions=_collisions(converted, origins, signatures),
+        decisions=tuple(decisions),
+    )
+
+
+def _collisions(
+    notes: Sequence[Note], origins: Sequence[tuple[str, int, int]], signatures: TimeSignatureMap
+) -> tuple[Collision, ...]:
+    """Ticks where converted notes from different source notes start on one pitch and channel.
+    Notes that already shared a pitch and channel in the source are not a collision."""
+    places: dict[tuple[int, int, int], list[int]] = {}
+    for index, note in enumerate(notes):
+        places.setdefault((note.pitch, note.channel, note.start), []).append(index)
+    met: dict[tuple[int, int], tuple[list[int], list[int]]] = {}
+    for (pitch, channel, start), indexes in places.items():
+        if len({origins[index][1:] for index in indexes}) > 1:
+            starts, found = met.setdefault((pitch, channel), ([], []))
+            starts.append(start)
+            found.extend(indexes)
+    return tuple(
+        Collision(
+            pitch=pitch,
+            channel=channel,
+            count=len(starts),
+            notes=len(found),
+            sources=tuple(dict.fromkeys(origins[index][0] for index in sorted(found))),
+            positions=_places(starts, signatures),
+        )
+        for (pitch, channel), (starts, found) in sorted(met.items())
     )
 
 
@@ -315,9 +373,13 @@ def _lowest(confidences: Iterable[Confidence]) -> Confidence:
 
 def _positions(notes: Sequence[Note], signatures: TimeSignatureMap) -> list[JsonValue]:
     """The first notes' positions as `[bar, beat]`, counted from 0."""
-    starts = sorted(note.start for note in notes)[:MAX_POSITIONS]
-    places = [signatures.position(start) for start in starts]
-    return [[place.bar, round(place.beat, 3)] for place in places]
+    return [[bar, beat] for bar, beat in _places([note.start for note in notes], signatures)]
+
+
+def _places(starts: Iterable[int], signatures: TimeSignatureMap) -> tuple[tuple[int, float], ...]:
+    """The first ticks' positions as `(bar, beat)`, counted from 0."""
+    places = [signatures.position(start) for start in sorted(starts)[:MAX_POSITIONS]]
+    return tuple((place.bar, round(place.beat, 3)) for place in places)
 
 
 def _from_bar(notes: Sequence[Note], signatures: TimeSignatureMap) -> str:

@@ -14,6 +14,7 @@
 - Positions are `[bar, beat]` from the time signature map, counted from 0 in the data and from 1 in messages, with at most 8 per group beside the full count.
 - The answers are `substitutions`, from a source articulation to a target articulation, and `unmapped`, from a source pitch to a target articulation. `drop` leaves those notes out instead. A note a controller value decides among several articulations is keyed by their names joined with `|`.
 - The report has a row per source and target articulation, with the count, each inexact step (what was asked, what was used, and which step it was, a pick being `picked`), both confidences, and how many velocities were moved into the target's range.
+- Converted notes from different source notes that start on one target pitch and channel at the same tick, as when several toms are re-spread onto fewer, keep their pitches and are listed as collisions: per pitch and channel, how many ticks and notes, the source articulations and the first positions.
 - Converting a kit to itself keeps every mapped note as it is.
 
 **Why:** A hit that silently changes family, or a choke played as a full crash, is a wrong note that the user may not notice. Re-spreading toms keeps a fill moving down the kit, where taking the nearest number would put half of General MIDI's six toms on the floor tom.

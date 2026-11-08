@@ -8,6 +8,7 @@ from human_o_matic.decisions import DecisionRequest
 from human_o_matic.maps.convert import (
     DROP,
     MAX_POSITIONS,
+    Collision,
     Conversion,
     Resolution,
     Row,
@@ -411,6 +412,61 @@ def test_six_toms_go_onto_three_by_register_and_back(tmp_path: Path) -> None:
     assert [n.pitch - 40 for n in up.notes] == [1, 3, 6]
     assert down.rows[0].steps == ()
     assert all(row.steps[0].kind == "piece" for row in down.rows[1:])
+    # The notes were at one tick, so each pair meets on its target tom, keeping its pitch.
+    assert [(c.pitch, c.count, c.notes, c.sources) for c in down.collisions] == [
+        (61, 1, 2, ("tom.1.hit", "tom.2.hit")),
+        (62, 1, 2, ("tom.3.hit", "tom.4.hit")),
+        (63, 1, 2, ("tom.5.hit", "tom.6.hit")),
+    ]
+    assert up.collisions == ()
+
+
+def test_a_collision_lists_its_count_and_first_positions(tmp_path: Path) -> None:
+    two = kit(articulation("tom.1.hit", 48), articulation("tom.2.hit", 45), id="two")
+    one = kit(articulation("tom.1.hit", 50), id="one", channel=10)
+    many, few = load_library(write_library(tmp_path, library(two, one)), built_in_vocabulary())
+    starts = [PPQ * index for index in range(MAX_POSITIONS + 2)]
+    notes = [note(pitch, start) for start in starts for pitch in (48, 45)]
+
+    conversion = convert([*notes, note(48, PPQ // 2)], many, few, FOUR_FOUR)
+
+    assert [n.pitch for n in conversion.notes] == [50] * len(notes) + [50]
+    assert conversion.collisions == (
+        Collision(
+            pitch=50,
+            channel=9,
+            count=MAX_POSITIONS + 2,
+            notes=len(notes),
+            sources=("tom.1.hit", "tom.2.hit"),
+            positions=tuple((index // 4, float(index % 4)) for index in range(MAX_POSITIONS)),
+        ),
+    )
+
+
+def test_notes_that_already_met_in_the_source_or_part_on_channels_are_no_collision(
+    tmp_path: Path,
+) -> None:
+    source, target = load_library(
+        write_library(
+            tmp_path,
+            library(
+                kit(articulation("kick.hit", 36), articulation("snare.center", 38), id="any"),
+                kit(
+                    articulation("kick.hit", 36, channel=10),
+                    articulation("snare.center", 36, channel=2),
+                    id="bound",
+                ),
+            ),
+        ),
+        built_in_vocabulary(),
+    )
+    doubled = [note(36), note(36)]
+
+    assert convert(doubled, source, target, FOUR_FOUR).collisions == ()
+    assert convert(doubled, source, source, FOUR_FOUR).collisions == ()
+    apart = convert([note(36, channel=5), note(38, channel=5)], source, target, FOUR_FOUR)
+    assert [(n.pitch, n.channel) for n in apart.notes] == [(36, 9), (36, 1)]
+    assert apart.collisions == ()
 
 
 @given(st.integers(1, 9), st.integers(1, 9))
