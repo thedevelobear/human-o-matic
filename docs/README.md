@@ -44,3 +44,4 @@ What was decided, specifically enough to check the code against.
 | [0006](decisions/0006-settings-block-pushes-and-publishing.md) | Claude Code's settings block pushes and publishing | Accepted |
 | [0007](decisions/0007-library-data-stays-out-of-the-repo.md) | Library data stays out of the repo | Accepted |
 | [0008](decisions/0008-library-neutral-drum-maps.md) | Drum maps are library-neutral: library, kit and articulation | Proposed |
+| [0009](decisions/0009-m1-resolves-notes-channels-and-velocity-ranges.md) | M1 resolves notes, channels and velocity ranges, and CC-driven articulations wait for M3 | Proposed |
