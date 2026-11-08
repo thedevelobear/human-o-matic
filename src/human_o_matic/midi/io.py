@@ -48,7 +48,9 @@ class Note:
 
     `order` and `off_order` are the positions of the note-on and note-off messages in their
     source track. The writer orders messages at the same tick by them, which is what keeps the
-    source order through a round trip, so a step that changes a note keeps them as they are.
+    source order through a round trip, so a step that changes a note keeps them as they are. A
+    step that moves a note-off onto the tick of a later note-on of the same pitch must give the
+    note-off the lower order, or it would end the new note.
     """
 
     track: int
