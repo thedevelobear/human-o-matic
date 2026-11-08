@@ -37,6 +37,8 @@ The plan's milestones, M0 to M6, are done in order, each in one or more PRs.
 - Never pass note arrays through MCP tools: pass IDs and file paths, and return compact JSON.
 - Don't train a model before M4 exists.
 - Never commit or redistribute library MIDI or vendor map files. The repo is public, and library data is used for learning only, read in place ([ADR 0007](docs/decisions/0007-library-data-stays-out-of-the-repo.md)).
+- Maps are built in: this version loads no user-supplied map file ([ADR 0010](docs/decisions/0010-built-in-maps-only.md)).
+- No library is special in the code. Libraries differ only in their map data ([ADR 0008](docs/decisions/0008-library-neutral-drum-maps.md)).
 - Timing never exceeds performed magnitudes by default.
 - No piano or guitar logic yet.
 
