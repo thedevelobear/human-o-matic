@@ -10,4 +10,4 @@
 
 **Why:** A wrong tempo silently skews every millisecond the engine computes, while a missing time signature only shifts bar numbers, which the user sees when confirming sections. A tempo the user gives is more likely right than the file's, as when an export carries a placeholder.
 
-**Consequences:** The `tempo_map` argument of `open_session`, and the format a user gives it in, are still to be decided.
+**Consequences:** `bpm` is the only tempo a user gives, and there is no `tempo_map` argument ([ADR 0032](0032-bpm-is-the-only-tempo-a-user-gives.md)).
