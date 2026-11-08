@@ -1,0 +1,202 @@
+# The canonical articulation vocabulary: the names every map uses as the pivot between
+# libraries (ADR 0019). It is validated when it loads, and it grows only through this file and a
+# test: a new family or articulation needs no code.
+#
+# A name is family[.piece].articulation[.variant...], in lower case with "_" inside a word.
+# - family: the kind of drum or cymbal. A conversion never leaves it.
+# - piece: numbers the drums or cymbals of a family from 1, the highest-pitched tom or the first
+#   cymbal of a kind. "numbered" families always write it (tom.1.hit), "second" families only
+#   for a second drum (snare.center, snare.2.center), and "single" families never (clap.hit).
+# - articulation: what is played, such as center, rimshot, closed, bow or choke.
+# - variant: a refinement that can be dropped: a stroke (tip), an openness (quarter, half,
+#   three_quarter), a foot (left, right) or an unnamed alternate (alt, alt2, ...).
+# A bare name is the library's ordinary stroke, and a variant is written only to tell two
+# strokes apart. hat.open is a fully open hat, and hat.variable one whose openness a controller
+# sets. Each family's articulations list every articulation and variant it allows, after the
+# family and piece, and a variant's parent is always listed too.
+schema = 1
+
+# An articulation listed here has no fallback to its family's default. When the target kit
+# lacks it, converting asks instead, because in some libraries a choke is a silent grab, and
+# playing the plain hit could sound a cymbal the source never did.
+ask_if_missing = ["choke"]
+
+# Substitutes from another family that converting may offer when the target kit lacks a family.
+# They are only offered in a decision request, never applied: a hit changes family only when the
+# user picks it. Each entry is a family, which keeps the articulation where that family has it,
+# or a family and articulation.
+[suggestions]
+china = ["crash"]
+stack = ["china"]
+sticks = ["snare.sidestick"]
+
+[families.kick]
+pieces = "second"
+default = "hit"
+articulations = ["hit", "hit.left", "hit.right"]
+
+[families.snare]
+pieces = "second"
+default = "center"
+# offcenter and edge are positional articulations. rim is the rim alone, with no head.
+articulations = [
+  "center",
+  "offcenter",
+  "edge",
+  "rimshot",
+  "sidestick",
+  "sidestick.alt",
+  "rim",
+  "flam",
+  "roll",
+]
+
+[families.hat]
+pieces = "second"
+default = "closed"
+articulations = [
+  "closed",
+  "closed.tip",
+  "tight",
+  "tight.tip",
+  "open",
+  "open.tip",
+  "open.quarter",
+  "open.quarter.tip",
+  "open.half",
+  "open.half.tip",
+  "open.three_quarter",
+  "pedal",
+  "pedal.splash",
+  "variable",
+  "variable.tip",
+]
+
+[families.tom]
+pieces = "numbered"
+default = "hit"
+# Toms are ordered by pitch, so a kit with a different number of them is re-spread by register.
+piece_substitution = "register"
+articulations = ["hit", "rimshot", "rim"]
+
+[families.ride]
+pieces = "numbered"
+default = "bow"
+# crash is the ride struck on its edge.
+articulations = [
+  "bow",
+  "bow.alt",
+  "bow.alt2",
+  "bow.alt3",
+  "bell",
+  "bell.tip",
+  "crash",
+  "mute",
+  "choke",
+]
+
+[families.crash]
+pieces = "numbered"
+default = "hit"
+articulations = ["hit", "mute", "choke"]
+
+[families.china]
+pieces = "numbered"
+default = "hit"
+articulations = ["hit", "mute", "choke"]
+
+[families.splash]
+pieces = "numbered"
+default = "hit"
+articulations = ["hit", "mute", "choke"]
+
+[families.stack]
+pieces = "numbered"
+default = "hit"
+articulations = ["hit", "hit.tip"]
+
+[families.cowbell]
+pieces = "second"
+default = "hit"
+articulations = ["hit"]
+
+[families.tambourine]
+pieces = "single"
+default = "hit"
+articulations = ["hit"]
+
+[families.clap]
+pieces = "single"
+default = "hit"
+articulations = ["hit"]
+
+[families.sticks]
+pieces = "single"
+default = "hit"
+articulations = ["hit"]
+
+[families.vibraslap]
+pieces = "single"
+default = "hit"
+articulations = ["hit"]
+
+[families.cabasa]
+pieces = "single"
+default = "hit"
+articulations = ["hit"]
+
+[families.maracas]
+pieces = "single"
+default = "hit"
+articulations = ["hit"]
+
+[families.claves]
+pieces = "single"
+default = "hit"
+articulations = ["hit"]
+
+# Paired percussion: piece 1 is the higher one.
+[families.bongo]
+pieces = "numbered"
+default = "hit"
+articulations = ["hit"]
+
+[families.timbale]
+pieces = "numbered"
+default = "hit"
+articulations = ["hit"]
+
+[families.agogo]
+pieces = "numbered"
+default = "hit"
+articulations = ["hit"]
+
+[families.woodblock]
+pieces = "numbered"
+default = "hit"
+articulations = ["hit"]
+
+[families.conga]
+pieces = "numbered"
+default = "open"
+articulations = ["open", "mute"]
+
+[families.whistle]
+pieces = "single"
+default = "short"
+articulations = ["short", "long"]
+
+[families.guiro]
+pieces = "single"
+default = "short"
+articulations = ["short", "long"]
+
+[families.cuica]
+pieces = "single"
+default = "open"
+articulations = ["open", "mute"]
+
+[families.triangle]
+pieces = "single"
+default = "open"
+articulations = ["open", "mute"]
