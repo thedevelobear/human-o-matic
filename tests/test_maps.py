@@ -299,8 +299,12 @@ def test_a_directory_of_maps_loads_by_library_and_kit(tmp_path: Path) -> None:
     assert [drums.ref for drums in maps] == ["first/one", "first/two", "second/kit"]
     assert maps.kit("first", "two").ref == "first/two"
     assert maps.kit("second").ref == "second/kit"
-    with pytest.raises(KeyError, match="the kits one, two"):
+    with pytest.raises(KeyError, match="first has the kits one, two; name one"):
         maps.kit("first")
+    with pytest.raises(KeyError, match="first has no kit 'three'; it has one, two"):
+        maps.kit("first", "three")
+    with pytest.raises(KeyError, match="second has no kit 'one'; it has kit"):
+        maps.kit("second", "one")
     with pytest.raises(KeyError, match="no library 'third'"):
         maps.kit("third")
 

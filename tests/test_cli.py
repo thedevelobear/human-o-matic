@@ -262,7 +262,8 @@ def test_a_grid_a_beat_cant_have_is_a_usage_error(tmp_path: Path) -> None:
     [
         ("nope", "no library 'nope'; there are addictive-drums-2, ezdrummer-3"),
         ("iof-drummer", "iof-drummer has the kits default, old; name one"),
-        ("gm/nope", "gm has the kits default; name one"),
+        ("gm/nope", "gm has no kit 'nope'; it has default"),
+        ("iof-drummer/", "iof-drummer has no kit ''; it has default, old"),
     ],
 )
 def test_a_map_that_isnt_built_in_is_a_usage_error(

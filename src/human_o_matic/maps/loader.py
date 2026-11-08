@@ -43,11 +43,13 @@ class MapSet:
         library_kits = self._kits.get(library)
         if library_kits is None:
             raise KeyError(f"no library {library!r}; there are {', '.join(self._kits)}")
-        if kit is None and len(library_kits) == 1:
-            return next(iter(library_kits.values()))
-        found = library_kits.get(kit) if kit is not None else None
-        if found is None:
+        if kit is None:
+            if len(library_kits) == 1:
+                return next(iter(library_kits.values()))
             raise KeyError(f"{library} has the kits {', '.join(library_kits)}; name one")
+        found = library_kits.get(kit)
+        if found is None:
+            raise KeyError(f"{library} has no kit {kit!r}; it has {', '.join(library_kits)}")
         return found
 
 
