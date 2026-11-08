@@ -7,17 +7,32 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from human_o_matic.maps.convert import Row, convert
+from human_o_matic.maps.convert import DROP, Row, convert
 from human_o_matic.maps.kit import DrumKit
 from human_o_matic.maps.loader import built_in_maps
 from human_o_matic.midi.io import Note
 from human_o_matic.midi.tempo import TimeSignatureMap
+from human_o_matic.resources import data_dir
 
 MAPS = built_in_maps()
 KITS = list(MAPS)
 GM = MAPS.kit("gm", "default")
 SLEEP_TOKEN = MAPS.kit("sleep-token-ii", "default")
+DRUMMER = MAPS.kit("iof-drummer", "default")
 FOUR_FOUR = TimeSignatureMap(960, [])
+SHIPPED = {
+    "gm": ("default",),
+    "sleep-token-ii": ("default",),
+    "iof-drummer": ("default", "old"),
+    "ezdrummer-3": ("default",),
+    "superior-drummer-3": ("default",),
+    "addictive-drums-2": ("default",),
+    "ssd5": ("default",),
+    "ggd-modern-and-massive": ("default",),
+    "ni-abbey-road": ("default",),
+    "logic-pro-drums": ("default",),
+    "garageband-drums": ("default",),
+}
 
 
 def family(kit: DrumKit, note: Note) -> str:
@@ -51,9 +66,23 @@ def every_binding_note(kit: DrumKit) -> list[Note]:
     return notes
 
 
-def test_the_shipped_maps_load() -> None:
-    assert {"gm", "sleep-token-ii"} <= {library.id for library in MAPS.libraries}
+def note(pitch: int, start: int = 0, channel: int = 9) -> Note:
+    return Note(track=0, channel=channel, pitch=pitch, start=start, end=start + 120, velocity=100)
+
+
+def test_the_shipped_maps_load_one_library_per_file() -> None:
+    kits = {library.id: tuple(kit.id for kit in library.kits) for library in MAPS.libraries}
+
+    assert kits == SHIPPED
+    assert len(sorted((data_dir() / "maps").glob("*.toml"))) == len(SHIPPED)
     assert all(library.schema_version == 1 for library in MAPS.libraries)
+
+
+@pytest.mark.parametrize("kit", KITS, ids=lambda kit: kit.ref)
+def test_an_inferred_name_ships_at_low_confidence(kit: DrumKit) -> None:
+    for entry in kit.articulations:
+        if entry.source == "inferred":
+            assert entry.confidence == "low", entry.name
 
 
 @pytest.mark.parametrize("kit", KITS, ids=lambda kit: kit.ref)
@@ -216,3 +245,38 @@ def test_random_hits_never_change_family(data: st.DataObject) -> None:
         assert family(source, before) == family(target, after), (before, after)
         assert (after.start, after.end, after.track) == (before.start, before.end, before.track)
     check_report(conversion.rows)
+
+
+@pytest.mark.parametrize("target", KITS, ids=lambda kit: kit.ref)
+def test_note_39_of_the_default_layout_is_a_snare_on_every_kit_and_never_a_flam(
+    target: DrumKit,
+) -> None:
+    hit = note(39)
+
+    conversion = convert([hit], DRUMMER, target, FOUR_FOUR)
+
+    assert family(DRUMMER, hit) == "snare"
+    assert conversion.complete
+    (row,) = conversion.rows
+    (after,) = conversion.notes
+    assert target.canonical(row.target).family == family(target, after) == "snare"
+    assert "snare.flam" not in {
+        row.target,
+        *(m.articulation.name for m in target.read(after.pitch, after.velocity, after.channel)),
+    }
+
+
+def test_a_sample_layer_is_asked_about_on_every_kit_without_one() -> None:
+    layers = [entry.name for entry in DRUMMER.articulations if entry.name.startswith("sample.")]
+    notes = [note(DRUMMER.write(name).pitch, index * 240) for index, name in enumerate(layers)]
+    without = [kit for kit in KITS if not kit.pieces("sample")]
+
+    assert len(layers) == 6
+    assert len(without) == len(KITS) - 2
+    for target in without:
+        conversion = convert(notes, DRUMMER, target, FOUR_FOUR)
+        assert conversion.notes == ()
+        assert {str(request.details["source"]) for request in conversion.decisions} == set(layers)
+        for request in conversion.decisions:
+            assert request.details["reason"] == "family"
+            assert [option.value for option in request.options] == [DROP]
