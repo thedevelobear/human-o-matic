@@ -67,3 +67,4 @@ What was decided, specifically enough to check the code against.
 | [0029](decisions/0029-unclear-beats-are-one-ambiguous-bars-request.md) | A beat whose grid is unclear keeps its best guess, and all of them are one `ambiguous_bars` request | Proposed |
 | [0030](decisions/0030-hit-types-cluster-each-familys-velocities.md) | Hit types come from clear groups in each family's velocities, and anything else is normal and asked about | Proposed |
 | [0031](decisions/0031-the-score-is-frozen-canonical-hits-with-their-source-notes.md) | The score is frozen canonical hits on a grid that keep their source notes | Proposed |
+| [0032](decisions/0032-bpm-is-the-only-tempo-a-user-gives.md) | `bpm` is the only tempo a user gives, and there is no `tempo_map` argument | Proposed |
