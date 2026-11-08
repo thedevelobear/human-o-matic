@@ -51,6 +51,7 @@ def test_every_family_has_its_default_first_and_listed() -> None:
         ("tom.6.rimshot", "tom", 6, ("rimshot",)),
         ("ride.1.bow.alt2", "ride", 1, ("bow", "alt2")),
         ("clap.hit", "clap", 1, ("hit",)),
+        ("sample.6.hit", "sample", 6, ("hit",)),
     ],
 )
 def test_names_are_taken_apart(text: str, family: str, piece: int, path: tuple[str, ...]) -> None:
@@ -100,6 +101,16 @@ def test_hat_openness_is_in_words_and_falls_back_to_fully_open() -> None:
 
     assert {"open", "open.quarter", "open.half", "open.three_quarter"} <= set(hats)
     assert VOCABULARY.parse("hat.open.half").path[:-1] == ("open",)
+
+
+def test_a_sample_layer_is_numbered_and_nothing_stands_in_for_it() -> None:
+    assert VOCABULARY.families["sample"].pieces == "numbered"
+    assert "sample" not in VOCABULARY.suggestions
+    assert all(
+        not substitute.startswith("sample")
+        for substitutes in VOCABULARY.suggestions.values()
+        for substitute in substitutes
+    )
 
 
 def test_a_choke_has_no_fallback_and_suggestions_name_other_families() -> None:

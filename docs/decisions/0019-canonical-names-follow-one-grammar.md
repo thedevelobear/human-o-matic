@@ -8,6 +8,7 @@
 - Pieces count from 1, the highest-pitched tom or the first cymbal of a kind. `tom`, `ride`, `crash`, `china`, `splash`, `stack` and paired percussion always write the number (`tom.1.hit`, `crash.1.choke`). `kick`, `snare`, `hat` and `cowbell` write it only for a second drum (`snare.center`, `snare.2.center`). Single instruments never do (`clap.hit`).
 - A bare name is the library's ordinary stroke, and a variant is written only to tell two strokes apart in one kit, so there is no `edge` variant.
 - Hat openness is in words: `hat.open.quarter`, `hat.open.half` and `hat.open.three_quarter`, and a bare `hat.open` is fully open. `hat.variable` is a hat whose openness a controller sets.
+- Numbered sample-layer notes whose sound the instrument chooses are the `sample` family (`sample.1.hit`, `sample.2.hit`, and so on). No other family is suggested for them, so converting one to a kit without the family always asks.
 - A kit that has a variant has its parent, and each piece it has includes that piece's default, so a kit with `crash.2.choke` has `crash.2.hit`. Fallback then only ever moves up a name.
 
 **Why:** One grammar lets a conversion move between libraries by meaning rather than by note number. Leaving the number off a first snare keeps the plan's `snare.center`, and openness in words converts by meaning, where one library's first open degree and another's need not match.

@@ -200,3 +200,10 @@ articulations = ["open", "mute"]
 pieces = "single"
 default = "open"
 articulations = ["open", "mute"]
+
+# Sample layers: numbered notes whose sound the instrument chooses, rather than a drum of their
+# own. No other family stands in for one, so converting it to a kit without them always asks.
+[families.sample]
+pieces = "numbered"
+default = "hit"
+articulations = ["hit"]
