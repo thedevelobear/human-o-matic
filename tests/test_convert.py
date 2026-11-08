@@ -33,7 +33,7 @@ BIG = kit(
     articulation("snare.center", 38),
     articulation("snare.flam", 39),
     articulation("snare.2.center", 40),
-    articulation("sticks.hit", 31, label="Sticks"),
+    articulation("sticks.hit", 31, label="Sticks", source="standard"),
     articulation("hat.closed", 42),
     articulation("hat.open", 46),
     articulation("hat.open.quarter", 77),
@@ -53,8 +53,8 @@ BIG = kit(
 )
 SMALL = kit(
     articulation("kick.hit", 36),
-    articulation("snare.center", 38, velocity=[1, 119], label="Snare"),
-    articulation("snare.sidestick", 37, label="Side Stick"),
+    articulation("snare.center", 38, velocity=[1, 119], label="Snare", source="standard"),
+    articulation("snare.sidestick", 37, label="Side Stick", source="standard"),
     articulation("hat.closed", 42),
     articulation("hat.open", 46, confidence="low"),
     *(articulation(f"tom.{n}.hit", pitch) for n, pitch in enumerate((48, 45, 43), 1)),

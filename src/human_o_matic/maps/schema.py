@@ -8,7 +8,7 @@ An articulation is a list of bindings: a note, with an optional velocity range, 
 controller condition. `notes`, with `velocity`, `channel` and `cc` beside it, is shorthand for
 one binding per note. The first binding is the one written, and the others are also read.
 
-Channels here are 1 to 16, as instruments and drum maps show them. A `Note`'s channel counts
+Channels here are 1 to 16, as instruments and DAWs show them. A `Note`'s channel counts
 from 0.
 """
 
@@ -19,13 +19,17 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validat
 type Confidence = Literal["high", "medium", "low"]
 """`high`: named by the source, or confirmed by the owner. `medium`: named by the source, with
 the canonical name an interpretation. `low`: inferred."""
-type SourceKind = Literal["standard", "vendor-file", "manual", "owner-check"]
+type Source = Literal["standard", "mapping", "inferred", "checked"]
+"""What backs an articulation's name. `standard`: a published standard names the note, as
+General MIDI does. `mapping`: the library's own note mapping names it. `inferred`: it is worked
+out from where the library puts the note, and nothing names it. `checked`: it was confirmed in
+the instrument itself."""
 type MidiNumber = Annotated[int, Field(ge=0, le=127)]
 type Channel = Annotated[int, Field(ge=1, le=16)]
 type Id = Annotated[str, Field(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")]
 
 MAX_LABEL = 40
-"""A label is the source's own name for a note, a few words, never a copy of the source."""
+"""A label is the name a published standard gives a note, a few words."""
 
 
 def _range(low: int, high: int) -> AfterValidator:
@@ -39,17 +43,6 @@ def _range(low: int, high: int) -> AfterValidator:
 
 type VelocityRange = Annotated[tuple[int, int], _range(1, 127)]
 type ValueRange = Annotated[tuple[int, int], _range(0, 127)]
-
-
-class Source(BaseModel):
-    """Where a map's data comes from."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
-
-    kind: SourceKind
-    title: str
-    path: str | None = None
-    """Where a vendor file is read in place. It is never copied into the repository."""
 
 
 class Cc(BaseModel):
@@ -95,12 +88,9 @@ class Articulation(BaseModel):
     name: str
     """A name of the vocabulary, unique in its kit."""
     bindings: tuple[Binding, ...] = Field(min_length=1)
-    source: str
-    """The id of one of the library's sources."""
-    ref: str | None = None
-    """Where in the source."""
+    source: Source
     label: str | None = Field(default=None, min_length=1, max_length=MAX_LABEL)
-    """The source's own name for it, when the source has one."""
+    """The standard's name for the note. Only a `standard` articulation has one."""
     confidence: Confidence
 
     @model_validator(mode="before")
@@ -119,6 +109,12 @@ class Articulation(BaseModel):
         shared = {key: fields.pop(key) for key in ("velocity", "channel", "cc") if key in fields}
         fields["bindings"] = [{"note": note, **shared} for note in cast(list[object], notes)]
         return fields
+
+    @model_validator(mode="after")
+    def _check_label(self) -> Self:
+        if self.label is not None and self.source != "standard":
+            raise ValueError(f"{self.name}: only a `standard` articulation has a label")
+        return self
 
 
 class Kit(BaseModel):
@@ -142,7 +138,6 @@ class Library(BaseModel):
     id: Id
     """The built-in library id, which maps are chosen by."""
     name: str
-    sources: dict[str, Source] = Field(min_length=1)
     kits: tuple[Kit, ...] = Field(min_length=1)
 
     @model_validator(mode="after")
@@ -150,11 +145,4 @@ class Library(BaseModel):
         kit_ids = [kit.id for kit in self.kits]
         if len(set(kit_ids)) != len(kit_ids):
             raise ValueError(f"kit ids repeat: {', '.join(kit_ids)}")
-        for kit in self.kits:
-            for articulation in kit.articulations:
-                if articulation.source not in self.sources:
-                    raise ValueError(
-                        f"{kit.id}: {articulation.name} names the source {articulation.source}, "
-                        "which the library doesn't list"
-                    )
         return self

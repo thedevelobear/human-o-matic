@@ -10,7 +10,7 @@ from human_o_matic.maps.loader import built_in_vocabulary, load_library, load_ma
 from human_o_matic.maps.vocabulary import MapError
 from map_files import Table, articulation, kit, library, load_kit, write_library
 
-KICK = articulation("kick.hit", 36, 35, label="Kick")
+KICK = articulation("kick.hit", 36, 35, label="Kick", source="standard")
 SNARE = articulation("snare.center", 38)
 
 
@@ -242,14 +242,15 @@ def test_one_articulation_cannot_list_a_note_twice(tmp_path: Path) -> None:
         ([articulation("crash.1.hit", 49), articulation("crash.2.choke", 50)], "crash.2.hit"),
         ([articulation("tom.1.hit", 48), articulation("tom.3.hit", 45)], "tom pieces 1, 3"),
         ([articulation("snare.2.center", 40)], "snare pieces 2 are not numbered from 1"),
-        ([articulation("kick.hit", 36, source="manual")], "source manual"),
+        ([articulation("kick.hit", 36, source="manual")], "source"),
+        ([articulation("kick.hit", 36, label="Kick")], "only a `standard` articulation"),
         ([articulation("kick.hit", 128)], "less than or equal to 127"),
         ([articulation("kick.hit", 36, velocity=[0, 127])], "within 1 to 127"),
         ([articulation("kick.hit", 36, velocity=[100, 99])], "within 1 to 127"),
         ([articulation("kick.hit", 36, channel=0)], "greater than or equal to 1"),
         ([articulation("kick.hit", 36, channel=17)], "less than or equal to 16"),
         ([articulation("kick.hit", 36, confidence="certain")], "confidence"),
-        ([articulation("kick.hit", 36, label="x" * 41)], "at most 40"),
+        ([articulation("kick.hit", 36, label="x" * 41, source="standard")], "at most 40"),
         ([articulation("kick.hit")], "bindings"),
         ([articulation("kick.hit", notes=[])], "at least 1"),
         ([articulation("kick.hit", 36, bindings=[{"note": 36}])], "not both"),
@@ -275,10 +276,9 @@ def test_an_invalid_map_is_refused_when_it_loads(
     [
         ({"schema": 2}, "schema"),
         ({"id": "Test Drums"}, "pattern"),
-        ({"sources": {}}, "sources"),
+        ({"sources": {"test": {"title": "?"}}}, "sources"),
         ({"kits": []}, "kits"),
         ({"kits": [kit(KICK, id="a"), kit(KICK, id="a")]}, "kit ids repeat"),
-        ({"sources": {"test": {"kind": "rumour", "title": "?"}}}, "kind"),
     ],
 )
 def test_an_invalid_library_is_refused(tmp_path: Path, fields: Table, message: str) -> None:

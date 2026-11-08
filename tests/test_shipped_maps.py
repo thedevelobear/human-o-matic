@@ -56,6 +56,12 @@ def test_the_shipped_maps_load() -> None:
     assert all(library.schema_version == 1 for library in MAPS.libraries)
 
 
+@pytest.mark.parametrize("kit", KITS, ids=lambda kit: kit.ref)
+def test_a_shipped_note_has_a_label_only_when_a_standard_names_it(kit: DrumKit) -> None:
+    for entry in kit.articulations:
+        assert (entry.label is not None) == (entry.source == "standard"), entry.name
+
+
 def test_every_general_midi_note_has_exactly_one_articulation() -> None:
     names = set()
     for pitch in range(35, 82):
@@ -79,7 +85,7 @@ def test_the_sleep_token_map_has_its_68_pitches_as_58_articulations() -> None:
     assert len(SLEEP_TOKEN.articulations) == 58
     assert len(pitches) == len(set(pitches)) == 68
     assert all(SLEEP_TOKEN.write(entry.name).channel == 9 for entry in SLEEP_TOKEN.articulations)
-    assert all(entry.label for entry in SLEEP_TOKEN.articulations)
+    assert all(entry.source == "mapping" for entry in SLEEP_TOKEN.articulations)
     flam, rimshot = SLEEP_TOKEN.resolve(39, 100, 9), SLEEP_TOKEN.resolve(40, 100, 9)
     assert (flam and flam.name, rimshot and rimshot.name) == ("snare.flam", "snare.rimshot")
     assert (SLEEP_TOKEN.pieces("tom"), SLEEP_TOKEN.pieces("crash")) == (3, 4)

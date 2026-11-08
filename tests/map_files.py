@@ -11,7 +11,7 @@ type Table = dict[str, object]
 
 
 def articulation(
-    name: str, *notes: int, confidence: str = "high", source: str = "test", **fields: object
+    name: str, *notes: int, confidence: str = "high", source: str = "mapping", **fields: object
 ) -> Table:
     """An articulation on `notes`, or on `bindings=[...]` when no notes are given."""
     table: Table = {"name": name}
@@ -26,21 +26,13 @@ def kit(*articulations: Table, id: str = "kit", **fields: object) -> Table:
 
 
 def library(*kits: Table, id: str = "test-drums", **fields: object) -> Table:
-    sources = {"test": {"kind": "manual", "title": "Built in a test"}}
-    return (
-        {"schema": 1, "id": id, "name": f"Library {id}", "sources": sources}
-        | fields
-        | {"kits": list(kits)}
-    )
+    return {"schema": 1, "id": id, "name": f"Library {id}"} | fields | {"kits": list(kits)}
 
 
 def toml(table: Table) -> str:
-    """The TOML of a library table: its keys, then `[sources.*]`, `[[kits]]` and each kit's
+    """The TOML of a library table: its keys, then `[[kits]]` and each kit's
     `[[kits.articulations]]`."""
-    lines = [f"{key} = {_value(value)}" for key, value in table.items() if key not in _NESTED]
-    for source_id, source in _table(table.get("sources", {})).items():
-        lines.append(f"[sources.{source_id}]")
-        lines.extend(f"{key} = {_value(value)}" for key, value in _table(source).items())
+    lines = [f"{key} = {_value(value)}" for key, value in table.items() if key != "kits"]
     for kit_table in _list(table.get("kits", [])):
         fields = _table(kit_table)
         lines.append("[[kits]]")
@@ -65,9 +57,6 @@ def load_kit(
     path = write_library(directory, library(kit(*articulations, id=kit_id, **fields), id=kit_id))
     (loaded,) = load_library(path, vocabulary or built_in_vocabulary())
     return loaded
-
-
-_NESTED = ("sources", "kits")
 
 
 def _value(value: object) -> str:
