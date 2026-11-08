@@ -1,8 +1,8 @@
-# Library data stays out of the repo (ADR 0007). Tests build their MIDI in code.
+# Local-only files live in private/, which is never committed (ADR 0007). Tests build their
+# MIDI in code.
+private/
 *.mid
 *.midi
-*.map
-*.drm
 
 # Python
 __pycache__/
