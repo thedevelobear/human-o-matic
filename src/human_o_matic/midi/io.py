@@ -190,7 +190,9 @@ def parse_midi(data: bytes) -> MidiSong:
     try:
         midi = mido.MidiFile(file=BytesIO(data))
     except (OSError, EOFError, ValueError, KeyError, IndexError, mido.KeySignatureError) as error:
-        raise MidiFileError(f"not a readable MIDI file: {error}") from error
+        # An error with no message, such as the EOFError of a truncated file, gives its type.
+        reason = str(error) or type(error).__name__
+        raise MidiFileError(f"not a readable MIDI file: {reason}") from error
     if midi.type not in (0, 1):
         raise MidiFileError(f"format {midi.type} MIDI files are not supported, only 0 and 1")
     if midi.ticks_per_beat <= 0:

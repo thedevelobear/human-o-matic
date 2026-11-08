@@ -282,6 +282,14 @@ def test_rejects_data_that_is_not_midi() -> None:
         parse_midi(b"RIFF....WAVEfmt ")
 
 
+@pytest.mark.parametrize("data", [b"", b"MThd", build(track((0, on(36)), (1, off(36))))[:-6]])
+def test_an_empty_or_cut_short_file_says_why_it_cant_be_read(data: bytes) -> None:
+    with pytest.raises(MidiFileError) as raised:
+        parse_midi(data)
+
+    assert str(raised.value) == "not a readable MIDI file: EOFError"
+
+
 def test_rejects_format_2() -> None:
     with pytest.raises(MidiFileError, match="format 2"):
         parse_midi(build(track((0, on(36)), (1, off(36))), midi_format=2))
