@@ -1,5 +1,4 @@
-"""Map files built in code for the tests, written as TOML to a temporary directory. No test reads
-a vendor map file (ADR 0007)."""
+"""Map files built in code for the tests, written as TOML to a temporary directory."""
 
 import json
 from pathlib import Path

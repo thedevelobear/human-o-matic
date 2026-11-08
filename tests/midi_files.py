@@ -1,4 +1,4 @@
-"""MIDI files built in code for the tests. No test reads or commits library MIDI (ADR 0007)."""
+"""MIDI files built in code for the tests."""
 
 from io import BytesIO
 from pathlib import Path

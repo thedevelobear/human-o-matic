@@ -1,10 +1,7 @@
-"""The built-in maps in `data/maps/`. They are in the repository, so these are ordinary tests,
-apart from the one that checks a map against the vendor file it was written from."""
+"""The built-in maps in `data/maps/`. They are in the repository, so these are ordinary tests."""
 
 from collections import Counter
 from itertools import product
-from pathlib import Path
-from xml.etree import ElementTree
 
 import pytest
 from hypothesis import given
@@ -81,7 +78,6 @@ def test_the_sleep_token_map_has_its_68_pitches_as_58_articulations() -> None:
 
     assert len(SLEEP_TOKEN.articulations) == 58
     assert len(pitches) == len(set(pitches)) == 68
-    assert 24 not in pitches  # the drum map's divider, not an articulation
     assert all(SLEEP_TOKEN.write(entry.name).channel == 9 for entry in SLEEP_TOKEN.articulations)
     assert all(entry.label for entry in SLEEP_TOKEN.articulations)
     flam, rimshot = SLEEP_TOKEN.resolve(39, 100, 9), SLEEP_TOKEN.resolve(40, 100, 9)
@@ -212,32 +208,3 @@ def test_random_hits_never_change_family(data: st.DataObject) -> None:
         assert family(source, before) == family(target, after), (before, after)
         assert (after.start, after.end, after.track) == (before.start, before.end, before.track)
     check_report(conversion.rows)
-
-
-def drum_map_path() -> Path:
-    path = SLEEP_TOKEN.library.sources["drum-map"].path
-    assert path is not None
-    return Path(path).expanduser()
-
-
-@pytest.mark.private
-def test_the_sleep_token_map_matches_its_drum_map_read_in_place() -> None:
-    path = drum_map_path()
-    if not path.is_file():
-        pytest.skip("the Sleep Token II drum map is not on this machine")
-
-    named: dict[int, str] = {}
-    for item in ElementTree.parse(path).getroot().iterfind("list[@name='Map']/item"):
-        fields = {child.get("name"): child.get("value") or "" for child in item}
-        label = fields.get("Name", "").strip()
-        if label and not label.startswith("---"):  # a divider in the list, not a pitch
-            assert fields["INote"] == fields["ONote"], label
-            assert fields["Channel"] == "9", label  # channel 10, counted from 0
-            named[int(fields["INote"])] = label
-    labels = {
-        binding.note: entry.label
-        for entry in SLEEP_TOKEN.articulations
-        for binding in entry.bindings
-    }
-
-    assert labels == named

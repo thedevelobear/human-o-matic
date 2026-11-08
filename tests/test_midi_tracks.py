@@ -34,7 +34,7 @@ def test_a_format_0_file_on_any_channel() -> None:
     assert choose_drum_track(song) == DrumTrackChoice(track=0, reason="only_track")
 
 
-@pytest.mark.parametrize("label", ["Drums", "DRUM KIT", "GetGood Drums", "superior drummer 3"])
+@pytest.mark.parametrize("label", ["Drums", "DRUM KIT", "Big Drums", "superior drummer 3"])
 def test_the_only_track_named_like_drums(label: str) -> None:
     song = parse_midi(
         build(
