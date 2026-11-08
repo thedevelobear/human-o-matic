@@ -56,3 +56,4 @@ What was decided, specifically enough to check the code against.
 | [0018](decisions/0018-mido-is-typed-by-a-local-stub.md) | mido is typed by a local stub in `typings/` | Proposed |
 | [0019](decisions/0019-canonical-names-follow-one-grammar.md) | Canonical articulation names follow one grammar, kept in a vocabulary file | Proposed |
 | [0020](decisions/0020-map-files-are-toml-checked-when-they-load.md) | A map file is one library in TOML, and an ambiguous map fails to load | Proposed |
+| [0021](decisions/0021-conversion-falls-back-within-a-family.md) | Conversion falls back within a family, and asks instead of changing family | Proposed |
