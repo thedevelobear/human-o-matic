@@ -45,3 +45,4 @@ What was decided, specifically enough to check the code against.
 | [0007](decisions/0007-library-data-stays-out-of-the-repo.md) | Library data stays out of the repo | Accepted |
 | [0008](decisions/0008-library-neutral-drum-maps.md) | Drum maps are library-neutral: library, kit and articulation | Proposed |
 | [0009](decisions/0009-m1-resolves-notes-channels-and-velocity-ranges.md) | M1 resolves notes, channels and velocity ranges, and CC-driven articulations wait for M3 | Proposed |
+| [0010](decisions/0010-built-in-maps-only.md) | Maps are built in, and this version loads no user-supplied map file | Proposed |
