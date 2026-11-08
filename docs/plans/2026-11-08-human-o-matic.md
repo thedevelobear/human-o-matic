@@ -2,7 +2,7 @@
 
 > **Status:** Active. M0 is merged, and M1 is in progress.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-08 (M1 on `feat/normalize`: MIDI I/O, tempo and the drum track choice built, ADRs 0013 to 0018 proposed; the map machinery, vocabulary, conversion and the General MIDI and Sleep Token II maps built, ADRs 0019 to 0024 proposed; local-only files kept in a gitignored `private/`, with ADR 0007 rewritten for it; maps for nine more libraries built in `private/`, the `sample` family and conversion collisions added, ADR 0025 proposed; the normalizer built: a grid per beat, graces, limbs on one grid point, ambiguous bars, hit types and the score, ADRs 0026 to 0031 proposed).
+> Last updated: 2026-11-08 (M1 on `feat/normalize`: MIDI I/O, tempo and the drum track choice built, ADRs 0013 to 0018 proposed; the map machinery, vocabulary, conversion and the General MIDI and Sleep Token II maps built, ADRs 0019 to 0024 proposed; local-only files kept in a gitignored `private/`, with ADR 0007 rewritten for it; maps for nine more libraries built in `private/`, the `sample` family and conversion collisions added, ADR 0025 proposed; the normalizer built: a grid per beat, graces, limbs on one grid point, ambiguous bars, hit types and the score, ADRs 0026 to 0031 proposed; `bpm` kept as the only tempo a user gives, with no `tempo_map` argument, ADR 0032 proposed; `human-o-matic analyze` built, ADR 0033 proposed).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 
@@ -136,7 +136,7 @@ Questions come from the agent, not the server. The server provides facts, sugges
     session.py            session JSON on disk: sections, answers, controls, seed
     preview.py            MIDI playback to a virtual port
     mcp_server.py         thin MCP layer over the above
-    cli.py                analyze and headless render, for tests and scripting
+    cli.py                analyze: a song's summary and decision requests as JSON; headless render later
   skills/human-o-matic/SKILL.md       question policy and workflow
   skills/human-o-matic/references/vocabulary.md
   data/vocabulary.toml                the canonical articulation vocabulary
@@ -161,7 +161,7 @@ Tools take IDs and file paths and return compact JSON. **Never pass note arrays:
 | Tool | Purpose |
 |---|---|
 | `list_maps` | The built-in libraries and their kits |
-| `open_session(midi_path, from_map, to_map, instrument, bpm?, tempo_map?, track?)` | Normalize and detect sections. `from_map` and `to_map` name a built-in library and kit, never a map file ([ADR 0010](../decisions/0010-built-in-maps-only.md)). Returns a session ID, summary, and anything needing a decision |
+| `open_session(midi_path, from_map, to_map, instrument, bpm?, track?)` | Normalize and detect sections. `from_map` and `to_map` name a built-in library and kit, never a map file ([ADR 0010](../decisions/0010-built-in-maps-only.md)). Returns a session ID, summary, and anything needing a decision |
 | `get_sections(session_id)` | Bars, repeat group, facts, ASCII pattern, plus suggested questions and a guess with confidence |
 | `update_sections(session_id, ops)` | Split, merge, move boundaries, rename |
 | `set_hit_types(session_id, decisions)` | Confirm soft notes and resolve ambiguous bars |
@@ -227,9 +227,8 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
   - SMF has no mute flag. Unmapped notes are a decision request listing pitch, count and position, so an incomplete map can never silently lose real hits.
 - **MIDI, as built:**
   - A file becomes paired notes and raw events at absolute ticks, and a round trip keeps every message in order ([ADR 0013](../decisions/0013-midi-is-read-into-notes-and-raw-events.md)). Songs are worked on and written at the smallest multiple of the source PPQ that is at least 960 ([ADR 0014](../decisions/0014-work-at-a-whole-multiple-of-the-source-ppq.md)).
-  - Unclear input is a `DecisionRequest`, raised as `DecisionRequired` ([ADR 0015](../decisions/0015-unclear-input-is-a-decision-request.md)). Tempo and time signatures follow [ADR 0016](../decisions/0016-tempo-and-time-signatures.md): a given `bpm` replaces the file's tempo, and a missing time signature is 4/4, flagged as assumed. The drums are one whole track ([ADR 0017](../decisions/0017-the-drums-are-one-whole-track.md)). mido is typed by a local stub ([ADR 0018](../decisions/0018-mido-is-typed-by-a-local-stub.md)).
+  - Unclear input is a `DecisionRequest`, raised as `DecisionRequired` ([ADR 0015](../decisions/0015-unclear-input-is-a-decision-request.md)). Tempo and time signatures follow [ADR 0016](../decisions/0016-tempo-and-time-signatures.md): a given `bpm` replaces the file's tempo, and a missing time signature is 4/4, flagged as assumed. `bpm` is the only tempo a user gives, and there is no `tempo_map` argument ([ADR 0032](../decisions/0032-bpm-is-the-only-tempo-a-user-gives.md)). The drums are one whole track ([ADR 0017](../decisions/0017-the-drums-are-one-whole-track.md)). mido is typed by a local stub ([ADR 0018](../decisions/0018-mido-is-typed-by-a-local-stub.md)).
   - Performed MIDI in `private/midi/` round-trips with every message unchanged apart from note-ons at velocity 0, written as note-offs, which a `private` test checks on a sample. Dense tempo maps are tested on files built in code.
-  - Still open: the `tempo_map` argument and its format.
 - **Quantizer:** choose a grid per beat among 16th, 8th triplet, 16th triplet and 32nd, with a penalty for complex grids. Treat hits on one drum under about 45 ms apart as grace plus main, and keep them linked. Merge near-simultaneous limbs onto one grid point. Report ambiguous bars instead of guessing silently.
 - **Hit types:** cluster velocities per drum family. Clear clusters become soft, normal or accent. Flat input gets inferred types marked low confidence, so the agent asks.
 - **Normalize, as built:**
@@ -247,7 +246,8 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
   - Conversion never changes a hit's family on its own. A target that lacks the family, a missing choke, a controller-driven articulation and notes the source doesn't map are decision requests (`conversion` and `unmapped_notes`), with positions as bar and beat. A request may suggest a substitute from another family, from a fixed list in the vocabulary, used only when the user picks it ([ADR 0021](../decisions/0021-conversion-falls-back-within-a-family.md)).
   - Shipped: `gm`, from the General MIDI Level 1 key map ([ADR 0022](../decisions/0022-the-general-midi-map-follows-the-standard.md)), and `sleep-token-ii`, 58 articulations on 68 pitches, written by hand from the library's own mapping and checked against it by a test in `private/`. Nine more are built in `private/` from local sources, every name inferred at low confidence until it is checked ([ADR 0025](../decisions/0025-proposed-names-ship-at-low-confidence.md)): `iof-drummer` (kits `default` and `old`), `ezdrummer-3`, `superior-drummer-3`, `addictive-drums-2`, `ssd5`, `ggd-modern-and-massive`, `ni-abbey-road`, `logic-pro-drums` and `garageband-drums`. A test in `private/` checks that building them again gives the committed files. Each articulation's `source` says what kind of evidence names it, and only names from a standard are kept as labels. Library ids follow [ADR 0023](../decisions/0023-built-in-library-ids.md), and the data is found by one function ([ADR 0024](../decisions/0024-built-in-data-is-found-beside-the-source.md)).
   - Notes whose sound the instrument chooses are the numbered `sample` family, which converting always asks about on a kit without it ([ADR 0019](../decisions/0019-canonical-names-follow-one-grammar.md)). Notes a conversion puts on one pitch and channel at one tick keep their pitches and are reported as collisions ([ADR 0021](../decisions/0021-conversion-falls-back-within-a-family.md)).
-  - Still to build: `human-o-matic analyze`.
+- **Analyze, as built:**
+  - `human-o-matic analyze MIDI_FILE --from-map LIBRARY[/KIT]` normalizes a song and prints one line of compact JSON: a summary of counts and the decision requests, as the MCP layer will return them. `--track` and `--bpm` are flags, and `--answers` is a JSON file of `unmapped`, `grids`, keyed `"bar,beat"` from 0, and `hit_types`. It only reads, and lists no notes. It exits 0 when no request is open, 3 when one is, and 2 for a usage error such as an answer that doesn't fit ([ADR 0033](../decisions/0033-analyze-takes-flags-and-an-answers-file-and-prints-json.md)).
 - **Exit:**
   - Add known jitter to quantized MIDI files and recover at least 99% of grid positions.
   - Round trips keep all notes and non-note events.
