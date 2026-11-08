@@ -45,7 +45,7 @@ The plan's milestones, M0 to M6, are done in order, each in one or more PRs.
 ## Code
 - Python 3.12, a `src/` layout, and pyright in strict mode on `src/` ([ADR 0001](docs/decisions/0001-python-312-with-uv-ruff-pyright-and-pytest.md)).
 - Rendering is deterministic. Draw randomness only from a `numpy.random.Generator` built from a `SeedSequence`, one stream per section, and never from `random` or numpy's global state. The same session and seed must give the same file.
-- Tests are `pytest`, with `hypothesis` for the plan's property tests. A test builds the MIDI it needs in code, in `tmp_path`. A test that reads the library's MIDI is marked `@pytest.mark.library` and skips when the files are missing.
+- Tests are `pytest`, with `hypothesis` for the plan's property tests. A test builds the MIDI it needs in code, in `tmp_path`. A test that needs the local-only files in `private/` is marked `@pytest.mark.private` and skips when they are missing.
 
 ## Commands
 `uv` is installed in `~/.local/bin`, and the Python version comes from `.python-version`.
@@ -56,6 +56,6 @@ The plan's milestones, M0 to M6, are done in order, each in one or more PRs.
 | `uv run ruff check` | Lint, including import order. |
 | `uv run ruff format` | Write formatting. Add `--check` to only check. |
 | `uv run pyright` | Type-check `src/` strictly and `tests/` in standard mode. |
-| `uv run pytest` | All tests. Library tests skip when the files are missing. |
-| `uv run pytest -m "not library"` | The tests CI runs. |
+| `uv run pytest` | All tests. The private ones skip when `private/` is missing. |
+| `uv run pytest -m "not private"` | The tests CI runs. |
 | `HYPOTHESIS_PROFILE=ci uv run pytest` | The property tests with CI's example count. |

@@ -1,4 +1,5 @@
-"""Round trips of the library MIDI, read in place (ADR 0007). Skips when the files are missing."""
+"""Round trips of the performed MIDI in `private/midi/`, which is never committed (ADR 0007).
+Skips when the folder is missing or empty."""
 
 from contextlib import suppress
 from dataclasses import replace
@@ -12,31 +13,29 @@ from human_o_matic.midi.tempo import tempo_map, time_signature_map
 from human_o_matic.midi.tracks import choose_drum_track
 from midi_files import Timed, messages, scaled
 
-# The library MIDI folders of the plan's Appendix B.
-LIBRARIES = (
-    Path("/Users/Shared/GetGood Drums - P V Matt Halpern Signature Pack/MIDIFiles"),
-    Path("/Users/Shared/Bogren Digital - Krimh Drums/MIDIfiles"),
-    Path("/Users/Shared/GetGood Drums - Modern and Massive Pack/Modern & Massive/MIDIFiles"),
-    Path.home() / "Documents/SleepTokenII/MIDI Files",
-    Path("/Users/Shared/SoundBlind Drums - Counterkit/MIDI"),
-    Path("/Users/Shared/Drum Lab Library/MIDI Files"),
-    Path("/Users/Shared/Krimh Drums Free/MIDIfiles"),
-)
+PRIVATE_MIDI = Path(__file__).resolve().parents[1] / "private" / "midi"
+"""One folder, or a link to one, per collection of MIDI files."""
 SAMPLE_SIZE = 50
 
 
-def library_sample(size: int = SAMPLE_SIZE) -> list[Path]:
-    """About `size` files, shared evenly among the libraries present and spread evenly through
-    each one's sorted file list, so the same files are chosen on every run."""
-    libraries = [
+def private_sample(size: int = SAMPLE_SIZE) -> list[Path]:
+    """About `size` files, shared evenly among the folders in `private/midi/` and spread evenly
+    through each one's sorted file list, so the same files are chosen on every run."""
+    folders = sorted(PRIVATE_MIDI.iterdir()) if PRIVATE_MIDI.is_dir() else []
+    collections = [
         files
-        for root in LIBRARIES
-        if root.is_dir()
-        and (files := sorted(p for p in root.rglob("*") if p.suffix.lower() in (".mid", ".midi")))
+        for folder in folders
+        if folder.is_dir()
+        # A link is resolved first, since a glob doesn't follow one to a directory.
+        and (
+            files := sorted(
+                p for p in folder.resolve().rglob("*") if p.suffix.lower() in (".mid", ".midi")
+            )
+        )
     ]
     sample: list[Path] = []
-    for index, files in enumerate(libraries):
-        count = min(size // len(libraries) + (index < size % len(libraries)), len(files))
+    for index, files in enumerate(collections):
+        count = min(size // len(collections) + (index < size % len(collections)), len(files))
         step = (len(files) - 1) / (count - 1) if count > 1 else 0
         sample.extend(files[round(position * step)] for position in range(count))
     return sample
@@ -53,11 +52,11 @@ def _as_note_off(raw: tuple[int, ...]) -> tuple[int, ...]:
     return raw
 
 
-@pytest.mark.library
-def test_library_files_round_trip(tmp_path: Path) -> None:
-    sample = library_sample()
+@pytest.mark.private
+def test_private_files_round_trip(tmp_path: Path) -> None:
+    sample = private_sample()
     if not sample:
-        pytest.skip("the library MIDI is not on this machine")
+        pytest.skip("no MIDI in private/midi/")
 
     failures: list[str] = []
     for index, path in enumerate(sample):

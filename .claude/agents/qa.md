@@ -18,8 +18,8 @@ Run them once, on the branch's tip. Commits before it don't have to pass on thei
 2. `uv run ruff check`
 3. `uv run ruff format --check`
 4. `uv run pyright`
-5. `HYPOTHESIS_PROFILE=ci uv run pytest -m "not library"`, as CI runs it. Note the number of tests.
-6. `uv run pytest -m library`, when the library's files exist on this machine. Say how many tests ran and how many skipped.
+5. `HYPOTHESIS_PROFILE=ci uv run pytest -m "not private"`, as CI runs it. Note the number of tests.
+6. `uv run pytest -m private` and `uv run pytest private/tests`, when `private/` exists on this machine. Say how many tests ran and how many skipped.
 7. Anything the milestone adds to run, such as the `human-o-matic` CLI on a generated MIDI file or the MCP server's tools, once it exists. Use files built in a temporary directory, and clean up.
 
 ## The review

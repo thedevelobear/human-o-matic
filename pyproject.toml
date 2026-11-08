@@ -64,5 +64,5 @@ addopts = ["-ra", "--strict-markers", "--strict-config"]
 xfail_strict = true
 filterwarnings = ["error"]
 markers = [
-  "library: reads the local Kontakt library MIDI in place. Skips when the files are missing, and CI leaves it out (ADR 0007)",
+  "private: needs the local-only files in private/. Skips when they are missing, and CI leaves it out (ADR 0007)",
 ]

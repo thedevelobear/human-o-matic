@@ -220,7 +220,7 @@ def drum_map_path() -> Path:
     return Path(path).expanduser()
 
 
-@pytest.mark.library
+@pytest.mark.private
 def test_the_sleep_token_map_matches_its_drum_map_read_in_place() -> None:
     path = drum_map_path()
     if not path.is_file():
