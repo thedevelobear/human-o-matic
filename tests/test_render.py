@@ -34,6 +34,7 @@ from grooves import (
     TOM_2,
     Hit,
     control_vectors,
+    flams,
     grooves,
     normalized,
     plan_for,
@@ -205,8 +206,14 @@ def test_notes_on_one_pitch_keep_their_order_and_most_of_their_grid_gap(
     midi = song(hits, bpm=bpm, length=length)
     result = normalized(midi)
 
-    out = rendered(midi, at_corners(data, midi, result, cuts, loose=True))
+    one_pitch_keeps_its_order(
+        result, rendered(midi, at_corners(data, midi, result, cuts, loose=True))
+    )
 
+
+def one_pitch_keeps_its_order(result: Normalized, out: Rendered) -> None:
+    """Notes on one pitch keep their order and 0.6 of their grid gap less a tick, and a rendered
+    note ends by the next one's start."""
     for notes in by_key(out.notes, "pitch").values():
         for earlier, later in pairwise(notes):
             if earlier.kept and later.kept:
@@ -221,7 +228,7 @@ def test_notes_on_one_pitch_keep_their_order_and_most_of_their_grid_gap(
 
 
 @given(
-    grooves((KICK, SNARE, HAT), max_bars=4),
+    flams(grooves((KICK, SNARE, HAT), max_bars=4)),
     TEMPOS,
     st.lists(st.tuples(st.integers(1, 4 * 64 - 1), TEMPOS), max_size=120),
     CUTS,
@@ -240,7 +247,10 @@ def test_offsets_stay_within_the_cap_at_every_tempo(
 
     out = rendered(midi, at_corners(data, midi, result, cuts, loose=True))
 
+    # A note played as it came in keeps its timing, however far off the grid it was played.
     for note in out.notes:
+        if note.kept:
+            continue
         tick = result.score.notes[note.position].tick
         slack = 2 * result.score.tempos.ms_per_tick(tick)
         assert abs(note.offset_ms) <= CAP_MS + slack
@@ -414,6 +424,40 @@ def test_a_flam_on_the_first_tick_keeps_its_gap_as_far_as_the_cap_allows(
         assert out.guards.unmet == (1 if kept < gap else 0)
         if kept < gap:
             assert grace.note.start == 0
+
+
+def graces_keep_their_gap(result: Normalized, out: Rendered) -> None:
+    """Each grace starts before its main by the gap it was played at, within a tick, unless the
+    score puts it on its main's tick, as on the song's first tick, and that gap would take the
+    main past the cap: then the main is at the cap, and the grace still before it."""
+    by_position = {note.position: note for note in out.notes}
+    by_source = {note.source_index: position for position, note in enumerate(result.score.notes)}
+    for position, grace in enumerate(result.score.notes):
+        if grace.grace_of is None:
+            continue
+        main = result.score.notes[by_source[grace.grace_of]]
+        written, written_main = by_position[position], by_position[by_source[grace.grace_of]]
+        gap = written_main.note.start - written.note.start
+        assert gap >= 1
+        if abs(gap - (main.source.start - grace.source.start)) > 1:
+            tick = result.score.tempos.ms_per_tick(main.tick)
+            assert grace.tick == main.tick
+            assert written_main.offset_ms > CAP_MS - tick
+
+
+@given(flams(grooves()), CUTS, st.data())
+def test_graces_keep_their_gap_and_their_order_and_on_the_first_tick_up_to_the_cap(
+    hits: list[Hit], cuts: list[int], data: st.DataObject
+) -> None:
+    # At 120 BPM no grid step is within 15 ms of a gap of 5 to 45 ms, so no drawn grace is taken
+    # for a step of the grid (ADR 0027).
+    midi = song(hits)
+    result = normalized(midi)
+
+    out = rendered(midi, at_corners(data, midi, result, cuts, loose=True))
+
+    graces_keep_their_gap(result, out)
+    one_pitch_keeps_its_order(result, out)
 
 
 @given(grooves(), CUTS, st.data())

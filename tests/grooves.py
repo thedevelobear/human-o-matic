@@ -166,6 +166,32 @@ def grooves(
     return [(step * SIXTEENTH, pitch, velocity) for step, pitch, velocity in hits]
 
 
+GRACE_GAPS = st.integers(10, 86)
+"""A grace's gap before its main, in ticks: 5 to 45 ms at 120 BPM."""
+FIRST_GAPS = st.integers(10, 40)
+"""A flam's gap on the song's first tick, in ticks: 5 to 21 ms at 120 BPM, on either side of
+the cap."""
+
+
+@st.composite
+def flams(draw: st.DrawFn, groove: st.SearchStrategy[list[Hit]]) -> list[Hit]:
+    """A groove with a soft grace before up to 4 of its hits, on their pitch, and half the time
+    a flam on the song's first tick. A grace can't go before tick 0, so that flam's grace is on
+    tick 0 and its main is played late by the gap, which the score reads on tick 0 as well."""
+    hits = draw(groove)
+    graced = draw(st.sets(st.integers(0, len(hits) - 1), max_size=4))
+    out: list[Hit] = []
+    for number, hit in enumerate(hits):
+        if number in graced and hit[0] > 0:
+            out.append((hit[0] - draw(GRACE_GAPS), hit[1], SOFT))
+        out.append(hit)
+    if draw(st.booleans()):
+        pitch = draw(st.sampled_from(sorted({hit[1] for hit in hits})))
+        out = [hit for hit in out if (hit[0], hit[1]) != (0, pitch)]
+        out.extend([(0, pitch, SOFT), (draw(FIRST_GAPS), pitch, NORMAL)])
+    return out
+
+
 TEMPOS = st.just(600.0) | st.floats(60, 600)
 """Tempos up to 600 BPM, half of them at 600, where a 16th is 25 ms and the 60% gap binds."""
 LENGTHS = st.sampled_from((10, 2 * BAR)) | st.integers(1, 2 * BAR)
