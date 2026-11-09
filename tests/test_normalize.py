@@ -285,7 +285,8 @@ def recovered(path: Path, bpms: list[float], jitter_sd: float, seeds: int) -> tu
 )
 def test_jittered_grooves_come_back_to_their_grid(tmp_path: Path, bpms: list[float]) -> None:
     # Jitter with a spread of 4 ms, the plan's default tightness, capped at 12 ms. The seeds are
-    # fixed, and the lowest recovery, at 240 BPM, is about 99.6%.
+    # fixed, and the lowest recovery, at 240 BPM, is 99.58% (2,829 of 2,841 notes), just above
+    # the bar of 99.5%.
     found, total = recovered(tmp_path, bpms, jitter_sd=4.0, seeds=4)
 
     assert total > 2500
