@@ -28,7 +28,8 @@
 - The headline is the mean of the per-track F1 over all tracks, so each track counts equally and a long song doesn't dominate. The exit holds when at least 10 labelled tracks have a mean F1 of at least 0.70.
 - Beside the headline are the pooled F1, `2Σm / (Σd + Σl)` over all tracks, and the mean F1 over the tracks not marked `tuned`, with how many there are. The untuned mean is only reported, and doesn't change whether the exit holds. When no track is marked, it is the headline, and when every track is, there is none.
 - The measurement turns SMF markers off. Where a file has them the detector takes its sections from them, which would make the score trivial, so this tests the heuristic itself.
-- The test that measures it is marked `private`, and skips when `private/labels/` is missing or holds no label file. It reports each track's precision, recall and F1, the mean F1, the pooled F1, and the untuned mean with its count. With 10 or more tracks it fails when the mean F1 is below 0.70. With fewer it skips with the scores in its reason, so a pass always means the exit holds.
+- The code that reads a label file, matches the boundaries and computes the scores is in `src/`, with unit tests that build their cases in code, so CI runs them.
+- Only the measurement over the label files is a test marked `private`, and it skips when `private/labels/` is missing or holds no label file. It reports each track's precision, recall and F1, the mean F1, the pooled F1, and the untuned mean with its count. With 10 or more tracks it fails when the mean F1 is below 0.70. With fewer it skips with the scores in its reason, so a pass always means the exit holds.
 
 **Why:** Hand labels are the only ground truth for what a section is, and one small file per track is the least work to label. Matching one to one keeps two detections near one labelled boundary from both counting. A path relative to `private/` keeps a label working wherever the repository is.
 
