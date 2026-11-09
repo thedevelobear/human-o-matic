@@ -3,7 +3,7 @@
 - **Status:** Proposed
 - **Date:** 2026-11-09
 
-- The engine's modules, as the plan's architecture lays them out, with two it doesn't list (`target.py` and `output.py`, `measure.py`):
+- The engine's modules, as the plan's architecture lays them out, with some it didn't list:
   - `controls.py`: the controls and plans ([ADR 0046](0046-controls-are-layered-pydantic-models-with-a-json-round-trip.md)).
   - `render/parts.py`: each note's role and limb, and the play order. `render/style.py`: the style ([ADR 0051](0051-the-tight-style-s-placeholders-fill-in-what-appendix-a-leaves-out.md)). `render/compiler.py`: a section's controls and the style into its parameters.
   - `render/backends/parametric.py`: a section's draws. `render/engine.py`: the streams, the song's drifts and `render()` ([ADR 0049](0049-each-section-draws-from-its-own-seeded-stream.md)). `render/guards.py`: the limits on every backend ([ADR 0050](0050-guards-hold-every-backend-and-keep-each-section-independent.md)).
