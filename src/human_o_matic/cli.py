@@ -10,8 +10,9 @@ The requests are answered by running it again. `--from-map`, `--track` and `--bp
 request's `answer_with` names (ADR 0033).
 
 The exit code is 0 when no request is open and 3 when one is, with the JSON printed either way.
-A usage error, such as a map that doesn't exist or an answer that doesn't fit, is 2 with its
-message on stderr, and 1 is left for a crash.
+A usage error, such as a map that doesn't exist, a tempo a MIDI file can't hold, or an answer
+that names something the song doesn't have (`AnswerError`), is 2 with its message on stderr.
+Anything else is a crash, 1.
 """
 
 import json
@@ -31,6 +32,7 @@ from human_o_matic.maps.loader import built_in_maps
 from human_o_matic.midi.io import MidiFileError, MidiSong, read_midi
 from human_o_matic.midi.tempo import MICROSECONDS_PER_MINUTE, tempo_map
 from human_o_matic.midi.tracks import DrumTrackReason, choose_drum_track, track_name
+from human_o_matic.normalize.answers import AnswerError
 from human_o_matic.normalize.grid import GRIDS, Grid
 from human_o_matic.normalize.hit_types import HitTypeBounds
 from human_o_matic.normalize.pipeline import normalize
@@ -107,6 +109,14 @@ def _problems(error: ValidationError) -> list[str]:
             message = f"given as --{str(place[0]).replace('_', '-')}, not in the answers file"
         problems.append(f"{where}: {message}" if where else message)
     return problems
+
+
+def answer_problem(error: AnswerError) -> str:
+    """An answer that doesn't fit the song, as `where: what` in the answers file, such as
+    `grids.32,1: bar 33, beat 2 has no notes, so it has no grid`."""
+    key = error.key
+    where = f"{key[0]},{key[1]}" if isinstance(key, tuple) else str(key)
+    return f"{error.argument}.{where}: {error}"
 
 
 def find_kit(name: str) -> DrumKit:
@@ -372,12 +382,8 @@ def analyze(
         raise typer.Exit(EXIT_OPEN) from None
     except MidiFileError as error:
         raise typer.BadParameter(str(error), param_hint="'MIDI_FILE'") from error
-    except ValueError as error:
-        # `normalize` raises it only for an answer that doesn't fit, so without answers it is a
-        # crash.
-        if answers is None:
-            raise
-        raise typer.BadParameter(str(error), param_hint="'--answers'") from error
+    except AnswerError as error:
+        raise typer.BadParameter(answer_problem(error), param_hint="'--answers'") from error
     summary = summarize(str(midi_file), song, normalized, track=track, bpm=bpm)
     typer.echo(report(summary, normalized.decisions))
     if normalized.decisions:

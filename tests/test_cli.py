@@ -237,7 +237,22 @@ def test_an_unmapped_pitch_can_be_given_an_articulation(tmp_path: Path) -> None:
             {"hit_types": {"snare": {"soft_below": 90, "accent_from": 60}}},
             "hit_types.snare: soft_below is above accent_from",
         ),
-        ({"unmapped": {"99": "snare.nope"}}, "note 99: General MIDI (Percussion key map) has no"),
+        (
+            {"unmapped": {"99": "snare.nope"}},
+            "unmapped.99: note 99: General MIDI (Percussion key map) has no snare.nope",
+        ),
+        (
+            {"unmapped": {"50": "drop"}},
+            "unmapped.50: note 50: the drum track has no note of this pitch",
+        ),
+        (
+            {"grids": {"5,0": "16th"}},
+            "grids.5,0: bar 6, beat 1 is after the last bar with drums, bar 1",
+        ),
+        (
+            {"hit_types": {"tom": {}}},
+            "hit_types.tom: the drums have no tom notes, only kick and snare",
+        ),
     ],
     ids=lambda value: None if isinstance(value, str) else json.dumps(value),
 )
@@ -258,7 +273,8 @@ def test_a_grid_a_beat_cant_have_is_a_usage_error(tmp_path: Path) -> None:
 
     result = analyze(song, "--from-map", "gm", "--answers", answers_file(tmp_path, answers))
 
-    assert "bar 1, beat 1: a 8th_triplet grid doesn't fit a beat of 1/8" in usage_error(result)
+    stderr = usage_error(result)
+    assert "grids.0,0: bar 1, beat 1: a 8th_triplet grid doesn't fit a beat of 1/8" in stderr
 
 
 @pytest.mark.parametrize(
@@ -326,6 +342,22 @@ def test_a_file_that_isnt_midi_is_a_usage_error(tmp_path: Path) -> None:
     file.write_text("not MIDI")
 
     assert "not a readable MIDI file" in usage_error(analyze(file, "--from-map", "gm"))
+
+
+def test_another_error_is_a_crash_not_a_bad_answer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def fails(*args: object, **kwargs: object) -> None:
+        raise ValueError("not about an answer")
+
+    monkeypatch.setattr("human_o_matic.cli.normalize", fails)
+    file = answers_file(tmp_path, ALL_NORMAL)
+
+    result = analyze(drums(tmp_path, GROOVE), "--from-map", "gm", "--answers", file)
+
+    assert result.exit_code == 1
+    assert isinstance(result.exception, ValueError)
+    assert "--answers" not in result.output
 
 
 def test_the_kit_is_named_by_library_and_kit(tmp_path: Path) -> None:
