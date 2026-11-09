@@ -1,6 +1,6 @@
 # 0034. The M2 exit is scored on hand-labelled section starts in `private/labels/`
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - Each labelled drum track, a whole song, is one TOML file directly in the gitignored `private/labels/`, under any name ending in `.toml` ([ADR 0007](0007-local-only-files-live-in-private.md)). The labels and the songs are local files: nothing in them is committed, and no tracked file names what they hold.

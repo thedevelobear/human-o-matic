@@ -1,6 +1,6 @@
 # 0035. M2 finds the sections, and their facts and ASCII pattern wait for M4
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - M2 builds `analyze/sections.py`: the bar features, the self-similarity matrix, the novelty peaks and the repeat groups, with SMF markers winning when a file has them. The measurement of [ADR 0034](0034-the-m2-exit-is-scored-on-hand-labelled-section-starts.md) turns the markers off.

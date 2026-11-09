@@ -1,8 +1,8 @@
 # human-o-matic: guided MIDI drum performance
 
-> **Status:** Active. M0 and M1 are merged, and M2 is in review.
+> **Status:** Active. M0 to M2 are merged.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-09 (M1 merged, ADRs 0008 to 0033 accepted; M2 on `feat/sections`: the labels and scoring of the M2 exit, and the section facts moved to M4, ADRs 0034 and 0035 proposed; the section detector, the label reader and the scoring built and measured on the three tuned tracks, and `analyze` printing the sections, ADRs 0036 to 0041 proposed; the detector's memory made to grow with a song's length, the measurement's report made to name tracks by number, and a status form for an ADR changed in part, ADR 0042 proposed; the exit measured on 10 labelled tracks and met, the measurement's report printed on a pass, ADR 0037's check on the untuned tracks recorded, and ADR 0038's reason for 0.8 and its silent sections corrected; M2 in review).
+> Last updated: 2026-11-09 (M2 merged, ADRs 0034 to 0042 accepted).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 
@@ -14,7 +14,7 @@ Milestones are done in order, and work stops at each gate ([`AGENTS.md`](../../A
 |---|---|---|---|
 | M0 | Setup | The checks pass on the scaffolding | Merged ([#1](https://github.com/thedevelobear/human-o-matic/pull/1)) |
 | M1 | Normalize | The M1 exit tests | Merged ([#2](https://github.com/thedevelobear/human-o-matic/pull/2)) |
-| M2 | Sections | Boundary F1 of at least 0.70 on at least 10 tracks the owner has hand-labelled | In review |
+| M2 | Sections | Boundary F1 of at least 0.70 on at least 10 tracks the owner has hand-labelled | Merged ([#3](https://github.com/thedevelobear/human-o-matic/pull/3)) |
 | M3 | Parametric engine and calibration | Each control moves its statistic the right way, and the property tests pass | Not started |
 | M4 | MCP, skill and the main gate | The blind listening test, judged by the owner | Not started |
 | M5 | Trained model experiment | Follows the controls and wins a blind test, judged by the owner | Not started. Not before M4 |

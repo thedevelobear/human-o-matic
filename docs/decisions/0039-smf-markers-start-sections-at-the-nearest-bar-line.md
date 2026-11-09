@@ -1,6 +1,6 @@
 # 0039. An SMF marker starts a section at the nearest bar line, and markers win when one starts a section
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - A marker is a meta event of type 6 (Marker), on any track, as tempo and time signatures are read from every track ([ADR 0016](0016-tempo-and-time-signatures.md)). Other events, such as cue points (type 7) and text, are not markers.

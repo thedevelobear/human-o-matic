@@ -1,6 +1,6 @@
 # 0041. M2 adds no runtime dependency, and `scipy` waits for code that imports it
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - The section detector, the label reader and the scoring use numpy, pydantic and the standard library's `tomllib`, which M1 already has. M2 adds no runtime dependency.

@@ -1,6 +1,6 @@
 # 0042. An accepted ADR that a later one changes in part is marked amended
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - When a later ADR changes part of an accepted ADR and leaves the rest standing, the accepted ADR's status line becomes `Accepted. Its <part> is amended by [ADR NNNN](NNNN-topic.md)`, naming the part in a few words. It is a fourth form in the status template, beside `Proposed`, `Accepted` and `Superseded by`. An ADR that replaces a whole decision still marks it `Superseded by`.

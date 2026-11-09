@@ -1,6 +1,6 @@
 # 0040. `human-o-matic analyze` prints the sections beside the summary, and its exit codes stay
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - When there is a score, the line `analyze` prints is `{"summary": {...}, "sections": [...], "decisions": [...]}`, extending [ADR 0033](0033-analyze-takes-flags-and-an-answers-file-and-prints-json.md). Each section is `{"start": bar, "bars": n, "group": "A"}`, in song order, with `start` counted from 0 and `group` its repeat group ([ADR 0038](0038-a-section-joins-the-repeat-group-it-plays-most-like.md)).

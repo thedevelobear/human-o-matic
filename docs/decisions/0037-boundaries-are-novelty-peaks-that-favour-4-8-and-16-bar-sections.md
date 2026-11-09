@@ -1,6 +1,6 @@
 # 0037. Boundaries are novelty peaks chosen to favour 4, 8 and 16 bar sections, and a long silence is a section of its own
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - The novelty at bar `b` at a scale of `L` bars is the mean likeness ([ADR 0036](0036-a-bar-is-its-onset-pattern-in-each-family.md)) within the `L` bars before `b` and within the `L` bars from `b`, each bar with itself included, less the mean likeness between the two. It is averaged over the scales of 2, 4 and 8 bars that fit in the song on both sides, and is 0 where none fits: the first two bars and the last. It needs the likeness of bars at most 15 apart, so it is found 256 bars at a time with the 8 bars either side, and the memory it takes grows with the song's length, not its square.
