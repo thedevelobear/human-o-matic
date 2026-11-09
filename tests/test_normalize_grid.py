@@ -3,6 +3,7 @@ import pytest
 
 from human_o_matic.decisions import DecisionRequest
 from human_o_matic.midi.tempo import TempoMap, TimeSignature, TimeSignatureMap
+from human_o_matic.normalize.answers import AnswerError
 from human_o_matic.normalize.grid import (
     FAR_MS,
     GRIDS,
@@ -203,8 +204,39 @@ def test_an_answer_the_beat_cant_have_is_an_error() -> None:
     windows = beat_windows(TimeSignatureMap(PPQ, [(0, TimeSignature(6, 8))]), PPQ)
     ticks = np.array([0.0, 240.0])
 
-    with pytest.raises(ValueError, match="bar 1, beat 1: a 8th_triplet grid doesn't fit"):
+    with pytest.raises(
+        AnswerError, match="bar 1, beat 1: a 8th_triplet grid doesn't fit"
+    ) as raised:
         snap(ticks, AT_120.ticks_to_ms(ticks), windows, AT_120, {(0, 0): "8th_triplet"})
+
+    assert (raised.value.argument, raised.value.key) == ("grids", (0, 0))
+
+
+def test_any_beat_with_notes_takes_an_answer() -> None:
+    # A beat on 8ths is plainly 16ths, and the answer still gives it 32nds.
+    ticks, beats = snapped([[0, 0.5]], answers={(0, 0): "32nd"})
+
+    assert ticks == [0, 480]
+    assert grids_of(beats) == ["32nd"]
+    assert beats[0].answered
+
+
+@pytest.mark.parametrize(
+    ("beat", "message"),
+    [
+        ((0, 2), "bar 1, beat 3 has no notes, so it has no grid"),
+        ((0, 4), "bar 1, beat 5 isn't in the song: bar 1 has 4 beats"),
+        ((1, 0), "bar 2, beat 1 is after the last bar with drums, bar 1"),
+    ],
+)
+def test_an_answer_for_a_beat_without_notes_is_an_error(
+    beat: tuple[int, int], message: str
+) -> None:
+    with pytest.raises(AnswerError) as raised:
+        snapped([[0], [0.25]], answers={(0, 0): "16th", beat: "16th"})
+
+    assert str(raised.value) == message
+    assert (raised.value.argument, raised.value.key) == ("grids", beat)
 
 
 def test_an_eighth_beat_never_takes_the_8th_triplet() -> None:

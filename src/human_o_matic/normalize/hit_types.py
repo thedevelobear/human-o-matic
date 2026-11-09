@@ -16,7 +16,7 @@ Three groups are tried first, then two. The groups are then named from the main 
 Without such groups every note is normal, at low confidence, so the agent asks. The input is
 flat when no two of the family's velocities are `MIN_STEP` apart, as with one velocity or one
 note, and one group when they spread without clear groups. An answer gives a family's types as
-velocity bounds instead, and is not a guess.
+velocity bounds instead, and is not a guess. An answer for a family with no notes is an error.
 
 After this the input velocities are not used again, except to write a `skip` section back as it
 came in, which the score's source notes allow.
@@ -33,6 +33,7 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
 from human_o_matic.decisions import DecisionRequest
 from human_o_matic.maps.schema import Confidence
+from human_o_matic.normalize.answers import AnswerError
 
 type HitType = Literal["soft", "normal", "accent"]
 type HitTypeReason = Literal["clusters", "flat", "one_group", "answer"]
@@ -197,11 +198,16 @@ def type_hits(
     answers: Mapping[str, HitTypeBounds] | None = None,
 ) -> Typed:
     """The hit type of each note, given each note's family and input velocity. `answers` gives
-    a family's types as bounds instead of clustering."""
+    a family's types as bounds instead of clustering. Raises `AnswerError` for an answer to a
+    family no note has."""
     given = answers or {}
     members: dict[str, list[int]] = {}
     for position, family in enumerate(families):
         members.setdefault(family, []).append(position)
+    stray = sorted(given.keys() - members.keys())
+    if stray:
+        only = f", only {_listing(list(members))}" if members else ""
+        raise AnswerError("hit_types", stray[0], f"the drums have no {stray[0]} notes{only}")
     types: list[HitType] = ["normal"] * len(families)
     confidences: list[Confidence] = ["low"] * len(families)
     summaries: list[FamilyHitTypes] = []

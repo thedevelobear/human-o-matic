@@ -4,10 +4,11 @@ Every later stage works on canonical names, so it is library-neutral. A note the
 is not guessed at: it waits for the user, in one `unmapped_notes` decision request that lists
 each pitch with its channels, count and first positions, as conversion does (ADR 0021). The
 answer is `unmapped`, from a pitch to an articulation of the kit or `DROP`, or another
-`from_map`. A note a controller value decides among several articulations keeps them all,
-joined by `|` as conversion keys them, since M1 doesn't follow controllers (ADR 0009). Notes
-read through a `low` confidence articulation are counted per articulation, so the agent can
-confirm the names with the user (ADR 0025).
+`from_map`, and an answer for a pitch with no unmapped note is an error. A note a controller
+value decides among several articulations keeps them all, joined by `|` as conversion keys
+them, since M1 doesn't follow controllers (ADR 0009). Notes read through a `low` confidence
+articulation are counted per articulation, so the agent can confirm the names with the user
+(ADR 0025).
 """
 
 from collections.abc import Iterable, Mapping, Sequence
@@ -21,6 +22,7 @@ from human_o_matic.maps.kit import DrumKit
 from human_o_matic.maps.schema import Confidence
 from human_o_matic.midi.io import MidiSong, Note
 from human_o_matic.midi.tempo import TimeSignatureMap
+from human_o_matic.normalize.answers import AnswerError
 
 _CONFIDENCE_ORDER: tuple[Confidence, ...] = ("low", "medium", "high")
 
@@ -76,12 +78,14 @@ def read_drums(
     """Read the notes of `track` through `kit`.
 
     `unmapped` answers an earlier `unmapped_notes` request: from a pitch to an articulation of
-    the kit, or `DROP`. Raises `ValueError` for an answer the kit doesn't have.
+    the kit, or `DROP`. Raises `AnswerError` for an articulation the kit doesn't have, and for a
+    pitch with no note the kit leaves unmapped.
     """
     answers = dict(unmapped or {})
     for pitch, answer in answers.items():
         if answer != DROP and answer not in kit:
-            raise ValueError(f"note {pitch}: {kit.label} has no {answer}")
+            raise AnswerError("unmapped", pitch, f"note {pitch}: {kit.label} has no {answer}")
+    answered: set[int] = set()
     hits: list[Hit] = []
     waiting: dict[int, list[tuple[int, Note]]] = {}
     dropped: list[int] = []
@@ -94,6 +98,7 @@ def read_drums(
             names = [match.articulation.name for match in matches]
             confidence = _lowest(match.articulation.confidence for match in matches)
         elif note.pitch in answers:
+            answered.add(note.pitch)
             if answers[note.pitch] == DROP:
                 dropped.append(index)
                 continue
@@ -116,6 +121,9 @@ def read_drums(
         )
         if confidence == "low":
             low[articulation] = low.get(articulation, 0) + 1
+    stray = sorted(answers.keys() - answered)
+    if stray:
+        raise _stray(stray[0], hits, kit)
     decisions = (_unmapped_request(waiting, kit, signatures),) if waiting else ()
     return Reading(
         hits=tuple(hits),
@@ -130,6 +138,16 @@ def positions(ticks: Iterable[int], signatures: TimeSignatureMap) -> list[JsonVa
     """The first ticks' positions as `[bar, beat]`, counted from 0, at most `MAX_POSITIONS`."""
     places = [signatures.position(tick) for tick in sorted(ticks)[:MAX_POSITIONS]]
     return [[place.bar, round(place.beat, 3)] for place in places]
+
+
+def _stray(pitch: int, hits: Sequence[Hit], kit: DrumKit) -> AnswerError:
+    """The error for an answer to a pitch that has no note the kit leaves unmapped."""
+    names = sorted({hit.articulation for hit in hits if hit.note.pitch == pitch})
+    if names:
+        why = f"{kit.label} already reads it, as {' and '.join(names)}"
+    else:
+        why = "the drum track has no note of this pitch"
+    return AnswerError("unmapped", pitch, f"note {pitch}: {why}")
 
 
 def _lowest(confidences: Iterable[Confidence]) -> Confidence:

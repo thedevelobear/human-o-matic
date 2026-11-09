@@ -19,6 +19,9 @@ none has no grid.
 A beat is ambiguous when another grid scores within `AMBIGUITY_MS` of the best and would put an
 onset on a different tick, or when an onset is more than `FAR_MS` from its point on the best
 grid. The best grid is still used, and the beat says it was a guess.
+
+An answer can give any beat with notes its grid, ambiguous or not. One for a beat without notes,
+or for a beat the song doesn't have, is an error.
 """
 
 from collections.abc import Mapping, Sequence
@@ -31,6 +34,7 @@ import numpy.typing as npt
 
 from human_o_matic.decisions import DecisionRequest
 from human_o_matic.midi.tempo import TempoMap, TimeSignatureMap
+from human_o_matic.normalize.answers import AnswerError
 
 type Grid = Literal["16th", "8th_triplet", "16th_triplet", "32nd"]
 type FloatArray = npt.NDArray[np.float64]
@@ -171,11 +175,14 @@ def snap(
     """Choose each beat's grid and put each onset on its nearest point.
 
     `ticks` and `ms` are the onsets' performed times, which may be fractional ticks. `answers`
-    gives the grid of a beat by its bar and place in the bar, both from 0. Raises `ValueError`
-    for an answer that names a grid the beat can't have.
+    gives the grid of a beat by its bar and place in the bar, both from 0, which any beat with
+    notes may take. Raises `AnswerError` for an answer to a beat with no notes or one the song
+    doesn't have, and for a grid the beat can't have.
     """
     which = np.searchsorted(beats.starts, ticks, side="right") - 1
     used, beat_of = np.unique(which, return_inverse=True)
+    given = answers or {}
+    _check_answered(given, beats, used)
     starts = beats.starts[used].astype(np.float64)
     ends = beats.ends[used].astype(np.float64)
     denominators = beats.denominators[used]
@@ -204,16 +211,17 @@ def snap(
         costs[g] = np.where(valid, summed + PENALTY_MS[grid], np.inf)
 
     best = np.argmin(costs, axis=0)
-    given = answers or {}
     answered = np.zeros(used.size, dtype=bool)
     for position, beat in enumerate(used):
         key = (int(beats.bars[beat]), int(beats.numbers[beat]))
         if key in given:
             grid = given[key]
             if not applies(grid, int(beats.denominators[beat])):
-                raise ValueError(
+                raise AnswerError(
+                    "grids",
+                    key,
                     f"bar {key[0] + 1}, beat {key[1] + 1}: a {grid} grid doesn't fit a beat of "
-                    f"1/{beats.denominators[beat]}"
+                    f"1/{beats.denominators[beat]}",
                 )
             best[position] = GRIDS.index(grid)
             answered[position] = True
@@ -256,6 +264,35 @@ def snap(
             )
         )
     return Snapped(beats=tuple(grids), ticks=chosen, beat_of=beat_of.astype(np.int64))
+
+
+def no_grid(bar: int, beat: int) -> AnswerError:
+    """The error for a grid given to a beat with no notes, counted from 0."""
+    return AnswerError(
+        "grids", (bar, beat), f"bar {bar + 1}, beat {beat + 1} has no notes, so it has no grid"
+    )
+
+
+def _check_answered(answers: Mapping[tuple[int, int], Grid], beats: Beats, used: IntArray) -> None:
+    """Raises `AnswerError` for an answer to a beat without notes, the beats in `used`, or to
+    one the song doesn't have."""
+    with_notes = set(zip(beats.bars[used].tolist(), beats.numbers[used].tolist(), strict=True))
+    last = int(beats.bars[used].max()) if used.size else -1
+    for bar, beat in sorted(answers):
+        if (bar, beat) in with_notes:
+            continue
+        where = f"bar {bar + 1}, beat {beat + 1}"
+        count = int(np.count_nonzero(beats.bars == bar))
+        if bar > last:
+            raise AnswerError(
+                "grids", (bar, beat), f"{where} is after the last bar with drums, bar {last + 1}"
+            )
+        if beat >= count:
+            beats_in_bar = f"{count} beat{'' if count == 1 else 's'}"
+            raise AnswerError(
+                "grids", (bar, beat), f"{where} isn't in the song: bar {bar + 1} has {beats_in_bar}"
+            )
+        raise no_grid(bar, beat)
 
 
 def ambiguous_request(beats: Sequence[BeatGrid]) -> DecisionRequest | None:

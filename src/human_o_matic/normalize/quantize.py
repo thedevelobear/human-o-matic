@@ -25,7 +25,15 @@ from itertools import pairwise
 import numpy as np
 
 from human_o_matic.midi.tempo import FloatArray, IntArray, TempoMap, TimeSignatureMap
-from human_o_matic.normalize.grid import DIVISIONS, GRIDS, BeatGrid, Grid, beat_windows, snap
+from human_o_matic.normalize.grid import (
+    DIVISIONS,
+    GRIDS,
+    BeatGrid,
+    Grid,
+    beat_windows,
+    no_grid,
+    snap,
+)
 from human_o_matic.normalize.read import Hit
 
 GRACE_MS = 45.0
@@ -65,8 +73,11 @@ def quantize(
     grids: Mapping[tuple[int, int], Grid] | None = None,
 ) -> Quantized:
     """Quantize hits given in the order of `MidiSong.notes`. `grids` gives the grid of a beat by
-    its bar and place in the bar."""
+    its bar and place in the bar. Raises `AnswerError` for a grid the beat can't have, or given
+    to a beat without notes."""
     if not hits:
+        if grids:
+            raise no_grid(*min(grids))
         empty = np.zeros(0, dtype=np.int64)
         return Quantized(ticks=empty, offsets_ms=np.zeros(0), beat_of=empty, grace_of=(), beats=())
     starts = np.array([hit.note.start for hit in hits], dtype=np.int64)

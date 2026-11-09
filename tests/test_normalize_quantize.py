@@ -5,6 +5,7 @@ from hypothesis import strategies as st
 
 from human_o_matic.midi.io import Note
 from human_o_matic.midi.tempo import TempoMap, TimeSignatureMap
+from human_o_matic.normalize.answers import AnswerError
 from human_o_matic.normalize.grid import DIVISIONS, GRIDS, Grid
 from human_o_matic.normalize.quantize import GRACE_MS, LIMB_MS, UNISON_MS, Quantized, quantize
 from human_o_matic.normalize.read import Hit
@@ -169,6 +170,11 @@ def test_no_hits_is_an_empty_result() -> None:
 
     assert quantized.ticks.size == 0
     assert quantized.beats == ()
+
+
+def test_a_grid_answer_with_no_hits_is_an_error() -> None:
+    with pytest.raises(AnswerError, match=r"^bar 1, beat 2 has no notes, so it has no grid$"):
+        quantize([], AT_120, FOUR_FOUR, {(3, 0): "16th", (0, 1): "32nd"})
 
 
 @given(

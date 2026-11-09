@@ -14,6 +14,7 @@ from human_o_matic.maps.convert import DROP
 from human_o_matic.maps.loader import built_in_maps
 from human_o_matic.midi.io import MidiSong, read_midi
 from human_o_matic.midi.tempo import TempoMap
+from human_o_matic.normalize.answers import AnswerError
 from human_o_matic.normalize.grid import GRIDS, Grid
 from human_o_matic.normalize.hit_types import HitTypeBounds
 from human_o_matic.normalize.pipeline import normalize
@@ -122,6 +123,39 @@ def test_answers_settle_the_requests(tmp_path: Path) -> None:
     snare = [(note.tick, note.hit_type) for note in result.score.notes if note.family == "snare"]
     assert snare == [(PPQ + 320, "soft"), (2 * PPQ, "normal")]
     assert {note.hit_type_confidence for note in result.score.notes} == {"high"}
+
+
+@pytest.mark.parametrize(
+    ("unmapped", "grids", "hit_types", "argument"),
+    [
+        ({KICK: "snare.center"}, None, None, "unmapped"),
+        ({HAT: DROP}, None, None, "unmapped"),
+        (None, {(5, 0): "16th"}, None, "grids"),
+        (None, None, {"tom": HitTypeBounds()}, "hit_types"),
+    ],
+)
+def test_an_answer_for_what_the_song_lacks_is_an_error(
+    tmp_path: Path,
+    unmapped: dict[int, str] | None,
+    grids: dict[tuple[int, int], Grid] | None,
+    hit_types: dict[str, HitTypeBounds] | None,
+    argument: str,
+) -> None:
+    song = drum_file(tmp_path, [(0, 99, 100), (0, KICK, 100), (PPQ, SNARE, 100)])
+
+    with pytest.raises(AnswerError) as raised:
+        normalize(song, GM, unmapped=unmapped, grids=grids, hit_types=hit_types)
+
+    assert raised.value.argument == argument
+
+
+def test_an_answered_pitch_brings_its_family_to_the_hit_types(tmp_path: Path) -> None:
+    song = drum_file(tmp_path, [(0, 99, 100), (0, KICK, 100), (PPQ, SNARE, 100)])
+    hit_types = {"kick": HitTypeBounds(), "snare": HitTypeBounds(), "tom": HitTypeBounds()}
+
+    result = normalize(song, GM, unmapped={99: "tom.1.hit"}, hit_types=hit_types)
+
+    assert result.decisions == ()
 
 
 def test_notes_read_through_low_confidence_names_are_counted(tmp_path: Path) -> None:

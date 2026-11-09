@@ -38,8 +38,9 @@ def normalize(
     `unmapped_notes`: from a pitch to an articulation of the kit, or `DROP`. `grids` answers
     `ambiguous_bars`: the grid of a beat, by its bar and place in the bar, both from 0.
     `hit_types` answers `hit_types`: velocity bounds for a family. Raises `DecisionRequired`
-    when the tempo or the drum track is unclear, and `ValueError` for an answer that doesn't
-    fit.
+    when the tempo or the drum track is unclear, and `AnswerError` for an answer that names a
+    pitch with no unmapped note, a beat without notes or a family without notes, or that the kit
+    or the beat can't take.
     """
     tempos = tempo_map(song, bpm=bpm)
     drums = choose_drum_track(song, track).track

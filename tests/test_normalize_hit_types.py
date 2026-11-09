@@ -6,6 +6,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+from human_o_matic.normalize.answers import AnswerError
 from human_o_matic.normalize.hit_types import (
     FamilyHitTypes,
     HitTypeBounds,
@@ -153,6 +154,18 @@ def test_an_answer_gives_the_types_by_velocity() -> None:
     assert typed.confidences == ("high",) * 4
     assert typed.families[0].reason == "answer"
     assert hit_types_request(typed.families) is None
+
+
+def test_an_answer_for_a_family_without_notes_is_an_error() -> None:
+    answers = {"kick": HitTypeBounds(), "tom": HitTypeBounds()}
+
+    with pytest.raises(AnswerError) as raised:
+        type_hits(["kick", "snare", "hat"], [100, 90, 80], answers)
+    with pytest.raises(AnswerError, match=r"^the drums have no kick notes$"):
+        type_hits([], [], answers)
+
+    assert str(raised.value) == "the drums have no tom notes, only kick, snare and hat"
+    assert (raised.value.argument, raised.value.key) == ("hit_types", "tom")
 
 
 def test_bounds_must_be_in_order() -> None:
