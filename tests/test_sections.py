@@ -1,5 +1,6 @@
 """Sections found in songs built in code from a few grooves, read through the General MIDI map."""
 
+import tracemalloc
 from itertools import combinations, pairwise
 
 import mido
@@ -174,6 +175,30 @@ def test_markers_that_start_no_section_leave_it_to_the_drums() -> None:
 
     assert found.source == "drums"
     assert found.starts == (0, 8)
+
+
+STRAY_BAR = 20_000
+"""A bar tens of thousands of bars out, as a stray note in an export can be."""
+MAX_STRAY_MB = 64
+"""Far less than a matrix of every pair of bars, which would take 3.2 GB here."""
+
+
+def test_a_stray_note_far_out_takes_memory_in_proportion_to_the_bars() -> None:
+    kicks: Groove = tuple((step, KICK) for step in range(0, 16, 4))
+    midi = song((kicks, 8), (EMPTY, STRAY_BAR - 8), (((0, KICK),), 1))
+    score = score_of(midi)
+
+    tracemalloc.start()
+    try:
+        found = find_sections(midi, score)
+        peak = tracemalloc.get_traced_memory()[1]
+    finally:
+        tracemalloc.stop()
+
+    # The silence is a section, and the stray note's bar one of its own.
+    assert found.starts == (0, 8, STRAY_BAR)
+    assert [section.group for section in found.sections] == ["A", "B", "C"]
+    assert peak < MAX_STRAY_MB * 1_000_000
 
 
 def test_a_groove_in_another_meter_is_a_section_of_its_own() -> None:

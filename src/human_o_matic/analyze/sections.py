@@ -68,6 +68,9 @@ MIN_SILENCE = 4
 """The shortest stretch of empty bars that is a section of its own: the shortest phrase."""
 REPEAT = 0.8
 """How alike a section must be to a group to join it."""
+CHUNK_BARS = 256
+"""How many bars' novelty is found from one matrix of likeness, so the matrix takes the same
+memory however long the song is."""
 META_MARKER = 0x06
 """The meta event type of an SMF marker."""
 
@@ -142,8 +145,9 @@ def bar_patterns(score: Score, bars: int) -> BarPatterns:
     family_of = np.array([index[note.family] for note in hits], dtype=np.int64)
     patterns = np.zeros((bars, len(families), width))
     patterns[bar_of, family_of, slots] = 1.0
-    norms = np.linalg.norm(patterns, axis=2, keepdims=True)
-    patterns = np.divide(patterns, norms, out=np.zeros_like(patterns), where=norms > 0)
+    # A pattern's length is the square root of its hits, since each is 1.
+    norms = np.sqrt(patterns.sum(axis=2, keepdims=True))
+    np.divide(patterns, norms, out=patterns, where=norms > 0)
 
     early = 2 * offsets < lengths[bar_of]
     in_first = np.bincount(bar_of[early], minlength=bars)
@@ -158,7 +162,8 @@ def bar_patterns(score: Score, bars: int) -> BarPatterns:
 
 
 def similarity(patterns: FloatArray) -> FloatArray:
-    """How alike each pair of bars is, from 0 to 1."""
+    """How alike each pair of bars is, from 0 to 1. The matrix grows with the square of the bars,
+    so the detector only asks it of `CHUNK_BARS` bars at a time."""
     flat = patterns.reshape(patterns.shape[0], -1)
     played = np.count_nonzero(patterns.any(axis=2), axis=1).astype(np.float64)
     scale = np.sqrt(np.outer(played, played))
@@ -166,6 +171,20 @@ def similarity(patterns: FloatArray) -> FloatArray:
     alike = np.divide(dots, scale, out=np.zeros_like(dots), where=scale > 0)
     empty = played == 0
     alike[np.ix_(empty, empty)] = 1.0
+    return np.clip(alike, 0.0, 1.0)
+
+
+def aligned_similarity(first: FloatArray, second: FloatArray) -> FloatArray:
+    """How alike each bar of `first` is to the bar in the same place in `second`, two patterns of
+    as many bars, from 0 to 1, as `similarity` gives it."""
+    played_first = np.count_nonzero(first.any(axis=2), axis=1).astype(np.float64)
+    played_second = np.count_nonzero(second.any(axis=2), axis=1).astype(np.float64)
+    scale = np.sqrt(played_first * played_second)
+    dots = np.einsum(
+        "ij,ij->i", first.reshape(first.shape[0], -1), second.reshape(second.shape[0], -1)
+    )
+    alike = np.divide(dots, scale, out=np.zeros_like(dots), where=scale > 0)
+    alike[(played_first == 0) & (played_second == 0)] = 1.0
     return np.clip(alike, 0.0, 1.0)
 
 
@@ -182,6 +201,20 @@ def novelty(alike: FloatArray) -> FloatArray:
             total[bar] += within - alike[before, after].mean()
             count[bar] += 1
     return np.divide(total, count, out=np.zeros(bars), where=count > 0)
+
+
+def song_novelty(patterns: FloatArray) -> FloatArray:
+    """The novelty of every bar, as `novelty(similarity(patterns))` gives it, found `CHUNK_BARS`
+    bars at a time with the bars around them that its scales reach, so the memory it takes grows
+    with the song's length and not with its square."""
+    bars = patterns.shape[0]
+    reach = max(SCALES)
+    novel = np.zeros(bars)
+    for start in range(0, bars, CHUNK_BARS):
+        stop = min(start + CHUNK_BARS, bars)
+        low, high = max(start - reach, 0), min(stop + reach, bars)
+        novel[start:stop] = novelty(similarity(patterns[low:high]))[start - low : stop - low]
+    return novel
 
 
 def silences(read: BarPatterns) -> tuple[tuple[int, int], ...]:
@@ -222,12 +255,12 @@ def marker_bars(song: MidiSong, score: Score, bars: int) -> tuple[int, ...]:
     return tuple(sorted(found))
 
 
-def drum_boundaries(read: BarPatterns, alike: FloatArray) -> tuple[int, ...]:
+def drum_boundaries(read: BarPatterns) -> tuple[int, ...]:
     """The bars after bar 0 where the drums start a section. A candidate is a peak of the
     novelty: a bar with hits, at least as novel as the bar before it and more than the bar
     after it."""
-    bars = alike.shape[0]
-    novel = novelty(alike)
+    bars = read.patterns.shape[0]
+    novel = song_novelty(read.patterns)
     kept = {bar for stretch in silences(read) for bar in stretch if 0 < bar < bars}
     candidates = [
         bar
@@ -283,15 +316,15 @@ def group_name(index: int) -> str:
     return name
 
 
-def repeat_groups(alike: FloatArray, starts: Sequence[int]) -> tuple[str, ...]:
-    """The repeat group of each section, from the bars where they start."""
-    bars = alike.shape[0]
+def repeat_groups(patterns: FloatArray, starts: Sequence[int]) -> tuple[str, ...]:
+    """The repeat group of each section, from the bars' patterns and where the sections start."""
+    bars = patterns.shape[0]
     spans = list(zip(starts, [*starts[1:], bars], strict=True))
     members: list[list[int]] = []
     groups: list[int] = []
     for position, span in enumerate(spans):
         scores = [
-            float(np.mean([_alike(alike, spans[member], span) for member in held]))
+            float(np.mean([_alike(patterns, spans[member], span) for member in held]))
             for held in members
         ]
         found = int(np.argmax(scores)) if scores else -1
@@ -303,11 +336,13 @@ def repeat_groups(alike: FloatArray, starts: Sequence[int]) -> tuple[str, ...]:
     return tuple(group_name(group) for group in groups)
 
 
-def _alike(alike: FloatArray, first: tuple[int, int], second: tuple[int, int]) -> float:
+def _alike(patterns: FloatArray, first: tuple[int, int], second: tuple[int, int]) -> float:
     """How alike two sections are, comparing their bars in order over the shorter length."""
     length = min(first[1] - first[0], second[1] - second[0])
-    block = alike[first[0] : first[0] + length, second[0] : second[0] + length]
-    return float(np.diagonal(block).mean())
+    pairs = aligned_similarity(
+        patterns[first[0] : first[0] + length], patterns[second[0] : second[0] + length]
+    )
+    return float(pairs.mean())
 
 
 def find_sections(song: MidiSong, score: Score, *, markers: bool = True) -> Sections:
@@ -315,12 +350,11 @@ def find_sections(song: MidiSong, score: Score, *, markers: bool = True) -> Sect
     and otherwise from the drums."""
     bars = drum_bars(song, score)
     read = bar_patterns(score, bars)
-    alike = similarity(read.patterns)
     marked = marker_bars(song, score, bars) if markers else ()
     source: SectionSource = "markers" if marked else "drums"
-    starts = (0, *(marked or drum_boundaries(read, alike)))
+    starts = (0, *(marked or drum_boundaries(read)))
     ends = (*starts[1:], bars)
-    groups = repeat_groups(alike, starts)
+    groups = repeat_groups(read.patterns, starts)
     return Sections(
         sections=tuple(
             Section(start=start, bars=end - start, group=group)
