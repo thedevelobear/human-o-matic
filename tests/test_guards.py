@@ -1,5 +1,7 @@
 """The guards on slots built by hand: each rule, and what each counts (ADR 0050)."""
 
+from math import ceil
+
 import numpy as np
 
 from human_o_matic.midi.io import Note
@@ -119,3 +121,30 @@ def test_the_controller_window_wins_over_the_gap_and_says_so() -> None:
     assert timed.starts[1] == 1052
     counts = tally.frozen()
     assert (counts.controller, counts.unmet, counts.gap) == (1, 1, 0)
+
+
+def test_when_both_gaps_can_t_be_kept_the_one_from_the_note_before_wins() -> None:
+    slots = [
+        slot(1000, order=1),
+        slot(1040, order=2),
+        slot(1080, section=1, kept=True, start=1070, order=3),
+    ]
+    tally = Tally()
+
+    timed = hold_timing(slots, np.array([12.0, 0.0, 0.0]), TEMPO, tally)
+
+    assert timed.starts[1] - timed.starts[0] == ceil(0.6 * 40)
+    assert timed.starts[2] - timed.starts[1] < ceil(0.6 * 40)
+    counts = tally.frozen()
+    assert (counts.gap, counts.unmet) == (1, 1)
+
+
+def test_a_note_inside_its_controller_window_stays_and_one_before_it_moves_to_its_start() -> None:
+    tally = Tally()
+
+    inside = hold_timing([slot(1050, window=(1000, 1100))], np.array([0.0]), TEMPO, tally)
+    before = hold_timing([slot(1050, window=(1060, 1500))], np.array([0.0]), TEMPO, tally)
+
+    assert inside.starts[0] == 1050
+    assert before.starts[0] == 1060
+    assert tally.frozen().controller == 1
