@@ -7,6 +7,6 @@
 - In song order, a section joins the group whose sections it is most alike on average, the first of equals, when that is at least 0.8. Otherwise it starts a group of its own.
 - Groups are named A to Z, then AA, AB and on, in the order they first appear. Silent sections fall into one group, since empty bars are alike.
 
-**Why:** Comparing bars in order means a repeat has to play the same bars in the same order, not just the same mix. On the sections the tuned tracks' labels give, repeats score 0.88 and above and different sections at most 0.77, so 0.8 sits between them. Letters are how the plan's product flow names them.
+**Why:** Comparing bars in order means a repeat has to play the same bars in the same order, not just the same mix. The labels give where sections start but not which ones repeat, so 0.8 comes from the likeness alone: no two of the sections the tuned tracks' labels start score between 0.772 and 0.875, and 0.8 sits in that gap. Letters are how the plan's product flow names them.
 
 **Consequences:** Repeat groups aren't scored, since the labels carry boundaries only ([ADR 0034](0034-the-m2-exit-is-scored-on-hand-labelled-section-starts.md)). A wrong boundary shifts the bars a section is compared on, so it can split a repeat from its group.
