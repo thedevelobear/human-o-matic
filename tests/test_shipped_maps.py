@@ -131,7 +131,7 @@ def test_every_shipped_articulation_reads_back_from_what_is_written(kit: DrumKit
             assert [match.articulation for match in kit.read(output.pitch, 100, channel)] == [entry]
 
 
-def check_report(rows: tuple[Row, ...]) -> None:
+def check_report(rows: tuple[Row, ...], source: DrumKit, target: DrumKit) -> None:
     """Every inexact conversion lists its steps, and they lead from the source to the target."""
     for row in rows:
         if row.source == row.target:
@@ -142,6 +142,44 @@ def check_report(rows: tuple[Row, ...]) -> None:
         assert row.steps[-1].used == row.target
         for step, following in zip(row.steps, row.steps[1:], strict=False):
             assert step.used == following.asked
+        check_fallback_order(row, source, target)
+
+
+FALLBACK_ORDER = ("piece", "variant", "default")
+"""The steps after the exact name, in the order a conversion tries them (ADR 0021)."""
+
+
+def check_fallback_order(row: Row, source: DrumKit, target: DrumKit) -> None:
+    """The steps of an inexact row come in the fallback order, each within the family and taken
+    only when the name before it won't do: the exact name, then piece substitution, then the
+    name without its last variant, one at a time, then the piece's default."""
+    vocabulary = target.vocabulary
+    kinds = [step.kind for step in row.steps]
+    assert set(kinds) <= set(FALLBACK_ORDER), row
+    assert kinds == sorted(kinds, key=FALLBACK_ORDER.index), row
+    assert kinds.count("piece") <= 1, row
+    assert kinds.count("default") <= 1, row
+    assert row.target in target, row
+    for step in row.steps:
+        asked, used = vocabulary.parse(step.asked), vocabulary.parse(step.used)
+        assert asked.family == used.family, step
+        match step.kind:
+            case "piece":
+                # Only when the target lacks the piece, or a family spread by register has a
+                # different number of pieces in each kit.
+                pieces = target.pieces(asked.family)
+                respread = vocabulary.families[asked.family].piece_substitution == "register"
+                assert asked.piece > pieces or (respread and source.pieces(asked.family) != pieces)
+                assert used.path == asked.path, step
+                assert used.piece <= pieces, step
+            case "variant":
+                assert step.asked not in target, step
+                assert (used.piece, used.path) == (asked.piece, asked.path[:-1]), step
+            case "default":
+                assert step.asked not in target, step
+                assert asked.variants == (), step
+                assert asked.articulation not in vocabulary.ask_if_missing, step
+                assert step.used == vocabulary.default(asked.family, asked.piece).text, step
 
 
 @pytest.mark.parametrize(("source", "target"), list(product(KITS, KITS)), ids=lambda kit: kit.ref)
@@ -157,11 +195,18 @@ def test_converting_between_shipped_maps_never_changes_family(
     assert len(conversion.notes) == len(kept)
     for before, after in zip(kept, conversion.notes, strict=True):
         assert family(source, before) == family(target, after), (before, after)
-    check_report(conversion.rows)
-    # Every note held back is in a decision request, and only those.
+    check_report(conversion.rows, source, target)
+    # Every note held back is in a decision request, and only those, and that includes every
+    # note of a family the target lacks.
     asked_about = sum(int(str(request.details.get("count", 0))) for request in conversion.decisions)
     assert asked_about == len(conversion.pending)
     assert all(request.kind == "conversion" for request in conversion.decisions)
+    lacking = {note.order for note in notes if not target.pieces(family(source, note))}
+    assert lacking <= held
+    for request in conversion.decisions:
+        if request.details["reason"] == "family":
+            name = str(request.details["source"]).split("|")[0]
+            assert not target.pieces(source.canonical(name).family), request
     # Every note starts at its own tick, so none can meet another.
     assert conversion.collisions == ()
 
@@ -244,7 +289,7 @@ def test_random_hits_never_change_family(data: st.DataObject) -> None:
         before = by_order[after.order]
         assert family(source, before) == family(target, after), (before, after)
         assert (after.start, after.end, after.track) == (before.start, before.end, before.track)
-    check_report(conversion.rows)
+    check_report(conversion.rows, source, target)
 
 
 @pytest.mark.parametrize("target", KITS, ids=lambda kit: kit.ref)
