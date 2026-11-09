@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from human_o_matic.cli import EXIT_OPEN, Summary, app
+from human_o_matic.cli import EXIT_OPEN, SectionEntry, Summary, app
 from human_o_matic.decisions import DecisionRequest
 from test_private_midi import private_sample
 
@@ -49,8 +49,14 @@ def test_analyze_prints_a_summary_and_requests_for_performed_midi() -> None:
                 flags += ["--track", str(request.options[0].value)]
             code, out, requests = analyze(path, *flags)
 
-        assert list(out) == ["summary", "decisions"]
+        assert list(out) == ["summary", "sections", "decisions"]
         summary = Summary.model_validate(out["summary"])
+        printed = out["sections"]
+        assert isinstance(printed, list)
+        sections = [SectionEntry.model_validate(section) for section in printed]
+        assert len(sections) == summary.sections.count
+        assert sections[0].start == 0
+        assert sum(section.bars for section in sections) == summary.bars
         assert (code == EXIT_OPEN) == bool(requests)
         assert {request.kind for request in requests} <= {
             "unmapped_notes",

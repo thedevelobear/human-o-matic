@@ -5,21 +5,24 @@ import json
 from pathlib import Path
 from typing import Any
 
+import mido
 import numpy as np
 import pytest
 from typer.testing import CliRunner, Result
 
-from human_o_matic.cli import EXIT_OPEN, app, read_answers, summarize
+from human_o_matic.analyze.sections import find_sections
+from human_o_matic.cli import EXIT_OPEN, Summary, app, read_answers, summarize
 from human_o_matic.decisions import DecisionRequest
 from human_o_matic.maps.loader import built_in_maps, find_kit
-from human_o_matic.midi.io import read_midi
+from human_o_matic.midi.io import MidiSong, read_midi
 from human_o_matic.midi.tempo import MAX_BPM, MIN_BPM
 from human_o_matic.normalize.hit_types import HitTypeBounds
 from human_o_matic.normalize.pipeline import normalize
+from human_o_matic.normalize.score import Normalized
 from midi_files import MidoMessage, end, name, off, on, save, signature, tempo, track
 
 PPQ = 960
-KICK, SNARE, HAT, UNMAPPED = 36, 38, 42, 99
+KICK, SNARE, HAT, RIDE, UNMAPPED = 36, 38, 42, 51, 99
 GROOVE = [
     *[(beat * PPQ, KICK if beat % 2 == 0 else SNARE, 110) for beat in range(8)],
     *[(eighth * PPQ // 2, HAT, 90) for eighth in range(16)],
@@ -53,6 +56,13 @@ def drums(
     items.sort(key=lambda item: (item[0], item[1]))
     messages = [(tick, message) for tick, _, message in items]
     return save(path / "drums.mid", track(*messages, (messages[-1][0], end())), ppq=PPQ)
+
+
+def summary_of(
+    file: str, song: MidiSong, normalized: Normalized, *, bpm: float | None = None
+) -> Summary:
+    """The summary, with the sections found as `analyze` finds them."""
+    return summarize(file, song, normalized, find_sections(song, normalized.score), bpm=bpm)
 
 
 def answers_file(path: Path, answers: object) -> Path:
@@ -92,7 +102,7 @@ def test_a_clean_run_prints_the_summary_and_no_requests(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     assert result.stderr == ""
     out = output(result)
-    assert list(out) == ["summary", "decisions"]
+    assert list(out) == ["summary", "sections", "decisions"]
     assert out["decisions"] == []
     summary = out["summary"]
     assert summary["file"] == str(song)
@@ -100,7 +110,52 @@ def test_a_clean_run_prints_the_summary_and_no_requests(tmp_path: Path) -> None:
     assert summary["track"] == {"index": 0, "name": "Drums", "reason": "only_track"}
     assert summary["notes"] == {"read": 24, "score": 24, "pending": 0, "dropped": 0}
     assert summary["bars"] == 2
+    assert summary["sections"] == {"count": 1, "source": "drums"}
     assert summary["families"] == {"hat": 16, "kick": 4, "snare": 4}
+    assert out["sections"] == [{"start": 0, "bars": 2, "group": "A"}]
+
+
+def bars_of(*grooves: tuple[str, int]) -> list[tuple[int, int, int]]:
+    """Notes of `(groove, bars)` blocks, where a groove is "rock", 8th hats on a backbeat, or
+    "ride", quarters on the ride over kicks."""
+    notes: list[tuple[int, int, int]] = []
+    bar = 0
+    for groove, count in grooves:
+        for number in range(bar, bar + count):
+            start = number * 4 * PPQ
+            if groove == "rock":
+                notes.extend(
+                    (start + beat * PPQ, (KICK, SNARE)[beat % 2], 110) for beat in range(4)
+                )
+                notes.extend((start + eighth * PPQ // 2, HAT, 90) for eighth in range(8))
+            else:
+                notes.extend((start + beat * PPQ, RIDE, 100) for beat in range(4))
+                notes.extend((start + beat * PPQ, KICK, 100) for beat in (0, 2))
+        bar += count
+    return notes
+
+
+def test_the_sections_are_printed_with_their_bars_and_groups(tmp_path: Path) -> None:
+    song = drums(tmp_path, bars_of(("rock", 8), ("ride", 8), ("rock", 8)))
+
+    out = output(analyze(song, "--from-map", "gm"))
+
+    assert out["summary"]["sections"] == {"count": 3, "source": "drums"}
+    assert out["sections"] == [
+        {"start": 0, "bars": 8, "group": "A"},
+        {"start": 8, "bars": 8, "group": "B"},
+        {"start": 16, "bars": 8, "group": "A"},
+    ]
+
+
+def test_markers_in_the_file_set_the_printed_sections(tmp_path: Path) -> None:
+    marker = (4 * 4 * PPQ, mido.MetaMessage("marker", text="Chorus"))
+    song = drums(tmp_path, bars_of(("rock", 8), ("ride", 8)), meta=(marker,))
+
+    out = output(analyze(song, "--from-map", "gm"))
+
+    assert out["summary"]["sections"] == {"count": 2, "source": "markers"}
+    assert [section["start"] for section in out["sections"]] == [0, 4]
 
 
 def test_the_output_is_one_line_of_compact_json(tmp_path: Path) -> None:
@@ -420,7 +475,7 @@ def test_the_printed_summary_is_the_summary_function(tmp_path: Path) -> None:
 
     result = analyze(path, "--from-map", "gm", "--bpm", "90")
 
-    expected = summarize(str(path), song, normalize(song, find_kit("gm"), bpm=90), bpm=90)
+    expected = summary_of(str(path), song, normalize(song, find_kit("gm"), bpm=90), bpm=90)
     assert output(result)["summary"] == expected.model_dump(mode="json")
 
 
@@ -467,7 +522,7 @@ def test_the_summary_counts_the_score(tmp_path: Path) -> None:
     song = read_midi(drums(tmp_path, notes))
     normalized = normalize(song, find_kit("gm"), unmapped={UNMAPPED: "drop"})
 
-    summary = summarize("song.mid", song, normalized)
+    summary = summary_of("song.mid", song, normalized)
 
     assert summary.notes.model_dump() == {"read": 8, "score": 6, "pending": 1, "dropped": 1}
     assert summary.beats.model_dump() == {
@@ -491,7 +546,7 @@ def test_the_summary_counts_notes_read_through_low_confidence_names(tmp_path: Pa
     song = read_midi(drums(tmp_path, GROOVE))
     normalized = normalize(song, kit)
 
-    summary = summarize("song.mid", song, normalized)
+    summary = summary_of("song.mid", song, normalized)
 
     assert summary.low_confidence == {e.articulation: e.count for e in normalized.low_confidence}
     assert sum(summary.low_confidence.values()) == sum(
@@ -510,8 +565,8 @@ def test_the_summary_tells_the_tempo_and_time_signatures(tmp_path: Path) -> None
     notes = [(beat * PPQ, KICK, 100) for beat in range(8 + 3 * 3)]
     song = read_midi(drums(tmp_path, notes, meta=meta))
 
-    from_file = summarize("song.mid", song, normalize(song, find_kit("gm")))
-    replaced = summarize("song.mid", song, normalize(song, find_kit("gm"), bpm=90.5), bpm=90.5)
+    from_file = summary_of("song.mid", song, normalize(song, find_kit("gm")))
+    replaced = summary_of("song.mid", song, normalize(song, find_kit("gm"), bpm=90.5), bpm=90.5)
 
     assert from_file.tempo.model_dump() == {
         "given": False,
