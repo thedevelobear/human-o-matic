@@ -89,6 +89,15 @@ def test_a_label_file_that_isnt_toml_is_an_error(tmp_path: Path) -> None:
         read_label(label_file(tmp_path, "starts = [0,"))
 
 
+def test_a_label_file_that_isnt_utf_8_is_an_error(tmp_path: Path) -> None:
+    path = tmp_path / "song.toml"
+    path.write_bytes(b'midi = "songs/\xff.mid"\n')
+
+    with pytest.raises(LabelError, match=re.escape(str(path))) as raised:
+        read_label(path)
+    assert "utf-8" in str(raised.value)
+
+
 def test_the_label_files_are_those_directly_in_the_folder_in_name_order(tmp_path: Path) -> None:
     label_file(tmp_path, LABEL, "b.toml")
     label_file(tmp_path, LABEL, "a.toml")

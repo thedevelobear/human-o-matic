@@ -75,7 +75,7 @@ def read_label(path: Path) -> Label:
     try:
         with path.open("rb") as file:
             return Label.model_validate(tomllib.load(file))
-    except (OSError, tomllib.TOMLDecodeError) as error:
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as error:
         raise LabelError(f"{path}: {error}") from error
     except ValidationError as error:
         problems = (
