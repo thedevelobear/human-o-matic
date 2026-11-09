@@ -28,5 +28,5 @@ jobs:
       - run: uv run ruff check
       - run: uv run ruff format --check
       - run: uv run pyright
-      # The library tests read local files that CI doesn't have (ADR 0007).
-      - run: uv run pytest -m "not library"
+      # The private tests need local-only files that CI doesn't have (ADR 0007).
+      - run: uv run pytest -m "not private"

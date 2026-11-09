@@ -1,6 +1,6 @@
 # 0004. Dependencies use exact versions
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 Every direct dependency in `pyproject.toml`, runtime and dev, uses an exact version (`==`). `[tool.uv] add-bounds = "exact"` makes `uv add` write them that way. `uv.lock` is committed, and CI installs with `uv sync --locked`, which fails when the two disagree.

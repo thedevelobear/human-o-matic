@@ -1,0 +1,363 @@
+# Sleep Token II, from the library's own note mapping (ADR 0011): 68 pitches on channel 10 as 58
+# articulations. Where an articulation has two notes, the first is the one written and the
+# second is only read. Confidence is high where the mapping's name gives the canonical name
+# directly, and medium where it had to be interpreted.
+schema = 1
+id = "sleep-token-ii"
+name = "Sleep Token II"
+
+[[kits]]
+id = "default"
+name = "Default map"
+channel = 10
+
+  [[kits.articulations]]
+  name = "kick.hit"
+  notes = [36]
+  source = "mapping"
+  confidence = "medium"       # read as the ordinary kick
+
+  [[kits.articulations]]
+  name = "kick.hit.left"
+  notes = [35]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "snare.center"
+  notes = [38]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "snare.rimshot"
+  notes = [40]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "snare.flam"
+  notes = [39]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "snare.sidestick"
+  notes = [37]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "snare.roll"
+  notes = [25]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "sticks.hit"
+  notes = [31]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.1.hit"
+  notes = [50, 48]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.2.hit"
+  notes = [47, 45]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.3.hit"
+  notes = [43, 41]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.1.rimshot"
+  notes = [23]
+  source = "mapping"
+  confidence = "medium"       # read as a rimshot; it could be the rim alone
+
+  [[kits.articulations]]
+  name = "tom.2.rimshot"
+  notes = [21]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "tom.3.rimshot"
+  notes = [19]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.closed"
+  notes = [42, 76]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "hat.closed.tip"
+  notes = [75]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "hat.tight"
+  notes = [74]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "hat.tight.tip"
+  notes = [73]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "hat.open.quarter"
+  notes = [77]
+  source = "mapping"
+  confidence = "medium"       # its open hats read as quarter, half and fully open, in order
+
+  [[kits.articulations]]
+  name = "hat.open.quarter.tip"
+  notes = [83]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.open.half"
+  notes = [78]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.open.half.tip"
+  notes = [84]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.open"
+  notes = [46, 79]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.open.tip"
+  notes = [85]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.pedal"
+  notes = [44]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "hat.pedal.splash"
+  notes = [81]
+  source = "mapping"
+  confidence = "high"
+
+  # A controller sets these hats' openness. The mapping doesn't say which one.
+  [[kits.articulations]]
+  name = "hat.variable"
+  notes = [32]
+  cc = { mode = "shape" }
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.variable.tip"
+  notes = [33]
+  cc = { mode = "shape" }
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.1.hit"
+  notes = [49, 90]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "crash.1.choke"
+  notes = [91]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "crash.1.mute"
+  notes = [61]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "crash.2.hit"
+  notes = [57, 92]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "crash.2.choke"
+  notes = [93]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "crash.2.mute"
+  notes = [69]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "crash.3.hit"
+  notes = [54, 102]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "crash.3.choke"
+  notes = [103]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "crash.3.mute"
+  notes = [66]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "crash.4.hit"
+  notes = [95]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "crash.4.choke"
+  notes = [96]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "crash.4.mute"
+  notes = [107]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "china.1.hit"
+  notes = [52, 100]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "china.1.choke"
+  notes = [101]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "china.1.mute"
+  notes = [64]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "splash.1.hit"
+  notes = [55, 98]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "splash.1.choke"
+  notes = [99]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "splash.1.mute"
+  notes = [67]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "splash.2.hit"
+  notes = [56]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "splash.2.choke"
+  notes = [94]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "splash.2.mute"
+  notes = [68]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "ride.1.bow"
+  notes = [51]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "ride.1.bell"
+  notes = [53]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "ride.1.bell.tip"
+  notes = [60]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "ride.1.crash"
+  notes = [59]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "ride.1.mute"
+  notes = [71]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "stack.1.hit"
+  notes = [63]
+  source = "mapping"
+  confidence = "medium"       # read as the ordinary stroke
+
+  [[kits.articulations]]
+  name = "stack.1.hit.tip"
+  notes = [62]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "stack.2.hit"
+  notes = [109]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "stack.2.hit.tip"
+  notes = [108]
+  source = "mapping"
+  confidence = "medium"

@@ -1,0 +1,208 @@
+# EZdrummer 3 (ADR 0011). Each name is inferred from where the library puts its notes, so each
+# entry is low confidence until it is checked in the instrument (ADR 0025). Built in private/ from
+# local sources (ADR 0007): change it there and build it again, rather than editing this file.
+schema = 1
+id = "ezdrummer-3"
+name = "EZdrummer 3"
+
+[[kits]]
+id = "default"
+name = "Default map"
+
+  [[kits.articulations]]
+  name = "kick.hit"
+  notes = [36]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "snare.center"
+  notes = [38]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "snare.sidestick"
+  notes = [37]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.1.hit"
+  notes = [48]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.2.hit"
+  notes = [47]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.3.hit"
+  notes = [43]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.4.hit"
+  notes = [41]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.pedal"
+  notes = [21]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.tight"
+  notes = [63]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.tight.tip"
+  notes = [62]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.closed"
+  notes = [61]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.closed.tip"
+  notes = [22]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.open.quarter"
+  notes = [64]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.open.half"
+  notes = [24]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.open"
+  notes = [25]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.1.hit"
+  notes = [49]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.2.hit"
+  notes = [57]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "splash.1.hit"
+  notes = [98]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "china.1.hit"
+  notes = [110]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "ride.1.bow"
+  notes = [51]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "ride.1.crash"
+  notes = [59]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "ride.1.bell"
+  notes = [53]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.1.choke"
+  notes = [50]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.2.choke"
+  notes = [58]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "splash.1.choke"
+  notes = [95]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "china.1.choke"
+  notes = [107]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "ride.1.choke"
+  notes = [118]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.pedal.splash"
+  notes = [23]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "snare.rimshot"
+  notes = [40]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.1.rimshot"
+  notes = [82]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.2.rimshot"
+  notes = [80]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.3.rimshot"
+  notes = [75]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.4.rimshot"
+  notes = [73]
+  source = "inferred"
+  confidence = "low"

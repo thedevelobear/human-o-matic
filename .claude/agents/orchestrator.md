@@ -30,7 +30,7 @@ This repo runs you as its session agent (`"agent": "orchestrator"` in `.claude/s
 ## Rules
 - Decisions belong to the owner. When the developer reports a choice the docs don't cover, check it with the owner, and have the developer record the answer as an ADR.
 - No agent pushes or publishes, and neither do you. Claude Code's settings block both ([ADR 0006](../../docs/decisions/0006-settings-block-pushes-and-publishing.md)).
-- Library MIDI and vendor map files are read in place and never copied into the repo ([ADR 0007](../../docs/decisions/0007-library-data-stays-out-of-the-repo.md)). Put this in every brief that touches them.
+- Nothing in the gitignored `private/` folder is committed, copied out of it into the repo, or redistributed, and no tracked file names what it holds ([ADR 0007](../../docs/decisions/0007-local-only-files-live-in-private.md)). Put this in every brief that touches it.
 - Run one writing agent at a time on the checkout.
 - Keep your own context light. The agents read the code. You read their reports and the docs.
 - If an agent fails or stops early, say so, and don't describe its work as done.

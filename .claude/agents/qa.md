@@ -18,14 +18,14 @@ Run them once, on the branch's tip. Commits before it don't have to pass on thei
 2. `uv run ruff check`
 3. `uv run ruff format --check`
 4. `uv run pyright`
-5. `HYPOTHESIS_PROFILE=ci uv run pytest -m "not library"`, as CI runs it. Note the number of tests.
-6. `uv run pytest -m library`, when the library's files exist on this machine. Say how many tests ran and how many skipped.
+5. `HYPOTHESIS_PROFILE=ci uv run pytest -m "not private"`, as CI runs it. Note the number of tests.
+6. `uv run pytest -m private` and `uv run pytest private/tests`, when `private/` exists on this machine. Say how many tests ran and how many skipped.
 7. Anything the milestone adds to run, such as the `human-o-matic` CLI on a generated MIDI file or the MCP server's tools, once it exists. Use files built in a temporary directory, and clean up.
 
 ## The review
 Read the whole diff, not only the stat, then check it against the plan:
-- **Library data.** `git diff --name-only <base>...HEAD` and `git ls-files` show no `.mid`, `.midi`, `.map` or `.drm` file, and no copied library content in data or docs. Calibration output holds aggregate statistics only ([ADR 0007](../../docs/decisions/0007-library-data-stays-out-of-the-repo.md)).
-- **The plan's rules.** Nothing from the "Do not" list: no DAW bridge, web UI or built-in LLM, no note arrays through MCP tools, no training before M4, no piano or guitar logic, and no timing past performed magnitudes by default.
+- **`private/`.** `git ls-files private` is empty, and `git diff --name-only <base>...HEAD` and `git ls-files` show no `.mid` or `.midi` file. No tracked file copies anything from `private/`, or names the files it holds or where they come from. Calibration output holds aggregate statistics only ([ADR 0007](../../docs/decisions/0007-local-only-files-live-in-private.md)).
+- **The plan's rules.** Nothing from the "Do not" list: no DAW bridge, web UI or built-in LLM, no note arrays through MCP tools, no training before M4, no user-supplied map files, no library special-cased in the code, no piano or guitar logic, and no timing past performed magnitudes by default.
 - **Determinism.** No `random` module and no numpy global state. Randomness comes from a `Generator` built from a `SeedSequence`.
 - **The milestone's exit criteria.** Go through each one and say whether the diff and the tests show it met. Name the criteria that only the owner can judge, such as anything a listener must hear, and don't call those passing.
 - **Correctness.** Look for bugs in the changed code, such as off-by-one errors in ticks and bars, tempo and time-signature maps handled wrongly, events dropped on a round trip, and unmapped notes lost silently. Check that each property test tests what the plan says and could fail.

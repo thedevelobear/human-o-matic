@@ -5,7 +5,15 @@ description = "An MCP server that re-performs a drum MIDI file section by sectio
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [{ name = "thedevelobear" }]
-dependencies = []
+dependencies = [
+    "mido==1.3.3",
+    "numpy==2.5.4",
+    "pydantic==2.14.3",
+    "typer==0.28.0",
+]
+
+[project.scripts]
+human-o-matic = "human_o_matic.cli:app"
 
 [build-system]
 requires = ["uv_build>=0.13.7,<0.14.0"]
@@ -50,6 +58,8 @@ pythonVersion = "3.12"
 include = ["src", "tests"]
 typeCheckingMode = "standard"
 strict = ["src"]
+# Local stubs for untyped libraries, such as typings/mido.
+stubPath = "typings"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -57,5 +67,5 @@ addopts = ["-ra", "--strict-markers", "--strict-config"]
 xfail_strict = true
 filterwarnings = ["error"]
 markers = [
-  "library: reads the local Kontakt library MIDI in place. Skips when the files are missing, and CI leaves it out (ADR 0007)",
+  "private: needs the local-only files in private/. Skips when they are missing, and CI leaves it out (ADR 0007)",
 ]

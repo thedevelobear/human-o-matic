@@ -1,6 +1,6 @@
 # 0003. Work branches off `main` and merges without squashing
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - Each change is a branch made from `origin/main` with `--no-track`, named after its main commit type and topic (`feat/topic`, `fix/topic`), and merged into `main` through a PR.

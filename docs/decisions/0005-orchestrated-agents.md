@@ -1,6 +1,6 @@
 # 0005. Claude Code works through an orchestrator, a developer and QA
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - Three agents live in `.claude/agents/`:

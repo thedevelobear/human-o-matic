@@ -1,6 +1,6 @@
 # 0002. docs/ is the decision record
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 `docs/` records what was decided and why, indexed by `docs/README.md`:
