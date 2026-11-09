@@ -10,7 +10,7 @@ Timing, in turn:
 5. In time order, a note after another of its pitch in its own section, or after a note played as
    it came in, keeps `MIN_GAP_SHARE` of their grid gap and at least a tick, by moving later with
    its main note and graces. A note before one played as it came in keeps it by moving earlier.
-   `unmet` counts a note whose gap can't be kept both ways.
+   When it can't keep both, the gap from the note before wins, and `unmet` counts it.
 6. A note a controller value decides or shapes stays within its window, between the controller
    events around its source note (ADR 0053), which wins over the gap.
 7. Each note keeps its source length, at least a tick, and ends by the time the next note of its
@@ -102,9 +102,11 @@ class GuardCounts(BaseModel):
     tick_zero: int = 0
     """Notes moved to tick 0 from before it."""
     gap: int = 0
-    """Notes moved later to keep their gap from the note before them on their pitch."""
+    """Notes moved, later after a note of their pitch or earlier before a kept one, to keep
+    their gap. A note that can't keep both gaps keeps the one from the note before, and counts
+    here and under `unmet`."""
     controller: int = 0
-    """Notes held to the controller value set for them."""
+    """Notes their controller window moved, which wins over the gap."""
     range: int = 0
     """Velocities moved into their articulation's range."""
     soft: int = 0
@@ -112,7 +114,8 @@ class GuardCounts(BaseModel):
     nudged: int = 0
     """Velocities moved off a repeat, or onto their class at a boundary."""
     unmet: int = 0
-    """Notes a guard couldn't hold, as when a range is too narrow for it."""
+    """Notes a guard couldn't hold, as when a range is too narrow for it or both gaps can't be
+    kept. Each is also counted under the guard that moved it, if one did."""
 
 
 @dataclass(slots=True)
