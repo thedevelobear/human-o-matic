@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from typer.testing import CliRunner, Result
 
-from human_o_matic.cli import EXIT_OPEN, app, find_kit, read_answers, summarize
+from human_o_matic.cli import EXIT_OPEN, MAX_BPM, MIN_BPM, app, find_kit, read_answers, summarize
 from human_o_matic.decisions import DecisionRequest
 from human_o_matic.maps.loader import built_in_maps
 from human_o_matic.midi.io import read_midi
@@ -286,8 +286,6 @@ def test_a_map_that_isnt_built_in_is_a_usage_error(
         ["missing.mid", "--from-map", "gm"],
         ["--from-map", "gm"],
         ["DRUMS", "--from-map", "gm", "--track", "-1"],
-        ["DRUMS", "--from-map", "gm", "--bpm", "0"],
-        ["DRUMS", "--from-map", "gm", "--bpm", "nan"],
         ["DRUMS"],
     ],
 )
@@ -295,6 +293,32 @@ def test_bad_flags_are_usage_errors(tmp_path: Path, args: list[str]) -> None:
     song = drums(tmp_path, GROOVE)
 
     usage_error(analyze(*(str(song) if arg == "DRUMS" else arg for arg in args)))
+
+
+@pytest.mark.parametrize("bpm", ["0", "-120", "1e-320", "3.576", "60000001", "inf", "nan"])
+def test_a_tempo_a_midi_file_cant_hold_is_a_usage_error(tmp_path: Path, bpm: str) -> None:
+    result = analyze(drums(tmp_path, GROOVE), "--from-map", "gm", "--bpm", bpm)
+
+    stderr = usage_error(result)
+    assert "Invalid value for '--bpm'" in stderr
+    assert "is not a tempo a MIDI file can hold, from 3.577 to 60000000 BPM" in stderr
+
+
+@pytest.mark.parametrize("bpm", ["3.577", "60000000"])
+def test_the_slowest_and_fastest_tempos_are_taken(tmp_path: Path, bpm: str) -> None:
+    result = analyze(drums(tmp_path, GROOVE), "--from-map", "gm", "--bpm", bpm)
+
+    assert result.exit_code == EXIT_OPEN, result.output
+    assert output(result)["summary"]["tempo"]["bpm"] == float(bpm)
+
+
+def test_the_slowest_and_fastest_tempos_fit_a_midi_tempo_event() -> None:
+    # A tempo event holds 1 to 16,777,215 microseconds per quarter note, which mido checks as it
+    # builds one, and the tempo written is the nearest whole microsecond.
+    assert tempo(MAX_BPM).bytes()[3:] == [0, 0, 1]
+    assert tempo(MIN_BPM).bytes()[3:] == list((16_773_833).to_bytes(3))
+    with pytest.raises(ValueError, match="16777215"):
+        tempo(MIN_BPM - 0.001)
 
 
 def test_a_file_that_isnt_midi_is_a_usage_error(tmp_path: Path) -> None:

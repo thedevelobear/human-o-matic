@@ -15,7 +15,6 @@ message on stderr, and 1 is left for a crash.
 """
 
 import json
-import math
 import re
 from collections import Counter
 from collections.abc import Sequence
@@ -41,6 +40,11 @@ EXIT_OPEN = 3
 """The exit code when a decision request is open."""
 FLAGS = ("from_map", "track", "bpm")
 """Answers given as flags, which the answers file doesn't take."""
+MIN_BPM = 3.577
+"""The slowest tempo `--bpm` takes: a MIDI tempo event holds at most 16,777,215 microseconds
+per quarter note, which is about 3.5763 BPM, here rounded up."""
+MAX_BPM = float(MICROSECONDS_PER_MINUTE)
+"""The fastest tempo `--bpm` takes: 1 microsecond per quarter note."""
 
 _PITCH = re.compile(r"[0-9]+")
 _BEAT = re.compile(r"([0-9]+),([0-9]+)")
@@ -318,7 +322,10 @@ def analyze(
         int | None, typer.Option(min=0, help="The track that holds the drums, from 0.")
     ] = None,
     bpm: Annotated[
-        float | None, typer.Option(help="A constant tempo, which replaces the file's.")
+        float | None,
+        typer.Option(
+            help=f"A constant tempo, which replaces the file's: {MIN_BPM:g} to {MAX_BPM:.0f} BPM."
+        ),
     ] = None,
     answers: Annotated[
         Path | None,
@@ -335,8 +342,11 @@ def analyze(
         kit = find_kit(from_map)
     except KeyError as error:
         raise typer.BadParameter(str(error.args[0]), param_hint="'--from-map'") from error
-    if bpm is not None and not (math.isfinite(bpm) and bpm > 0):
-        raise typer.BadParameter(f"{bpm} is not a tempo above 0", param_hint="'--bpm'")
+    if bpm is not None and not MIN_BPM <= bpm <= MAX_BPM:
+        raise typer.BadParameter(
+            f"{bpm} is not a tempo a MIDI file can hold, from {MIN_BPM:g} to {MAX_BPM:.0f} BPM",
+            param_hint="'--bpm'",
+        )
     given = Answers()
     if answers is not None:
         try:
