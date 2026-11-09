@@ -1,13 +1,20 @@
 """Drum songs built in code for the engine's tests: notes at ticks, read through the GM map."""
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
+from itertools import pairwise
 
+from hypothesis import strategies as st
+
+from human_o_matic.analyze.sections import drum_bars
+from human_o_matic.controls import Arc, ControlVector, SectionPlan, SessionPlan
 from human_o_matic.maps.kit import DrumKit
 from human_o_matic.maps.loader import find_kit
 from human_o_matic.midi.io import MidiSong, parse_midi
 from human_o_matic.normalize.hit_types import HitTypeBounds
 from human_o_matic.normalize.pipeline import normalize
 from human_o_matic.normalize.score import Normalized
+from human_o_matic.render.engine import Rendered, render
+from human_o_matic.render.target import place_score
 from midi_files import MidoMessage, build, end, name, off, on, signature, tempo, track
 
 GM = find_kit("gm")
@@ -53,11 +60,7 @@ def song(
 
 def normalized(midi: MidiSong, kit: DrumKit = GM) -> Normalized:
     """The song normalized with every family it has typed by `TYPED`, so no request is open."""
-    families = {
-        match.articulation.name.split(".")[0]
-        for note in midi.notes
-        for match in kit.read(note.pitch, note.velocity, note.channel)
-    }
+    families = {note.family for note in normalize(midi, kit).score.notes}
     result = normalize(midi, kit, hit_types=dict.fromkeys(families, TYPED))
     assert result.complete
     return result
@@ -71,3 +74,90 @@ def rock(bars: int, *, start: int = 0) -> list[Hit]:
         hits.extend([(at, KICK), (at + 2 * PPQ, KICK), (at + PPQ, SNARE), (at + 3 * PPQ, SNARE)])
         hits.extend((at + eighth * PPQ // 2, HAT) for eighth in range(8))
     return hits
+
+
+def plan_for(
+    midi: MidiSong,
+    result: Normalized,
+    *,
+    cuts: Iterable[int] = (),
+    sections: Mapping[int, ControlVector] | None = None,
+    controls: ControlVector | None = None,
+    seed: int = 1,
+) -> SessionPlan:
+    """A plan whose sections start at bar 0 and at each cut inside the drums' bars, with the
+    controls `sections` gives by section number."""
+    bars = drum_bars(midi, result.score)
+    edges = sorted({0, bars, *(cut for cut in cuts if 0 < cut < bars)})
+    given = sections or {}
+    return SessionPlan(
+        seed=seed,
+        controls=controls or ControlVector(),
+        sections=tuple(
+            SectionPlan(
+                start=start,
+                bars=end - start,
+                group="A",
+                controls=given.get(number, ControlVector()),
+            )
+            for number, (start, end) in enumerate(pairwise(edges))
+        ),
+    )
+
+
+def rendered(
+    midi: MidiSong,
+    plan: SessionPlan,
+    *,
+    kit: DrumKit = GM,
+    target: DrumKit = GM,
+    substitutions: Mapping[str, str] | None = None,
+    result: Normalized | None = None,
+) -> Rendered:
+    """The song rendered by the plan, read with `kit` and written to `target`."""
+    result = result or normalized(midi, kit)
+    placement = place_score(result.score, kit, target, substitutions)
+    assert placement.complete, placement.decisions
+    return render(midi, result, placement, plan)
+
+
+PITCHES = (KICK, SNARE, SIDESTICK, HAT, PEDAL, OPEN_HAT, RIDE, BELL, CRASH, CHINA, TOM_1, TOM_2)
+
+
+@st.composite
+def grooves(draw: st.DrawFn, pitches: Sequence[int] = PITCHES, max_bars: int = 6) -> list[Hit]:
+    """Hits on the 16th grid of up to `max_bars` bars, each soft, normal or accent."""
+    bars = draw(st.integers(1, max_bars))
+    hits = draw(
+        st.lists(
+            st.tuples(
+                st.integers(0, 16 * bars - 1),
+                st.sampled_from(pitches),
+                st.sampled_from((SOFT, NORMAL, ACCENT)),
+            ),
+            min_size=1,
+            max_size=12 * bars,
+            unique_by=lambda hit: (hit[0], hit[1]),
+        )
+    )
+    return [(step * SIXTEENTH, pitch, velocity) for step, pitch, velocity in hits]
+
+
+_units = st.none() | st.floats(0, 1)
+ARCS: tuple[Arc, ...] = ("steady", "build", "drop")
+
+
+@st.composite
+def control_vectors(draw: st.DrawFn, skip: bool = True) -> ControlVector:
+    """Any controls, each maybe unset, with `skip` drawn only when `skip` is set."""
+    return ControlVector(
+        energy=draw(_units),
+        groove=draw(_units),
+        dynamic_range=draw(_units),
+        tightness=draw(_units),
+        feel=draw(st.none() | st.floats(-1, 1)),
+        arc=draw(st.none() | st.sampled_from(ARCS)),
+        fill_intensity=draw(_units),
+        ghost_level=draw(_units),
+        skip=draw(st.none() | st.booleans()) if skip else None,
+    )
