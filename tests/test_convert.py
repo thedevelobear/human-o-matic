@@ -15,6 +15,7 @@ from human_o_matic.maps.convert import (
     Step,
     StepKind,
     convert,
+    place,
     resolve_name,
     substitute_piece,
 )
@@ -141,6 +142,25 @@ def test_each_fallback_step_is_reported(
     assert one(conversion).steps == expected
     assert conversion.inexact == conversion.rows
     assert conversion.notes[0].pitch == small.write(used).pitch
+
+
+def test_a_note_is_placed_by_a_pick_then_the_fallback_order_then_a_reason_to_ask(
+    kits: tuple[DrumKit, DrumKit],
+) -> None:
+    big, small = kits
+    found: dict[str, Resolution] = {}
+    picked = {"sticks.hit": "snare.sidestick"}
+
+    def placed(key: str, controlled: bool = False) -> Resolution:
+        return place(key, controlled, big, small, picked, found)
+
+    assert placed("sticks.hit") == Resolution(
+        "snare.sidestick", (Step(kind="picked", asked="sticks.hit", used="snare.sidestick"),)
+    )
+    assert placed("snare.flam") == resolve_name("snare.flam", big, small)
+    assert placed("crash.1.choke") == Resolution(None, reason="articulation")
+    assert placed("hat.variable", controlled=True) == Resolution(None, reason="cc")
+    assert set(found) == {"snare.flam", "crash.1.choke"}
 
 
 def test_a_target_without_the_family_is_a_decision_request(

@@ -184,6 +184,35 @@ def _within_piece(name: CanonicalName, target: DrumKit, steps: list[Step]) -> Re
     return Resolution(default.text, tuple(steps))
 
 
+def place(
+    key: str,
+    controlled: bool,
+    source: DrumKit,
+    target: DrumKit,
+    picks: Mapping[str, str],
+    resolutions: dict[str, Resolution],
+) -> Resolution:
+    """Where the notes of one source articulation go in the target kit: the user's pick, else
+    the fallback order, else no target and the reason to ask.
+
+    `key` is a source articulation, or several joined by `|` when a controller value decides
+    among them, and `controlled` says whether a controller value decides or shapes it. `picks`
+    are the user's `substitutions`, and `resolutions` keeps the fallback order found per key, for
+    the requests. `convert` and the renderer both place notes with it.
+    """
+    choice = picks.get(key)
+    if choice is not None:
+        return Resolution(choice, (Step(kind="picked", asked=key, used=choice),))
+    if controlled:
+        return Resolution(None, reason="cc")
+    if key not in resolutions:
+        resolutions[key] = resolve_name(key, source, target)
+    resolution = resolutions[key]
+    if resolution.target is not None and target.write(resolution.target).cc is not None:
+        return Resolution(None, resolution.steps, reason="cc")
+    return resolution
+
+
 def suggestions(name: str, source: DrumKit, target: DrumKit) -> tuple[str, ...]:
     """The target kit's articulations from other families that the vocabulary suggests for a
     source articulation. They are offered to the user, never applied."""
@@ -233,8 +262,8 @@ def convert(
     """
     if source.vocabulary is not target.vocabulary:
         raise ValueError("the two kits were loaded with different vocabularies")
-    picks = _checked(substitutions or {}, target)
-    pitch_picks = _checked(unmapped or {}, target)
+    picks = checked(substitutions or {}, target)
+    pitch_picks = checked(unmapped or {}, target)
     same_kit = source.ref == target.ref
     resolutions: dict[str, Resolution] = {}
     converted: list[Note] = []
@@ -252,37 +281,26 @@ def convert(
     for note in notes:
         matches = source.read(note.pitch, note.velocity, note.channel)
         if not matches:
-            key, confidence, controlled = f"note {note.pitch}", None, False
+            key, confidence = f"note {note.pitch}", None
             choice = pitch_picks.get(note.pitch)
             if choice is None:
                 unknown.setdefault(note.pitch, []).append(note)
                 pending.append(note)
                 continue
+            steps = (Step(kind="picked", asked=key, used=choice),)
         else:
             key = "|".join(match.articulation.name for match in matches)
             confidence = _lowest(match.articulation.confidence for match in matches)
+            if same_kit and key not in picks:
+                tally = tallies.setdefault((key, key), _Tally((), confidence, confidence))
+                tally.count += 1
+                converted.append(note)
+                origins.append((key, note.channel, note.pitch))
+                continue
             controlled = matches[0].binding.cc is not None or len(matches) > 1
-            choice = picks.get(key)
-        if choice is not None:
-            steps = (Step(kind="picked", asked=key, used=choice),)
-        elif same_kit:
-            tally = tallies.setdefault((key, key), _Tally((), confidence, confidence))
-            tally.count += 1
-            converted.append(note)
-            origins.append((key, note.channel, note.pitch))
-            continue
-        elif controlled:
-            wait("cc", key, note)
-            continue
-        else:
-            if key not in resolutions:
-                resolutions[key] = resolve_name(key, source, target)
-            resolution = resolutions[key]
+            resolution = place(key, controlled, source, target, picks, resolutions)
             if resolution.target is None:
                 wait(resolution.reason or "family", key, note)
-                continue
-            if target.write(resolution.target).cc is not None:
-                wait("cc", key, note)
                 continue
             choice, steps = resolution.target, resolution.steps
 
@@ -306,7 +324,7 @@ def convert(
     for (reason, key), held in waiting.items():
         resolution = resolutions.get(key, Resolution(None))
         decisions.append(
-            _conversion_request(reason, key, held, resolution, source, target, signatures)
+            conversion_request(reason, key, held, resolution, source, target, signatures)
         )
     rows = tuple(
         Row(
@@ -356,7 +374,9 @@ def _collisions(
     )
 
 
-def _checked[K](answers: Mapping[K, str], target: DrumKit) -> dict[K, str]:
+def checked[K](answers: Mapping[K, str], target: DrumKit) -> dict[K, str]:
+    """The answers, each an articulation of the target kit or `DROP`. Raises `ValueError` for
+    one the target kit doesn't have or that depends on a controller."""
     for key, answer in answers.items():
         if answer == DROP:
             continue
@@ -423,7 +443,7 @@ def _unmapped_request(
     )
 
 
-def _conversion_request(
+def conversion_request(
     reason: Reason,
     key: str,
     held: Sequence[Note],
@@ -432,6 +452,8 @@ def _conversion_request(
     target: DrumKit,
     signatures: TimeSignatureMap,
 ) -> DecisionRequest:
+    """The `conversion` request for the notes `held` of one source articulation, asked for
+    `reason`, with `resolution` the fallback order found for it."""
     first = key.split("|")[0]
     label = source.articulation(first).label if "|" not in key else None
     what = f"{label} ({key})" if label else key
