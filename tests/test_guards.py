@@ -172,3 +172,30 @@ def test_a_note_is_held_no_lower_than_1_below_the_lowest_where_its_drum_has_soft
 
     assert list(out) == [58, 60, 61, 60, 59]
     assert tally.frozen().unmet == 1
+
+
+def test_the_cap_wins_over_the_gap_after_a_kept_note_played_late() -> None:
+    # The kept note is 70 ms late, so 0.6 of the 125 ms gap would take the next to +20 ms.
+    slots = [slot(1000, section=0, kept=True, start=1134, order=1), slot(1240, section=1, order=2)]
+    tally = Tally()
+
+    timed = hold_timing(slots, np.array([0.0, 0.0]), TEMPO, tally)
+
+    offset = TEMPO.tick_to_ms(int(timed.starts[1])) - TEMPO.tick_to_ms(1240)
+    assert 11 < offset <= 12
+    assert timed.starts[1] > 1134
+    counts = tally.frozen()
+    assert (counts.unmet, counts.gap) == (1, 0)
+
+
+def test_the_cap_wins_over_the_gap_before_a_kept_note_played_early() -> None:
+    slots = [slot(1000, section=0, order=1), slot(1240, section=1, kept=True, start=1106, order=2)]
+    tally = Tally()
+
+    timed = hold_timing(slots, np.array([0.0, 0.0]), TEMPO, tally)
+
+    offset = TEMPO.tick_to_ms(int(timed.starts[0])) - TEMPO.tick_to_ms(1000)
+    assert -12 <= offset < -11
+    assert timed.starts[0] < 1106
+    counts = tally.frozen()
+    assert (counts.unmet, counts.gap) == (1, 0)

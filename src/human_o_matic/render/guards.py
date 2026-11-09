@@ -10,7 +10,9 @@ Timing, in turn:
 5. In time order, a note after another of its pitch in its own section, or after a note played as
    it came in, keeps `MIN_GAP_SHARE` of their grid gap and at least a tick, by moving later with
    its main note and graces. A note before one played as it came in keeps it by moving earlier.
-   When it can't keep both, the gap from the note before wins, and `unmet` counts it.
+   When it can't keep both, the gap from the note before wins, and `unmet` counts it. Next to a
+   note played as it came in, the cap wins over the gap, so the note stops at the cap with less
+   of its gap, a tick or more from the kept note, and `unmet` counts it, not `gap`.
 6. A note a controller value decides or shapes stays within its window, between the controller
    events around its source note (ADR 0053), which wins over the gap.
 7. Each note keeps its source length, at least a tick, and ends by the time the next note of its
@@ -104,7 +106,8 @@ class GuardCounts(BaseModel):
     gap: int = 0
     """Notes moved, later after a note of their pitch or earlier before a kept one, to keep
     their gap. A note that can't keep both gaps keeps the one from the note before, and counts
-    here and under `unmet`."""
+    here and under `unmet`. One the cap stops short of a kept note's gap counts only under
+    `unmet`."""
     controller: int = 0
     """Notes their controller window moved, which wins over the gap."""
     range: int = 0
@@ -114,8 +117,9 @@ class GuardCounts(BaseModel):
     nudged: int = 0
     """Velocities moved off a repeat, or onto their class at a boundary."""
     unmet: int = 0
-    """Notes a guard couldn't hold, as when a range is too narrow for it or both gaps can't be
-    kept. Each is also counted under the guard that moved it, if one did."""
+    """Notes a guard couldn't hold, as when a range is too narrow for it, both gaps can't be
+    kept, or the cap keeps a note short of a kept note's gap. Each is also counted under the
+    guard that moved it, if one did, but for the cap."""
 
 
 @dataclass(slots=True)
@@ -193,38 +197,68 @@ def hold_timing(
     starts[before] = 0
     earliest = np.maximum(np.floor(tempos.ms_to_ticks(grid_ms + lowest)), 0).astype(np.int64)
 
-    latest = np.full(count, np.iinfo(np.int64).max, dtype=np.int64)
-    """The latest tick each note may take before a note of its pitch played as it came in."""
-    for sequence in _sequences([slot.key for slot in slots]):
-        for earlier, later in pairwise(sequence):
-            if slots[later].kept and not slots[earlier].kept:
-                grid = slots[later].tick - slots[earlier].tick
-                latest[earlier] = starts[later] - max(1, ceil(MIN_GAP_SHARE * grid))
+    kept_after = {
+        earlier: later
+        for sequence in _sequences([slot.key for slot in slots])
+        for earlier, later in pairwise(sequence)
+        if slots[later].kept and not slots[earlier].kept
+    }
+    """For each rendered note followed on its pitch by a note played as it came in, that note."""
+    cap_low = np.ceil(tempos.ms_to_ticks(grid_ms - MAX_OFFSET_MS)).astype(np.int64)
+    cap_high = np.floor(tempos.ms_to_ticks(grid_ms + MAX_OFFSET_MS)).astype(np.int64)
+    """The earliest and latest ticks within the cap, for the gap to a kept note."""
 
+    # Each note moves by one shift with its main note and graces, and what bounds it wins in this
+    # order: the controller window; then a tick after a kept note before it and a tick before a
+    # kept note after it, so notes never reorder; then the cap, over the gap to a kept note; then
+    # the gap from the note before over the gap to a kept note after.
     last: dict[Key, int] = {}
     order = sorted(members, key=lambda unit: (min(slots[m].tick for m in members[unit]), unit))
     for unit in order:
         held = members[unit]
         if not slots[unit].kept:
-            gap_low, gap_high = -_FAR, _FAR
-            """The shifts that keep the gap from the note before and to a kept note after."""
+            before_low = -_FAR
+            """The shift that keeps the gap from the note before in the note's section."""
+            kept_low, kept_high = -_FAR, _FAR
+            """The shifts that keep the gap from a kept note before and to a kept note after."""
+            order_low, order_high = -_FAR, _FAR
+            """The shifts that keep a tick from a kept note either side."""
+            capped_low, capped_high = -_FAR, _FAR
+            """The shifts that keep the notes within the cap."""
             held_low, held_high = -_FAR, _FAR
             """The shifts that keep the notes within their controller windows."""
             for member in held:
                 slot = slots[member]
+                here = int(starts[member])
+                capped_low = max(capped_low, int(cap_low[member]) - here)
+                capped_high = min(capped_high, int(cap_high[member]) - here)
                 previous = last.get(slot.key)
                 if previous is not None and (
                     slots[previous].kept or slots[previous].section == slot.section
                 ):
                     grid = slot.tick - slots[previous].tick
                     least = int(starts[previous]) + max(1, ceil(MIN_GAP_SHARE * grid))
-                    gap_low = max(gap_low, least - int(starts[member]))
-                gap_high = min(gap_high, int(latest[member] - starts[member]))
+                    if slots[previous].kept:
+                        kept_low = max(kept_low, least - here)
+                        order_low = max(order_low, int(starts[previous]) + 1 - here)
+                    else:
+                        before_low = max(before_low, least - here)
+                after = kept_after.get(member)
+                if after is not None:
+                    grid = slots[after].tick - slot.tick
+                    most = int(starts[after]) - max(1, ceil(MIN_GAP_SHARE * grid))
+                    kept_high = min(kept_high, most - here)
+                    order_high = min(order_high, int(starts[after]) - 1 - here)
                 if slot.window is not None:
-                    held_low = max(held_low, slot.window[0] - int(starts[member]))
-                    held_high = min(held_high, slot.window[1] - int(starts[member]))
+                    held_low = max(held_low, slot.window[0] - here)
+                    held_high = min(held_high, slot.window[1] - here)
+            short = kept_low > capped_high or kept_high < capped_low
+            kept_low = max(min(kept_low, capped_high), order_low)
+            kept_high = min(max(kept_high, capped_low), order_high)
+            gap_low, gap_high = max(before_low, kept_low), kept_high
+            unmet = short
             if gap_low > gap_high:
-                tally.add("unmet")
+                unmet = True
                 gapped = gap_low
             else:
                 gapped = min(max(0, gap_low), gap_high)
@@ -232,9 +266,11 @@ def hold_timing(
             if shift != gapped:
                 tally.add("controller")
                 if gap_low <= gap_high and not gap_low <= shift <= gap_high:
-                    tally.add("unmet")
-            elif shift:
+                    unmet = True
+            elif shift and not short:
                 tally.add("gap")
+            if unmet:
+                tally.add("unmet")
             starts[held] += shift
         for member in held:
             last[slots[member].key] = member

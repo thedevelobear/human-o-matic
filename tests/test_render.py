@@ -632,3 +632,23 @@ def test_a_drum_s_neighbours_across_a_boundary_differ_on_pitches_it_doesn_t_shar
     for seed in range(4):
         plan = plan_for(midi, result, cuts=range(1, 32), controls=flat, seed=seed)
         neighbours_differ(rendered(midi, plan, result=result))
+
+
+def test_the_cap_holds_after_a_kept_hat_played_far_late_on_a_slow_32nd_grid() -> None:
+    # At 30 BPM a 32nd is 250 ms. The kept bar's last hat is played about 115 ms after the 32nd
+    # point it is read on, so keeping 0.6 of the gap would take the next hat to about +15 ms.
+    late = round(0.73 * 500 / (60_000 / 30 / PPQ))
+    hits: list[Hit] = [(0, KICK), (BAR, KICK), (2 * BAR, KICK)]
+    hits.extend((step * SIXTEENTH + (late if step == 15 else 0), HAT) for step in range(32))
+    midi = song(hits, bpm=30)
+    result = normalized(midi)
+    plan = plan_for(midi, result, cuts=(1,), sections={0: ControlVector(skip=True)})
+
+    out = rendered(midi, plan, result=result)
+
+    kept = [note for note in out.notes if note.kept and note.note.pitch == HAT][-1]
+    first = next(note for note in out.notes if not note.kept and note.note.pitch == HAT)
+    assert kept.offset_ms > 110
+    assert first.offset_ms <= 12
+    assert first.note.start > kept.note.start
+    assert out.guards.unmet == 1
