@@ -158,6 +158,22 @@ def test_markers_in_the_file_set_the_printed_sections(tmp_path: Path) -> None:
     assert [section["start"] for section in out["sections"]] == [0, 4]
 
 
+def test_the_sections_are_printed_while_a_request_is_open(tmp_path: Path) -> None:
+    song = drums(tmp_path, [*bars_of(("rock", 8), ("ride", 8)), (0, UNMAPPED, 100)])
+
+    result = analyze(song, "--from-map", "gm")
+
+    assert result.exit_code == EXIT_OPEN
+    out = output(result)
+    assert list(out) == ["summary", "sections", "decisions"]
+    assert "unmapped_notes" in kinds(result)
+    assert out["summary"]["sections"] == {"count": 2, "source": "drums"}
+    assert out["sections"] == [
+        {"start": 0, "bars": 8, "group": "A"},
+        {"start": 8, "bars": 8, "group": "B"},
+    ]
+
+
 def test_the_output_is_one_line_of_compact_json(tmp_path: Path) -> None:
     result = analyze(drums(tmp_path, GROOVE), "--from-map", "gm")
 
