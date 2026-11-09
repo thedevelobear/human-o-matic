@@ -18,12 +18,14 @@ from grooves import (
     GM,
     HAT,
     KICK,
+    LENGTHS,
     NORMAL,
     PPQ,
     RIDE,
     SIXTEENTH,
     SNARE,
     SOFT,
+    TEMPOS,
     TOM_1,
     TOM_2,
     Hit,
@@ -35,12 +37,12 @@ from grooves import (
     rock,
     song,
 )
-from human_o_matic.controls import ControlVector
+from human_o_matic.controls import ControlVector, SessionPlan
 from human_o_matic.maps.convert import DROP
 from human_o_matic.midi.io import MidiSong, Note, midi_bytes, parse_midi
 from human_o_matic.normalize.answers import AnswerError
+from human_o_matic.normalize.score import Normalized
 from human_o_matic.render.engine import Rendered, RenderedNote, drift, render
-from human_o_matic.render.guards import MAX_OFFSET_MS, MIN_GAP_SHARE
 from human_o_matic.render.target import place_score
 from map_files import articulation, load_kit
 from midi_files import MidoMessage, build, cc, end, name, off, on, tempo, track
@@ -48,6 +50,10 @@ from midi_files import MidoMessage, build, cc, end, name, off, on, tempo, track
 FLAM = round(PPQ * 30 / 500)
 """30 ms at 120 BPM: a grace's gap before its main."""
 CUTS = st.lists(st.integers(1, 5), max_size=3)
+CAP_MS = 12.0
+"""The plan's cap on an offset from the grid."""
+GAP_SHARE = 0.6
+"""The share of its grid gap the plan says a note keeps from the one before it on its pitch."""
 
 
 def by_key(notes: Sequence[RenderedNote], key: str) -> dict[object, list[RenderedNote]]:
@@ -162,16 +168,40 @@ def test_input_velocities_and_timing_change_nothing_but_the_hit_types(
     )
 
 
-@given(grooves(), CUTS, st.data())
-def test_notes_on_one_pitch_keep_their_order_and_most_of_their_grid_gap(
-    hits: list[Hit], cuts: list[int], data: st.DataObject
-) -> None:
-    midi = song(hits)
-    result = normalized(midi)
+def at_corners(
+    data: st.DataObject,
+    midi: MidiSong,
+    result: Normalized,
+    cuts: list[int],
+    *,
+    loose: bool = False,
+) -> SessionPlan:
+    """A plan whose sections' controls are drawn at their ends often, where the guards bind.
+    `loose` sets the song's tightness to 0 and its feel to -1 or +1, under the sections'."""
     count = len(plan_for(midi, result, cuts=cuts).sections)
-    controls = {n: data.draw(control_vectors(), label=f"section {n}") for n in range(count)}
+    controls = {
+        number: data.draw(control_vectors(corners=True), label=f"section {number}")
+        for number in range(count)
+    }
+    song_controls = None
+    if loose:
+        feel = data.draw(st.sampled_from((-1.0, 1.0)), label="feel")
+        song_controls = ControlVector(tightness=0.0, feel=feel)
+    return plan_for(midi, result, cuts=cuts, sections=controls, controls=song_controls)
 
-    out = rendered(midi, plan_for(midi, result, cuts=cuts, sections=controls))
+
+DENSE = grooves((KICK, SNARE, HAT), per_bar=36)
+"""Grooves on three drums, so notes on one pitch are often a 16th apart."""
+
+
+@given(DENSE, CUTS, TEMPOS, LENGTHS, st.data())
+def test_notes_on_one_pitch_keep_their_order_and_most_of_their_grid_gap(
+    hits: list[Hit], cuts: list[int], bpm: float, length: int, data: st.DataObject
+) -> None:
+    midi = song(hits, bpm=bpm, length=length)
+    result = normalized(midi)
+
+    out = rendered(midi, at_corners(data, midi, result, cuts, loose=True))
 
     for notes in by_key(out.notes, "pitch").values():
         for earlier, later in pairwise(notes):
@@ -181,39 +211,45 @@ def test_notes_on_one_pitch_keep_their_order_and_most_of_their_grid_gap(
                 result.score.notes[later.position].tick - result.score.notes[earlier.position].tick
             )
             assert later.note.start > earlier.note.start
-            assert later.note.start - earlier.note.start >= MIN_GAP_SHARE * grid - 1
-            assert earlier.note.end <= later.note.start
+            assert later.note.start - earlier.note.start >= GAP_SHARE * grid - 1
+            if not earlier.kept:
+                assert earlier.note.end <= later.note.start
 
 
 @given(
-    grooves(max_bars=4),
-    st.lists(st.tuples(st.integers(1, 4 * 16 - 1), st.floats(30, 300)), max_size=60),
+    grooves((KICK, SNARE, HAT), max_bars=4),
+    TEMPOS,
+    st.lists(st.tuples(st.integers(1, 4 * 64 - 1), TEMPOS), max_size=120),
     CUTS,
+    st.data(),
 )
 def test_offsets_stay_within_the_cap_at_every_tempo(
-    hits: list[Hit], tempos: list[tuple[int, float]], cuts: list[int]
+    hits: list[Hit],
+    bpm: float,
+    tempos: list[tuple[int, float]],
+    cuts: list[int],
+    data: st.DataObject,
 ) -> None:
-    midi = song(hits, tempos=[(step * SIXTEENTH // 4, bpm) for step, bpm in tempos])
+    changes = [(step * SIXTEENTH // 4, value) for step, value in tempos]
+    midi = song(hits, bpm=bpm, tempos=changes)
     result = normalized(midi)
 
-    out = rendered(midi, plan_for(midi, result, cuts=cuts))
+    out = rendered(midi, at_corners(data, midi, result, cuts, loose=True))
 
     for note in out.notes:
         tick = result.score.notes[note.position].tick
         slack = 2 * result.score.tempos.ms_per_tick(tick)
-        assert abs(note.offset_ms) <= MAX_OFFSET_MS + slack
+        assert abs(note.offset_ms) <= CAP_MS + slack
 
 
-@given(grooves(), CUTS, st.data())
+@given(grooves((KICK, SNARE, CRASH, TOM_1), velocities=(NORMAL, NORMAL, SOFT)), CUTS, st.data())
 def test_velocities_are_1_to_127_and_never_repeat_on_a_pitch_or_a_drum(
     hits: list[Hit], cuts: list[int], data: st.DataObject
 ) -> None:
     midi = song(hits)
     result = normalized(midi)
-    count = len(plan_for(midi, result, cuts=cuts).sections)
-    controls = {n: data.draw(control_vectors(), label=f"section {n}") for n in range(count)}
 
-    out = rendered(midi, plan_for(midi, result, cuts=cuts, sections=controls))
+    out = rendered(midi, at_corners(data, midi, result, cuts))
 
     assert all(1 <= note.note.velocity <= 127 for note in out.notes)
     for key in ("pitch", "drum"):
@@ -223,17 +259,32 @@ def test_velocities_are_1_to_127_and_never_repeat_on_a_pitch_or_a_drum(
                     assert earlier.note.velocity != later.note.velocity
 
 
-@given(grooves(), CUTS, st.data())
-def test_soft_notes_land_below_the_other_notes_of_their_drum_in_a_section(
-    hits: list[Hit], cuts: list[int], data: st.DataObject
-) -> None:
-    midi = song(hits)
+@pytest.mark.parametrize("cuts", [(), tuple(range(1, 32))])
+def test_16ths_at_600_bpm_played_loose_keep_most_of_their_gap(cuts: tuple[int, ...]) -> None:
+    midi = song([(step * SIXTEENTH, HAT) for step in range(32 * 16)], bpm=600)
     result = normalized(midi)
-    count = len(plan_for(midi, result, cuts=cuts).sections)
-    controls = {n: data.draw(control_vectors(), label=f"section {n}") for n in range(count)}
+    loose = ControlVector(tightness=0.0, feel=1.0)
 
-    out = rendered(midi, plan_for(midi, result, cuts=cuts, sections=controls))
+    for seed in range(4):
+        plan = plan_for(midi, result, cuts=cuts, controls=loose, seed=seed)
+        starts = [note.note.start for note in rendered(midi, plan, result=result).notes]
+        gaps = [later - earlier for earlier, later in pairwise(starts)]
+        assert min(gaps) >= GAP_SHARE * SIXTEENTH - 1
 
+
+def test_neighbours_across_a_boundary_never_share_a_velocity() -> None:
+    midi = song([(beat * PPQ, KICK) for beat in range(4 * 32)])
+    result = normalized(midi)
+    flat = ControlVector(dynamic_range=0.0)
+
+    for seed in range(4):
+        plan = plan_for(midi, result, cuts=range(1, 32), controls=flat, seed=seed)
+        kicks = [note.note.velocity for note in rendered(midi, plan, result=result).notes]
+        assert all(earlier != later for earlier, later in pairwise(kicks))
+
+
+def soft_below(out: Rendered) -> None:
+    """Every soft note is below every other note of its drum in its section."""
     places: dict[tuple[int, str, int], tuple[list[int], list[int]]] = {}
     for note in out.notes:
         if not note.kept:
@@ -242,6 +293,35 @@ def test_soft_notes_land_below_the_other_notes_of_their_drum_in_a_section(
     for soft, other in places.values():
         if soft and other:
             assert max(soft) < min(other)
+
+
+@given(grooves(), CUTS, st.data())
+def test_soft_notes_land_below_the_other_notes_of_their_drum_in_a_section(
+    hits: list[Hit], cuts: list[int], data: st.DataObject
+) -> None:
+    midi = song(hits)
+    result = normalized(midi)
+
+    soft_below(rendered(midi, at_corners(data, midi, result, cuts)))
+
+
+def test_soft_notes_are_held_below_where_their_center_meets_the_others() -> None:
+    hits: list[Hit] = []
+    for bar in range(8):
+        hits.extend(
+            (bar * BAR + step * SIXTEENTH, SNARE, SOFT if step % 4 else NORMAL)
+            for step in range(16)
+        )
+    midi = song(hits)
+    result = normalized(midi)
+    corner = ControlVector(energy=0.0, ghost_level=1.0, groove=1.0, dynamic_range=1.0)
+
+    held = 0
+    for seed in range(4):
+        out = rendered(midi, plan_for(midi, result, controls=corner, seed=seed), result=result)
+        soft_below(out)
+        held += out.guards.soft
+    assert held > 0
 
 
 def test_rider_hits_alternate_strong_and_weak_about_three_times_in_four() -> None:
@@ -454,3 +534,15 @@ def test_a_velocity_range_of_one_value_wins_over_no_repeats(tmp_path: Path) -> N
 
     assert {note.note.velocity for note in out.notes if note.note.pitch == 24} == {64}
     assert out.guards.unmet > 0
+
+
+def test_loud_notes_next_to_a_boundary_find_a_velocity_of_their_class_that_doesn_t_repeat() -> None:
+    midi = song([(0, KICK), (SIXTEENTH, KICK), (2 * SIXTEENTH, KICK), (2 * BAR, KICK)])
+    result = normalized(midi)
+    loud = ControlVector(energy=1.0, dynamic_range=1.0, arc="drop")
+
+    out = rendered(midi, plan_for(midi, result, cuts=(2,), sections={0: loud}))
+
+    kicks = [note.note.velocity for note in out.notes]
+    assert all(earlier != later for earlier, later in pairwise(kicks))
+    assert out.guards.unmet == 0

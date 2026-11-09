@@ -131,39 +131,57 @@ PITCHES = (KICK, SNARE, SIDESTICK, HAT, PEDAL, OPEN_HAT, RIDE, BELL, CRASH, CHIN
 
 
 @st.composite
-def grooves(draw: st.DrawFn, pitches: Sequence[int] = PITCHES, max_bars: int = 6) -> list[Hit]:
-    """Hits on the 16th grid of up to `max_bars` bars, each soft, normal or accent."""
+def grooves(
+    draw: st.DrawFn,
+    pitches: Sequence[int] = PITCHES,
+    max_bars: int = 6,
+    velocities: Sequence[int] = (SOFT, NORMAL, ACCENT),
+    per_bar: int = 12,
+) -> list[Hit]:
+    """Hits on the 16th grid of up to `max_bars` bars, at most `per_bar` to a bar, each soft,
+    normal or accent."""
     bars = draw(st.integers(1, max_bars))
     hits = draw(
         st.lists(
             st.tuples(
                 st.integers(0, 16 * bars - 1),
                 st.sampled_from(pitches),
-                st.sampled_from((SOFT, NORMAL, ACCENT)),
+                st.sampled_from(velocities),
             ),
             min_size=1,
-            max_size=12 * bars,
+            max_size=per_bar * bars,
             unique_by=lambda hit: (hit[0], hit[1]),
         )
     )
     return [(step * SIXTEENTH, pitch, velocity) for step, pitch, velocity in hits]
 
 
+TEMPOS = st.just(600.0) | st.floats(60, 600)
+"""Tempos up to 600 BPM, half of them at 600, where a 16th is 25 ms and the 60% gap binds."""
+LENGTHS = st.sampled_from((10, 2 * BAR)) | st.integers(1, 2 * BAR)
+"""Note lengths up to 2 bars, so notes on one pitch overlap and their ends are trimmed."""
+
+
 _units = st.none() | st.floats(0, 1)
+_corners = st.none() | st.sampled_from((0.0, 1.0)) | st.floats(0, 1)
+"""Controls that reach their ends often, where the guards bind."""
 ARCS: tuple[Arc, ...] = ("steady", "build", "drop")
 
 
 @st.composite
-def control_vectors(draw: st.DrawFn, skip: bool = True) -> ControlVector:
-    """Any controls, each maybe unset, with `skip` drawn only when `skip` is set."""
+def control_vectors(draw: st.DrawFn, skip: bool = True, corners: bool = False) -> ControlVector:
+    """Any controls, each maybe unset, with `skip` drawn only when `skip` is set, and each at
+    its ends often when `corners` is set."""
+    units = _corners if corners else _units
+    feel = st.none() | st.sampled_from((-1.0, 1.0)) | st.floats(-1, 1) if corners else None
     return ControlVector(
-        energy=draw(_units),
-        groove=draw(_units),
-        dynamic_range=draw(_units),
-        tightness=draw(_units),
-        feel=draw(st.none() | st.floats(-1, 1)),
+        energy=draw(units),
+        groove=draw(units),
+        dynamic_range=draw(units),
+        tightness=draw(units),
+        feel=draw(feel if feel is not None else st.none() | st.floats(-1, 1)),
         arc=draw(st.none() | st.sampled_from(ARCS)),
-        fill_intensity=draw(_units),
-        ghost_level=draw(_units),
+        fill_intensity=draw(units),
+        ghost_level=draw(units),
         skip=draw(st.none() | st.booleans()) if skip else None,
     )
