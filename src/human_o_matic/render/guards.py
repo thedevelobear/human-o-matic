@@ -19,8 +19,8 @@ Timing, in turn:
 Velocity, in turn:
 1. A draw above 127 is reflected below it, and one below the note's floor above it.
 2. It is rounded, and moved into its articulation's velocity range.
-3. Per section and drum, soft-typed notes are held at least 2 below the lowest other note, and
-   the others no lower than 1 below it, so soft notes stay below them.
+3. Per section and drum with soft-typed notes, they are held at least 2 below the lowest other
+   note, and the others no lower than 1 below it, so soft notes stay below them.
 4. In play order, no note takes the velocity of the note before it on its pitch, or before it
    on its drum, when that note is in its section or played as it came in, nor that of a note
    after it played as it came in. A note next to a note of another rendered section, on its
@@ -294,10 +294,12 @@ def hold_velocity(
         tally.add("range", int(moved != value))
         out[position] = moved
 
+    softened = {(slot.section, slot.drum) for slot in slots if not slot.kept and slot.soft}
+    """The sections' drums that have soft notes, where the others are held above them."""
     lowest: dict[tuple[int, Drum], int] = {}
     for position, slot in enumerate(slots):
-        if not slot.kept and not slot.soft:
-            place = (slot.section, slot.drum)
+        place = (slot.section, slot.drum)
+        if not slot.kept and not slot.soft and place in softened:
             lowest[place] = min(lowest.get(place, 128), int(out[position]))
     bounds: list[tuple[int, int]] = []
     for position, slot in enumerate(slots):
