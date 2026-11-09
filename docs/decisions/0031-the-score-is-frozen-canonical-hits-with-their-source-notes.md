@@ -1,6 +1,6 @@
 # 0031. The score is frozen canonical hits on a grid that keep their source notes
 
-- **Status:** Accepted
+- **Status:** Accepted. Its wait for controllers in M3 is amended by [ADR 0053](0053-a-controller-bound-note-keeps-its-controller-value.md)
 - **Date:** 2026-11-08
 
 - `normalize.pipeline.normalize(song, kit, ...)` reads the drum track ([ADR 0017](0017-the-drums-are-one-whole-track.md)) through a built-in kit, quantizes it ([ADR 0026](0026-a-grid-per-beat-by-timing-error-and-complexity.md) to [ADR 0028](0028-limbs-within-20-ms-share-a-grid-point.md)) and types its hits ([ADR 0030](0030-hit-types-cluster-each-familys-velocities.md)). A missing tempo or an unclear drum track raises, as before ([ADR 0016](0016-tempo-and-time-signatures.md)). The `unmapped_notes`, `ambiguous_bars` and `hit_types` requests are returned with the score, in that order, and each is answered by calling again with the argument it names.

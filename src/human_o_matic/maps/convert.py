@@ -15,7 +15,7 @@ source notes that start on one target pitch and channel at the same tick, as whe
 are re-spread onto fewer. They keep their pitches. A hit never leaves its family unless the user
 picks a substitute. These are decision requests instead: a target that lacks the family, a
 target that lacks an `ask_if_missing` articulation, an articulation that depends on a controller
-value, which M1 doesn't follow (ADR 0009), and notes the source kit doesn't map at all.
+value, which isn't followed or written (ADR 0053), and notes the source kit doesn't map at all.
 
 The answers come back as `substitutions`, from a source articulation to the target articulation
 it becomes, and `unmapped`, from a source pitch to the target articulation. Either may be `DROP`,
@@ -383,7 +383,7 @@ def checked[K](answers: Mapping[K, str], target: DrumKit) -> dict[K, str]:
         if answer not in target:
             raise ValueError(f"{key}: {target.label} has no {answer}")
         if target.write(answer).cc is not None:
-            raise ValueError(f"{key}: {answer} depends on a controller, which M1 doesn't write")
+            raise ValueError(f"{key}: {answer} depends on a controller, which isn't written yet")
     return dict(answers)
 
 

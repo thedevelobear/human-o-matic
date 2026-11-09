@@ -6,7 +6,7 @@ each pitch with its channels, count and first positions, as conversion does (ADR
 answer is `unmapped`, from a pitch to an articulation of the kit or `DROP`, or another
 `from_map`, and an answer for a pitch with no unmapped note is an error. A note a controller
 value decides among several articulations keeps them all, joined by `|` as conversion keys
-them, since M1 doesn't follow controllers (ADR 0009). Notes read through a `low` confidence
+them, since controllers aren't followed (ADR 0053). Notes read through a `low` confidence
 articulation are counted per articulation, so the agent can confirm the names with the user
 (ADR 0025).
 """

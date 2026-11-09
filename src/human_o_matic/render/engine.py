@@ -24,6 +24,7 @@ from human_o_matic.midi.tempo import FloatArray
 from human_o_matic.normalize.hit_types import HitType
 from human_o_matic.normalize.score import Normalized
 from human_o_matic.render.backends.parametric import sample
+from human_o_matic.render.controllers import windows
 from human_o_matic.render.guards import GuardCounts, Slot, Tally, hold_timing, hold_velocity
 from human_o_matic.render.output import with_drums
 from human_o_matic.render.parts import Part, play_key
@@ -110,13 +111,11 @@ def render(
     plan: SessionPlan,
     *,
     instrument: Instrument = DRUMS,
-    windows: Sequence[tuple[int, int] | None] | None = None,
 ) -> Rendered:
     """Render the song's drums by the plan, written as `placement` places them.
 
-    `windows` are the controller windows of the score's notes (`render/controllers.py`). Raises
-    `ValueError` while notes wait for an `unmapped_notes` or `conversion` answer, and when the
-    plan's sections don't cover the drums' bars.
+    Raises `ValueError` while notes wait for an `unmapped_notes` or `conversion` answer, and
+    when the plan's sections don't cover the drums' bars.
     """
     if not normalized.complete:
         raise ValueError("drum notes wait for an unmapped_notes answer, so none can be rendered")
@@ -183,6 +182,7 @@ def render(
             offsets[position] = draw.offsets_ms[index] + timing[tick]
             strong[position] = draw.strong[index]
 
+    held_to = windows(song, score, placement)
     slot_of = {position: number for number, position in enumerate(order)}
     by_source = {note.source_index: position for position, note in enumerate(score.notes)}
     base = _after_orders(song, score.track)
@@ -210,7 +210,7 @@ def render(
                 velocity=placed.velocity,
                 order=note.source.order if own else base + number,
                 off_order=note.source.off_order if own else base + number,
-                window=windows[position] if windows is not None else None,
+                window=held_to[position],
             )
         )
     tally = Tally()

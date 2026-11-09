@@ -44,7 +44,7 @@ What was decided, specifically enough to check the code against.
 | [0006](decisions/0006-settings-block-pushes-and-publishing.md) | Claude Code's settings block pushes and publishing | Accepted |
 | [0007](decisions/0007-local-only-files-live-in-private.md) | Local-only files live in `private/`, which is never committed | Accepted |
 | [0008](decisions/0008-library-neutral-drum-maps.md) | Drum maps are library-neutral: library, kit and articulation | Accepted |
-| [0009](decisions/0009-m1-resolves-notes-channels-and-velocity-ranges.md) | M1 resolves notes, channels and velocity ranges, and CC-driven articulations wait for M3 | Accepted |
+| [0009](decisions/0009-m1-resolves-notes-channels-and-velocity-ranges.md) | M1 resolves notes, channels and velocity ranges, and CC-driven articulations wait for M3 | Accepted. Its line that controllers are resolved in M3 is amended by [ADR 0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) |
 | [0010](decisions/0010-built-in-maps-only.md) | Maps are built in, and this version loads no user-supplied map file | Accepted |
 | [0011](decisions/0011-m1-maps-for-general-midi-and-drum-libraries.md) | M1 ships a General MIDI map and maps for ten drum libraries | Accepted |
 | [0012](decisions/0012-runtime-dependencies-arrive-with-their-milestone.md) | M1 adds mido, numpy, pydantic and typer, and other runtime dependencies wait for their milestone | Accepted. Its line on `scipy` is amended by [ADR 0041](decisions/0041-m2-adds-no-runtime-dependency.md) |
@@ -56,7 +56,7 @@ What was decided, specifically enough to check the code against.
 | [0018](decisions/0018-mido-is-typed-by-a-local-stub.md) | mido is typed by a local stub in `typings/` | Accepted |
 | [0019](decisions/0019-canonical-names-follow-one-grammar.md) | Canonical articulation names follow one grammar, kept in a vocabulary file | Accepted |
 | [0020](decisions/0020-map-files-are-toml-checked-when-they-load.md) | A map file is one library in TOML, and an ambiguous map fails to load | Accepted |
-| [0021](decisions/0021-conversion-falls-back-within-a-family.md) | Conversion falls back within a family, and asks instead of changing family | Accepted |
+| [0021](decisions/0021-conversion-falls-back-within-a-family.md) | Conversion falls back within a family, and asks instead of changing family | Accepted. Its wait for controllers in M3 is amended by [ADR 0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) |
 | [0022](decisions/0022-the-general-midi-map-follows-the-standard.md) | The General MIDI map follows the GM Level 1 percussion key map | Accepted |
 | [0023](decisions/0023-built-in-library-ids.md) | Built-in libraries have short kebab-case ids | Accepted |
 | [0024](decisions/0024-built-in-data-is-found-beside-the-source.md) | Built-in data is found in `data/` beside the source, by one function | Accepted |
@@ -66,7 +66,7 @@ What was decided, specifically enough to check the code against.
 | [0028](decisions/0028-limbs-within-20-ms-share-a-grid-point.md) | Hits on different drums within 20 ms, or half a 32nd at a fast tempo, share one grid point | Accepted |
 | [0029](decisions/0029-unclear-beats-are-one-ambiguous-bars-request.md) | A beat whose grid is unclear keeps its best guess, and all of them are one `ambiguous_bars` request | Accepted |
 | [0030](decisions/0030-hit-types-cluster-each-familys-velocities.md) | Hit types come from clear groups in each family's velocities, and anything else is normal and asked about | Accepted |
-| [0031](decisions/0031-the-score-is-frozen-canonical-hits-with-their-source-notes.md) | The score is frozen canonical hits on a grid that keep their source notes | Accepted |
+| [0031](decisions/0031-the-score-is-frozen-canonical-hits-with-their-source-notes.md) | The score is frozen canonical hits on a grid that keep their source notes | Accepted. Its wait for controllers in M3 is amended by [ADR 0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) |
 | [0032](decisions/0032-bpm-is-the-only-tempo-a-user-gives.md) | `bpm` is the only tempo a user gives, and there is no `tempo_map` argument | Accepted |
 | [0033](decisions/0033-analyze-takes-flags-and-an-answers-file-and-prints-json.md) | `human-o-matic analyze` takes flags and an answers file, and prints a summary and the requests as JSON | Accepted. Its printed line is amended by [ADR 0040](decisions/0040-analyze-prints-the-sections-and-its-exit-codes-stay.md) |
 | [0034](decisions/0034-the-m2-exit-is-scored-on-hand-labelled-section-starts.md) | The M2 exit is scored on hand-labelled section starts in `private/labels/` | Accepted |
@@ -88,3 +88,4 @@ What was decided, specifically enough to check the code against.
 | [0050](decisions/0050-guards-hold-every-backend-and-keep-each-section-independent.md) | The guards hold every backend's draws, and never make a section depend on another's | Proposed |
 | [0051](decisions/0051-the-tight-style-s-placeholders-fill-in-what-appendix-a-leaves-out.md) | The `tight` style's placeholders are Appendix A with the values it leaves out filled in | Proposed |
 | [0052](decisions/0052-each-control-is-tested-against-the-statistic-it-mainly-drives.md) | Each control is tested against the statistic it mainly drives, and the plan's properties have exact definitions | Proposed |
+| [0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) | A controller-bound note keeps its controller value, and following and writing controllers wait for a map that gives them | Proposed |

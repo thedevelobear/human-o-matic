@@ -1,6 +1,6 @@
 # 0009. M1 resolves notes, channels and velocity ranges, and CC-driven articulations wait for M3
 
-- **Status:** Accepted
+- **Status:** Accepted. Its line that controllers are resolved in M3 is amended by [ADR 0053](0053-a-controller-bound-note-keeps-its-controller-value.md)
 - **Date:** 2026-11-08
 
 - The map schema has every field of [ADR 0008](0008-library-neutral-drum-maps.md) from the start.
