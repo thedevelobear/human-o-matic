@@ -15,13 +15,7 @@ _PART = Part(role="other", limb="other")
 
 
 class Generic:
-    @property
-    def name(self) -> str:
-        return "generic"
-
-    @property
-    def controls(self) -> frozenset[str]:
-        return frozenset(Controls.model_fields) - {"fill_intensity"}
+    """Every note `other`, with no limb offset."""
 
     def parts(self, score: Score) -> tuple[Part, ...]:
         return tuple(_PART for _ in score.notes)

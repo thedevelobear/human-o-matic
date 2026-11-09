@@ -1,7 +1,7 @@
 """The instrument seam: what the engine asks of one kind of part (ADR 0045).
 
-An instrument gives each note of a score its part, says which controls change its render, and
-compiles a section's controls with a style. Normalizing, hit typing and the facts the agent reads
+An instrument gives each note of a score its part, and compiles a section's controls with a
+style: the two things `render()` calls. Normalizing, hit typing and the facts the agent reads
 are the drums' own for now, and join the seam when a second real instrument or M4 needs them.
 """
 
@@ -15,14 +15,6 @@ from human_o_matic.render.style import Style
 
 
 class Instrument(Protocol):
-    @property
-    def name(self) -> str: ...
-
-    @property
-    def controls(self) -> frozenset[str]:
-        """The names of the controls that change its render. The others are ignored."""
-        ...
-
     def parts(self, score: Score) -> tuple[Part, ...]:
         """Each note's part, in the order of `Score.notes`."""
         ...

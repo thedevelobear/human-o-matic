@@ -10,6 +10,7 @@ from human_o_matic.instruments.generic import GENERIC
 from human_o_matic.midi.io import MidiSong, midi_bytes
 from human_o_matic.normalize.score import Normalized
 from human_o_matic.render.engine import Rendered, render
+from human_o_matic.render.style import STYLES
 from human_o_matic.render.target import place_score
 
 
@@ -33,10 +34,13 @@ def rendered_by(
 
 def test_both_instruments_meet_the_seam() -> None:
     instruments: list[Instrument] = [DRUMS, GENERIC]
+    midi = with_fills(1)
+    score = normalized(midi).score
+    style = STYLES["tight"]
 
-    assert [instrument.name for instrument in instruments] == ["drums", "generic"]
-    assert "fill_intensity" in DRUMS.controls
-    assert "fill_intensity" not in GENERIC.controls
+    for instrument in instruments:
+        assert len(instrument.parts(score)) == len(score.notes)
+        assert instrument.compile(style.defaults, style).controls == style.defaults
 
 
 def test_generic_mode_plays_every_note_with_no_role_and_feel_moves_them_all() -> None:

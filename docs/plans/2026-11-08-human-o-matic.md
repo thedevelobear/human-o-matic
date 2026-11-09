@@ -160,7 +160,7 @@ Questions come from the agent, not the server. The server provides facts, sugges
 
 **Render determinism:** derive one random stream per section with `numpy.random.SeedSequence`, so re-rendering section 5 leaves sections 1 to 4 byte-identical. Long-memory drift is generated once for the whole song and only changes with the song seed. The same session JSON and seed always produce the same file ([ADR 0049](../decisions/0049-each-section-draws-from-its-own-seeded-stream.md)).
 
-**Instrument seam:** `Instrument` provides normalization rules, hit typing, facts, a control schema and a compiler. `drums` is the only real implementation. A small `generic` mode (dynamics and timing without roles) proves the seam works. Piano and guitar need their own analysis, so do not design for them further yet. As built, the seam has only what the engine calls: the controls that apply, each note's part, and the compiler ([ADR 0045](../decisions/0045-the-engine-is-render-modules-behind-a-small-instrument-seam.md)).
+**Instrument seam:** `Instrument` provides normalization rules, hit typing, facts, a control schema and a compiler. `drums` is the only real implementation. A small `generic` mode (dynamics and timing without roles) proves the seam works. Piano and guitar need their own analysis, so do not design for them further yet. As built, the seam has only what the engine calls, each note's part and the compiler, and the rest joins it when something calls it ([ADR 0045](../decisions/0045-the-engine-is-render-modules-behind-a-small-instrument-seam.md)).
 
 ### MCP tools
 

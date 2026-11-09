@@ -48,15 +48,7 @@ type Drum = tuple[str, int]
 
 
 class Drums:
-    """The drums: every control, and a role for each note."""
-
-    @property
-    def name(self) -> str:
-        return "drums"
-
-    @property
-    def controls(self) -> frozenset[str]:
-        return frozenset(Controls.model_fields)
+    """The drums: a role for each note."""
 
     def parts(self, score: Score) -> tuple[Part, ...]:
         return drum_parts(score)
