@@ -10,6 +10,7 @@ import pytest
 from human_o_matic.analyze.labels import Label, LabelError, measure, read_label, read_labels
 from human_o_matic.analyze.scoring import BoundaryScore
 from human_o_matic.midi.io import MidiSong, midi_bytes
+from human_o_matic.midi.tempo import MAX_BPM, MIN_BPM
 from test_sections import HALF, PPQ, ROCK, song
 
 META_TEMPO = 0x51
@@ -49,6 +50,15 @@ def test_a_label_file_is_read() -> None:
     assert not label.tuned
 
 
+@pytest.mark.parametrize(("written", "bpm"), [("3.577", MIN_BPM), ("60_000_000", MAX_BPM)])
+def test_a_label_takes_any_bpm_a_midi_tempo_event_can_hold(
+    tmp_path: Path, written: str, bpm: float
+) -> None:
+    path = label_file(tmp_path, LABEL.replace("bpm = 132", f"bpm = {written}"))
+
+    assert read_label(path).bpm == bpm == float(written.replace("_", ""))
+
+
 def test_a_label_file_is_read_from_toml(tmp_path: Path) -> None:
     label = read_label(label_file(tmp_path, LABEL))
 
@@ -67,7 +77,9 @@ def test_a_label_file_is_read_from_toml(tmp_path: Path) -> None:
         ("starts = [0, 8, 8]\n", "bar 8 comes after bar 8"),
         ("starts = [0, 8.0]\n", "starts.1: Input should be a valid integer"),
         ("bpm = 2\n", "bpm: Input should be greater than or equal to 3.577"),
+        ("bpm = 60_000_001\n", "bpm: Input should be less than or equal to 60000000"),
         ('bpm = "132"\n', "bpm: Input should be a valid number"),
+        ("bpm = true\n", "bpm: Input should be a valid number"),
         ("tuned = 1\n", "tuned: Input should be a valid boolean"),
         ("track = -1\n", "track: Input should be greater than or equal to 0"),
     ],
