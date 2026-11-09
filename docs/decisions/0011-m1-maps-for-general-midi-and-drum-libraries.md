@@ -1,6 +1,6 @@
 # 0011. M1 ships a General MIDI map and maps for ten drum libraries
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - M1 ships a General MIDI map, built from the General MIDI Level 1 percussion key map, and maps for ten libraries: IOF Drummer (`iof-drummer`), EZdrummer 3 (`ezdrummer-3`), Superior Drummer 3 (`superior-drummer-3`), Addictive Drums 2 (`addictive-drums-2`), SSD5 (`ssd5`), GGD Modern & Massive (`ggd-modern-and-massive`), NI Abbey Road (`ni-abbey-road`), Logic Pro Drums (`logic-pro-drums`), GarageBand Drums (`garageband-drums`) and Sleep Token II (`sleep-token-ii`).

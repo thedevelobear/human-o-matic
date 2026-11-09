@@ -1,6 +1,6 @@
 # 0014. Songs are worked on and written at the smallest multiple of their PPQ that is at least 960
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - A file is read at its working PPQ, and every song is written at it: the smallest whole multiple of the source PPQ that is at least 960. 96 and 480 become 960, 384 becomes 1152 and 100 becomes 1000. A PPQ of 960 or more is kept.

@@ -1,9 +1,10 @@
 """The command line: `human-o-matic analyze`, for tests and scripting.
 
-`analyze` reads a MIDI file through a built-in kit and normalizes its drums, then prints one line
-of compact JSON on stdout: a summary of what was found and the decision requests, each as the MCP
-layer returns it (`DecisionRequest.model_dump(mode="json")`). It never prints notes, only counts,
-bars and the requests, and it only reads: it writes no file and converts to no other kit.
+`analyze` reads a MIDI file through a built-in kit, normalizes its drums and finds their
+sections, then prints one line of compact JSON on stdout: a summary of what was found, the
+sections, and the decision requests, each as the MCP layer returns it
+(`DecisionRequest.model_dump(mode="json")`). It never prints notes, only counts, bars, sections
+and the requests, and it only reads: it writes no file and converts to no other kit.
 
 The requests are answered by running it again. `--from-map`, `--track` and `--bpm` are flags, and
 `--answers` names a JSON file holding `unmapped`, `grids` and `hit_types`, the other arguments a
@@ -27,9 +28,9 @@ import numpy as np
 import typer
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, JsonValue, ValidationError
 
+from human_o_matic.analyze.sections import Sections, SectionSource, drum_bars, find_sections
 from human_o_matic.decisions import DecisionRequest, DecisionRequired
-from human_o_matic.maps.kit import DrumKit
-from human_o_matic.maps.loader import built_in_maps
+from human_o_matic.maps.loader import find_kit
 from human_o_matic.midi.io import MidiFileError, MidiSong, read_midi
 from human_o_matic.midi.tempo import MAX_BPM, MICROSECONDS_PER_MINUTE, MIN_BPM, tempo_map
 from human_o_matic.midi.tracks import DrumTrackReason, choose_drum_track, track_name
@@ -115,13 +116,6 @@ def answer_problem(error: AnswerError) -> str:
     return f"{error.argument}.{where}: {error}"
 
 
-def find_kit(name: str) -> DrumKit:
-    """The built-in kit named `library/kit`, or `library` alone when it has one kit (ADR 0023).
-    Raises `KeyError` naming what exists."""
-    library, slash, kit = name.partition("/")
-    return built_in_maps().kit(library, kit if slash else None)
-
-
 class DrumTrack(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -187,6 +181,26 @@ class HitTypeCounts(BaseModel):
     """The notes whose type is a guess."""
 
 
+class SectionCounts(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    count: int
+    source: SectionSource
+    """`markers` when the file's markers set the sections, and `drums` when the drums did."""
+
+
+class SectionEntry(BaseModel):
+    """One section as `analyze` prints it."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    start: int
+    """Its first bar, counting from 0."""
+    bars: int
+    group: str
+    """Its repeat group, `A` for the first."""
+
+
 class Summary(BaseModel):
     """What `analyze` found, as counts. No note is listed."""
 
@@ -203,6 +217,7 @@ class Summary(BaseModel):
     time_signatures: TimeSignatures
     bars: int
     """From the start to the bar of the drum track's last note."""
+    sections: SectionCounts
     notes: NoteCounts
     beats: BeatCounts
     families: dict[str, int]
@@ -216,11 +231,12 @@ def summarize(
     file: str,
     song: MidiSong,
     normalized: Normalized,
+    sections: Sections,
     *,
     track: int | None = None,
     bpm: float | None = None,
 ) -> Summary:
-    """The summary of a song normalized with `track` and `bpm`."""
+    """The summary of a song normalized with `track` and `bpm`, and its sections."""
     score = normalized.score
     drums = [note for note in song.notes if note.track == score.track]
     bpms = MICROSECONDS_PER_MINUTE / score.tempos.tempos
@@ -248,7 +264,8 @@ def summarize(
             assumed=score.signatures.assumed,
             changes=tuple((bar, str(sig)) for _, bar, sig in score.signatures.changes),
         ),
-        bars=score.signatures.bar_at(max(note.start for note in drums)) + 1,
+        bars=drum_bars(song, score),
+        sections=SectionCounts(count=len(sections.sections), source=sections.source),
         notes=NoteCounts(
             read=len(drums),
             score=len(score.notes),
@@ -280,12 +297,21 @@ def _has_tempo(song: MidiSong) -> bool:
     return True
 
 
-def report(summary: Summary | None, decisions: Sequence[DecisionRequest]) -> str:
-    """The compact JSON `analyze` prints: the summary, unless no score was made, and the
-    decision requests."""
+def report(
+    summary: Summary | None, sections: Sections | None, decisions: Sequence[DecisionRequest]
+) -> str:
+    """The compact JSON `analyze` prints: the summary and the sections, unless no score was
+    made, and the decision requests."""
     out: dict[str, JsonValue] = {}
     if summary is not None:
         out["summary"] = summary.model_dump(mode="json")
+    if sections is not None:
+        out["sections"] = [
+            SectionEntry(start=section.start, bars=section.bars, group=section.group).model_dump(
+                mode="json"
+            )
+            for section in sections.sections
+        ]
     out["decisions"] = [request.model_dump(mode="json") for request in decisions]
     return json.dumps(out, separators=(",", ":"))
 
@@ -343,7 +369,8 @@ def analyze(
         ),
     ] = None,
 ) -> None:
-    """Normalize a song's drums, and print a summary and the decision requests as JSON."""
+    """Normalize a song's drums, find their sections, and print a summary, the sections and the
+    decision requests as JSON."""
     try:
         kit = find_kit(from_map)
     except KeyError as error:
@@ -375,13 +402,14 @@ def analyze(
             hit_types=given.hit_types,
         )
     except DecisionRequired as asked:
-        typer.echo(report(None, [asked.request]))
+        typer.echo(report(None, None, [asked.request]))
         raise typer.Exit(EXIT_OPEN) from None
     except MidiFileError as error:
         raise typer.BadParameter(str(error), param_hint="'MIDI_FILE'") from error
     except AnswerError as error:
         raise typer.BadParameter(answer_problem(error), param_hint="'--answers'") from error
-    summary = summarize(str(midi_file), song, normalized, track=track, bpm=bpm)
-    typer.echo(report(summary, normalized.decisions))
+    sections = find_sections(song, normalized.score)
+    summary = summarize(str(midi_file), song, normalized, sections, track=track, bpm=bpm)
+    typer.echo(report(summary, sections, normalized.decisions))
     if normalized.decisions:
         raise typer.Exit(EXIT_OPEN)

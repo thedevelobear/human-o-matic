@@ -1,6 +1,6 @@
 # 0029. A beat whose grid is unclear keeps its best guess, and all of them are one `ambiguous_bars` request
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - A beat is ambiguous when another grid that applies scores within 6 ms of the chosen one and would put one of its onsets on a different tick, or when an onset is more than 20 ms from its point on the chosen grid ([ADR 0026](0026-a-grid-per-beat-by-timing-error-and-complexity.md)). A grid that scores as well but moves no note is no alternative.

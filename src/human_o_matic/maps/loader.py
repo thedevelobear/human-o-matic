@@ -83,3 +83,10 @@ def built_in_maps() -> MapSet:
     if not directory.is_dir():
         raise MapError(f"the built-in maps are not at {directory}")
     return load_maps(directory, built_in_vocabulary())
+
+
+def find_kit(name: str) -> DrumKit:
+    """The built-in kit named `library/kit`, or `library` alone when it has one kit (ADR 0023).
+    Raises `KeyError` naming what exists."""
+    library, slash, kit = name.partition("/")
+    return built_in_maps().kit(library, kit if slash else None)

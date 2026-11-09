@@ -1,6 +1,6 @@
 # 0013. MIDI files are read into paired notes and raw events at absolute ticks
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - `midi/io.py` reads a format 0 or 1 file into a `MidiSong` of frozen dataclasses with absolute ticks. A `Note` has its track, channel, pitch, start and end ticks, velocity and release velocity. Every other message, including controllers, RPNs, pitch bend, aftertouch, program changes, sysex and meta events, is an `Event` that keeps its raw bytes. End of track is kept as a tick per track, and the writer adds the message.

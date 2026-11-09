@@ -1,6 +1,6 @@
 # 0020. A map file is one library in TOML, and an ambiguous map fails to load
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - Each built-in library is one TOML file in `data/maps/`, with `schema = 1`, a kebab-case `id`, a `name` and its `[[kits]]`. A kit has an `id`, a `name` and an optional output `channel`.

@@ -1,6 +1,6 @@
 # 0026. Each beat takes one of four grids, by its timing error in milliseconds plus a complexity penalty
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - `normalize/grid.py` chooses a grid for every beat that has notes. A beat is the time signature's denominator note ([ADR 0016](0016-tempo-and-time-signatures.md)). A beat with no notes has no grid.

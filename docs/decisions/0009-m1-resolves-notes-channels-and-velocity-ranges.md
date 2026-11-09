@@ -1,6 +1,6 @@
 # 0009. M1 resolves notes, channels and velocity ranges, and CC-driven articulations wait for M3
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - The map schema has every field of [ADR 0008](0008-library-neutral-drum-maps.md) from the start.

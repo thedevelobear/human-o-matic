@@ -1,6 +1,6 @@
 # 0033. `human-o-matic analyze` takes flags and an answers file, and prints a summary and the requests as JSON
 
-- **Status:** Proposed
+- **Status:** Accepted. Its printed line is amended by [ADR 0040](0040-analyze-prints-the-sections-and-its-exit-codes-stay.md)
 - **Date:** 2026-11-08
 
 - The console script `human-o-matic` is `human_o_matic.cli:app`, a typer app. `human-o-matic analyze MIDI_FILE --from-map LIBRARY[/KIT] [--track N] [--bpm BPM] [--answers FILE]` normalizes the song's drums ([ADR 0031](0031-the-score-is-frozen-canonical-hits-with-their-source-notes.md)). It only reads: it writes no file and converts to no other kit.

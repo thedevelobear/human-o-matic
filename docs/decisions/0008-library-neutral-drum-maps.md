@@ -1,6 +1,6 @@
 # 0008. Drum maps are library-neutral: library, kit and articulation
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - A map describes a library, its kits, and each kit's articulations. Each articulation has a canonical name, its MIDI note or notes, its velocity behavior, its CC behavior, its channel, and a source and confidence.

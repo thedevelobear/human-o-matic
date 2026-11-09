@@ -1,6 +1,6 @@
 # 0022. The General MIDI map follows the GM Level 1 percussion key map
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - `data/maps/gm.toml` (library `gm`, kit `default`, channel 10) maps notes 35 to 81 of the General MIDI Level 1 percussion key map, one articulation per note, each labelled with the standard's name for it. The standard is its only source.

@@ -1,6 +1,6 @@
 # 0025. A proposed name ships at low confidence, and only a check raises it
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - An articulation whose name is a proposal, inferred from where a library puts the note rather than named by a source, ships with `source = "inferred"` and `confidence = "low"`. That includes best guesses with little behind them: they ship, and stay `low`.

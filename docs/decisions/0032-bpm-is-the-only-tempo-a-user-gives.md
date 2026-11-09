@@ -1,6 +1,6 @@
 # 0032. `bpm` is the only tempo a user gives, and there is no `tempo_map` argument
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - No call takes a `tempo_map`. The file's own tempo events are read, a given `bpm` is a constant tempo that replaces them, and a file with no tempo and no `bpm` is a `tempo` decision request, as [ADR 0016](0016-tempo-and-time-signatures.md) sets out.
