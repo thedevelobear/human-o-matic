@@ -3,7 +3,9 @@
 committed (ADR 0007), and the test skips when it is missing or holds no label file.
 
 With fewer than `EXIT_TRACKS` labelled tracks it skips with the scores in its reason, which
-`pytest -m private -rs` shows, so a pass always means the exit holds.
+`pytest -m private -rs` shows, so a pass always means the exit holds. The scores name each track
+by its number in the label files' name order, never by its file, since the report may be passed
+on. A label file that is wrong is still named, so it can be fixed.
 """
 
 from pathlib import Path
@@ -18,12 +20,13 @@ LABELS = PRIVATE / "labels"
 
 
 def describe(results: list[Measured], total: Totals) -> str:
-    """Each track's scores, then the means and the pooled F1, on one line each."""
+    """Each track's scores, by its number from 1, then the means and the pooled F1, on one line
+    each."""
     lines = [
-        f"{result.path.stem}{' (tuned)' if result.label.tuned else ''}: "
+        f"track {number}{' (tuned)' if result.label.tuned else ''}: "
         f"precision {result.score.precision:.3f}, recall {result.score.recall:.3f}, "
         f"F1 {result.score.f1:.3f}"
-        for result in results
+        for number, result in enumerate(results, start=1)
     ]
     untuned = (
         f"{total.untuned_mean_f1:.3f} over {total.untuned} untuned"
