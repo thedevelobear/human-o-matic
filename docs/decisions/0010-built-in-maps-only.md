@@ -1,6 +1,6 @@
 # 0010. Maps are built in, and this version loads no user-supplied map file
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - The maps ship in `data/maps/`, and this version loads no map file from the user.

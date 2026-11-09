@@ -1,6 +1,6 @@
 # 0015. Unclear input is a decision request, raised as `DecisionRequired`
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - `human_o_matic/decisions.py` holds one shared type, the frozen pydantic model `DecisionRequest`: a `kind`, a plain-language `message`, `answer_with` (the arguments that settle it, such as `bpm` or `track`), `options` (each a `value` to pass back, a `label` and `details`) and `details`. `model_dump(mode="json")` gives its compact JSON.

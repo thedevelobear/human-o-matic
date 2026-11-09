@@ -1,6 +1,6 @@
 # 0018. mido is typed by a local stub in `typings/`
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - `typings/mido/__init__.pyi` declares only the part of mido the code uses, and pyright reads it through `stubPath`. Strict mode stays on for all of `src/`, with no ignore comments.

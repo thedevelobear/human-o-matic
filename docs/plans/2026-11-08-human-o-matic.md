@@ -1,8 +1,8 @@
 # human-o-matic: guided MIDI drum performance
 
-> **Status:** Active. M0 is merged, and M1 is in progress.
+> **Status:** Active. M0 and M1 are merged.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-09 (M1 on `feat/normalize`: MIDI I/O, tempo and the drum track choice built, ADRs 0013 to 0018 proposed; the map machinery, vocabulary, conversion and the General MIDI and Sleep Token II maps built, ADRs 0019 to 0024 proposed; local-only files kept in a gitignored `private/`, with ADR 0007 rewritten for it; maps for nine more libraries built in `private/`, the `sample` family and conversion collisions added, ADR 0025 proposed; the normalizer built: a grid per beat, graces, limbs on one grid point, ambiguous bars, hit types and the score, ADRs 0026 to 0031 proposed; `bpm` kept as the only tempo a user gives, with no `tempo_map` argument, ADR 0032 proposed; `human-o-matic analyze` built, ADR 0033 proposed; `bpm` limited to a range of tempos a MIDI tempo event can hold, and only an answer that doesn't fit the song made a usage error, in ADRs 0032 and 0033; the M1 exit criteria checked against the tests, and the test over every pair of shipped kits made to check the fallback order of each conversion).
+> Last updated: 2026-11-09 (M1 merged, ADRs 0008 to 0033 accepted).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 
@@ -13,7 +13,7 @@ Milestones are done in order, and work stops at each gate ([`AGENTS.md`](../../A
 | # | Milestone | Gate | Status |
 |---|---|---|---|
 | M0 | Setup | The checks pass on the scaffolding | Merged ([#1](https://github.com/thedevelobear/human-o-matic/pull/1)) |
-| M1 | Normalize | The M1 exit tests | In progress |
+| M1 | Normalize | The M1 exit tests | Merged ([#2](https://github.com/thedevelobear/human-o-matic/pull/2)) |
 | M2 | Sections | Boundary F1 of at least 0.70 on at least 10 tracks the owner has hand-labelled | Not started. Needs the owner's labelled tracks |
 | M3 | Parametric engine and calibration | Each control moves its statistic the right way, and the property tests pass | Not started |
 | M4 | MCP, skill and the main gate | The blind listening test, judged by the owner | Not started |

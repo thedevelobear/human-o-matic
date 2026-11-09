@@ -1,6 +1,6 @@
 # 0028. Hits on different drums within 20 ms, or half a 32nd at a fast tempo, share one grid point
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - Before grids are chosen, the hits that aren't graces are gathered into onsets in time order. A hit joins the current onset when it is within the limb window of the onset's first hit and on a drum the onset doesn't have yet, or under 5 ms after that drum's hit in it ([ADR 0027](0027-hits-on-one-drum-under-45-ms-apart-are-a-grace-and-its-main.md)). Otherwise it starts a new onset.

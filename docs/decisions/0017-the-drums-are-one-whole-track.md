@@ -1,6 +1,6 @@
 # 0017. The drums are one whole track, chosen by rules in turn
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - The drum part is every note of one track, on whatever channels they use, since a library can put articulations on several channels ([ADR 0008](0008-library-neutral-drum-maps.md)). Other tracks pass through unchanged.

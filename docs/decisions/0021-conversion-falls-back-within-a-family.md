@@ -1,6 +1,6 @@
 # 0021. Conversion falls back within a family, and asks instead of changing family
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - A note is read with the source kit, and its articulation is found in the target kit by, in turn: the exact name; piece substitution; the name without its last variant, one variant at a time (`hat.open.quarter.tip`, then `hat.open.quarter`, then `hat.open`); and the piece's default (`snare.flam` to `snare.center`, `ride.1.crash` to `ride.1.bow`, `crash.1.mute` to `crash.1.hit`).

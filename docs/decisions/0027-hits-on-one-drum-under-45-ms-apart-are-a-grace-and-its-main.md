@@ -1,6 +1,6 @@
 # 0027. Two hits on one drum from 5 ms to under 45 ms apart are a grace and its main, unless the gap is a grid step
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - A drum is a family and piece, such as `snare` or `tom.2`, whatever the articulation, so a center hit can be the grace of a rimshot.

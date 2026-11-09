@@ -1,6 +1,6 @@
 # 0016. Tempo and time signatures come from every track, and a missing tempo is asked for
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - Tempo and time signature events are read from every track, so a conductor track, or a tempo on another track from the notes, works in formats 0 and 1. At one tick the last event wins, in track order and then file order, as a sequencer plays them.

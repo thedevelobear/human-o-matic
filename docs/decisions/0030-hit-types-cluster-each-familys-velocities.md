@@ -1,6 +1,6 @@
 # 0030. Hit types come from clear groups in each family's velocities, and anything else is normal and asked about
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-08
 
 - `normalize/hit_types.py` types the notes of each drum family on their own. Their velocities are split into at most three groups by optimal one-dimensional k-means, an exact dynamic program over the distinct velocities, with numpy only. Three groups are tried, then two.
