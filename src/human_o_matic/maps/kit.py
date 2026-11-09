@@ -36,7 +36,7 @@ class Output:
     velocity: tuple[int, int]
     """The velocities the written note may have."""
     cc: Cc | None
-    """A controller the articulation depends on, which writing would need to set (M3)."""
+    """A controller the articulation depends on, which writing would need to set (ADR 0053)."""
 
 
 class DrumKit:
@@ -99,7 +99,7 @@ class DrumKit:
         """Every articulation a note can be, with `channel` counted from 0.
 
         None means the kit doesn't map the note. One match without a controller condition is
-        the articulation. Anything else depends on a controller value, which M1 doesn't follow:
+        the articulation. Anything else depends on a controller value, which isn't followed:
         several matches are told apart by `select` ranges, and one with a condition needs it.
         """
         return tuple(

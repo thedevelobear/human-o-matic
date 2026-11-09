@@ -1,8 +1,8 @@
 # human-o-matic: guided MIDI drum performance
 
-> **Status:** Active. M0 and M1 are merged, and M2 is in review.
+> **Status:** Active. M0 to M2 are merged, and M3's engine, the first of its three PRs, is in review.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-09 (M1 merged, ADRs 0008 to 0033 accepted; M2 on `feat/sections`: the labels and scoring of the M2 exit, and the section facts moved to M4, ADRs 0034 and 0035 proposed; the section detector, the label reader and the scoring built and measured on the three tuned tracks, and `analyze` printing the sections, ADRs 0036 to 0041 proposed; the detector's memory made to grow with a song's length, the measurement's report made to name tracks by number, and a status form for an ADR changed in part, ADR 0042 proposed; the exit measured on 10 labelled tracks and met, the measurement's report printed on a pass, ADR 0037's check on the untuned tracks recorded, and ADR 0038's reason for 0.8 and its silent sections corrected; M2 in review).
+> Last updated: 2026-11-09 (M2 merged, ADRs 0034 to 0042 accepted; M3 started as three PRs with three styles, ADRs 0043 and 0044 proposed; the engine built on `feat/engine`, with `human-o-matic render`, ADRs 0045 to 0054 proposed, and ADRs 0009, 0021 and 0031 amended by ADR 0053; the engine in review; after review, two guard fixes, a smaller instrument seam, tests that reach each guard, and the `skip` exception stated; a flam on the song's first tick kept apart, up to the cap).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 
@@ -14,8 +14,8 @@ Milestones are done in order, and work stops at each gate ([`AGENTS.md`](../../A
 |---|---|---|---|
 | M0 | Setup | The checks pass on the scaffolding | Merged ([#1](https://github.com/thedevelobear/human-o-matic/pull/1)) |
 | M1 | Normalize | The M1 exit tests | Merged ([#2](https://github.com/thedevelobear/human-o-matic/pull/2)) |
-| M2 | Sections | Boundary F1 of at least 0.70 on at least 10 tracks the owner has hand-labelled | In review |
-| M3 | Parametric engine and calibration | Each control moves its statistic the right way, and the property tests pass | Not started |
+| M2 | Sections | Boundary F1 of at least 0.70 on at least 10 tracks the owner has hand-labelled | Merged ([#3](https://github.com/thedevelobear/human-o-matic/pull/3)) |
+| M3 | Parametric engine and calibration | Each control moves its statistic the right way, and the property tests pass | In progress: the engine in review, the first of three PRs |
 | M4 | MCP, skill and the main gate | The blind listening test, judged by the owner | Not started |
 | M5 | Trained model experiment | Follows the controls and wins a blind test, judged by the owner | Not started. Not before M4 |
 | M6 | Added notes | The owner confirms the priority first | Not started |
@@ -64,7 +64,7 @@ Tooling: `uv`, `ruff`, `pyright`, `pytest`, `hypothesis`.
 
 **Guided beats black box, and measurements of performed drum MIDI support it.**
 - **Energy is not readable from note density.** Within a song, one drummer's snare level varies by a standard deviation of 8 to 20 velocity between grooves, yet its correlation with note density is only -0.06 to +0.30. Only density was tested, so another score feature might predict it, but asking the user is a direct way to get this information.
-- **Dynamics are what change per section; timing mostly is not.** Within a song, timing spread moves by only 0.3 to 3.1 ms between grooves, while between drummers it runs from 3 to 12 ms. So set tightness or drummer style once per song, and steer dynamics per section.
+- **Dynamics are what change per section; timing mostly is not.** Within a song, timing spread moves by only 0.3 to 3.1 ms between grooves, while between drummers it runs from 3 to 12 ms. So set the style and tightness once per song, and steer dynamics per section.
 - **The engine can work some things out itself.** Denser kick playing is often softer (r down to -0.76), so that needs no question.
 
 **Perception research says to be careful with timing.** Listeners [rate original-performance microtiming and fully quantized timing about equally](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5050221/), and exaggerated microtiming scores lower. On a rock pattern, [the accurate version rated best, early shifts were worse than late ones, and snare deviations were worse than kick deviations](https://journals.sagepub.com/doi/abs/10.1177/1029864913486793). So timing stays within performed magnitudes, leans late rather than early, and has to prove its value in the listening test. In contrast, [listeners prefer long-range correlated deviations over uncorrelated noise](https://news.harvard.edu/gazette/story/2012/07/when-the-beat-goes-off), so timing should drift, not jitter. [Drummers asked to play laid-back generally also played louder](https://www.researchgate.net/publication/282186017_Effects_of_instructed_timing_and_tempo_on_snare_drum_sound_in_drum_kit_performance), so timing feel and intensity should be linked.
@@ -129,21 +129,27 @@ Questions come from the agent, not the server. The server provides facts, sugges
     analyze/scoring.py    boundaries matched one to one within a bar, and their F1
     analyze/labels.py     hand-label files, and the detector measured on them
     analyze/facts.py      per-section facts and compact ASCII pattern for the agent, in M4
-    controls.py           pydantic ControlVector, SectionPlan, SessionPlan
+    controls.py           pydantic ControlVector, Controls, SectionPlan, SessionPlan
+    render/parts.py       each note's role and limb, and the play order
+    render/style.py       styles: the placeholder `tight` until calibration
     render/compiler.py    controls + style into per-role parameters
-    render/engine.py      seeded sampling
+    render/engine.py      seeded streams, the song's drifts, render()
     render/guards.py      limits that apply to every backend
+    render/target.py      each note's pitch, channel and velocity range in the target kit
+    render/controllers.py the windows that keep a controller-bound note's value
+    render/output.py      the rendered notes back into the drum track
+    render/measure.py     each section's statistics
     render/backends/      parametric.py; neural.py in M5 only
     instruments/          base protocol, drums.py, generic.py
     session.py            session JSON on disk: sections, answers, controls, seed
     preview.py            MIDI playback to a virtual port
     mcp_server.py         thin MCP layer over the above
-    cli.py                analyze: a song's summary, sections and decision requests as JSON; headless render later
+    cli.py                analyze: a song's summary, sections and decision requests as JSON; render: a new MIDI file by a plan
   skills/human-o-matic/SKILL.md       question policy and workflow
   skills/human-o-matic/references/vocabulary.md
   data/vocabulary.toml                the canonical articulation vocabulary
   data/maps/*.toml                    built-in maps, one library per file: its kits and their articulations
-  data/styles/*.toml                  generated by calibration
+  data/styles/*.toml                  tight, medium and loose, generated by calibration
   tools/                              infer_map, calibrate, make_ab, train
   private/                            gitignored: local-only files and the tools that build maps from them, never committed (ADR 0007)
   typings/mido/                       local type stubs for the part of mido the code uses
@@ -152,9 +158,9 @@ Questions come from the agent, not the server. The server provides facts, sugges
 
 **Pipeline:** read, map, normalize to a flat quantized score with hit types, detect sections, collect controls, compile, sample, guards, write.
 
-**Render determinism:** derive one random stream per section with `numpy.random.SeedSequence`, so re-rendering section 5 leaves sections 1 to 4 byte-identical. Long-memory drift is generated once for the whole song and only changes with the song seed. The same session JSON and seed always produce the same file.
+**Render determinism:** derive one random stream per section with `numpy.random.SeedSequence`, so re-rendering section 5 leaves sections 1 to 4 byte-identical. Long-memory drift is generated once for the whole song and only changes with the song seed. The same session JSON and seed always produce the same file ([ADR 0049](../decisions/0049-each-section-draws-from-its-own-seeded-stream.md)).
 
-**Instrument seam:** `Instrument` provides normalization rules, hit typing, facts, a control schema and a compiler. `drums` is the only real implementation. A small `generic` mode (dynamics and timing without roles) proves the seam works. Piano and guitar need their own analysis, so do not design for them further yet.
+**Instrument seam:** `Instrument` provides normalization rules, hit typing, facts, a control schema and a compiler. `drums` is the only real implementation. A small `generic` mode (dynamics and timing without roles) proves the seam works. Piano and guitar need their own analysis, so do not design for them further yet. As built, the seam has only what the engine calls, each note's part and the compiler, and the rest joins it when something calls it ([ADR 0045](../decisions/0045-the-engine-is-render-modules-behind-a-small-instrument-seam.md)).
 
 ### MCP tools
 
@@ -167,13 +173,13 @@ Tools take IDs and file paths and return compact JSON. **Never pass note arrays:
 | `get_sections(session_id)` | Bars, repeat group, facts, ASCII pattern, plus suggested questions and a guess with confidence |
 | `update_sections(session_id, ops)` | Split, merge, move boundaries, rename |
 | `set_hit_types(session_id, decisions)` | Confirm soft notes and resolve ambiguous bars |
-| `set_style(session_id, style, seed?)` | Song-wide drummer style and tightness |
+| `set_style(session_id, style, seed?)` | Song-wide style, `tight`, `medium` or `loose` ([ADR 0044](../decisions/0044-m3-ships-tight-medium-and-loose-styles-pooled-by-tightness.md)), and tightness |
 | `set_section_controls(session_id, section_ids, controls, note)` | Validate and store. Returns plain-language expected results, such as "snare about 118 to 127, timing spread about 3 ms", and any clamping |
 | `render(session_id, section_ids?, take?)` | Sample, returning measured stats per section |
 | `preview(session_id, section_ids?, take?, port?)` / `stop_preview` | Non-blocking playback through a virtual MIDI port |
 | `export(session_id, output_path, overwrite?)` | Write MIDI and a report. Never overwrite the input; refuse existing files unless `overwrite` is set |
 
-**Preview:** the sample library determines how velocities sound, so preview through the user's real kit: enable the macOS IAC Driver, route it to the DAW track, and play with `mido` and `python-rtmidi`. This route was not verified during research, so test it in M3. If it fails, fall back to exporting and dragging into the DAW.
+**Preview:** the sample library determines how velocities sound, so preview through the user's real kit: enable the macOS IAC Driver, route it to the DAW track, and play with `mido` and `python-rtmidi`. This route was not verified during research, so test it in M3's last PR ([ADR 0043](../decisions/0043-m3-is-three-prs-and-its-gate-follows-the-third.md)). If it fails, fall back to exporting and dragging into the DAW.
 
 ### Control vector
 
@@ -202,7 +208,7 @@ Per section, all optional, with defaults supplied by the song style:
 
 ### Question policy (in `SKILL.md`)
 1. **Confirm before asking about feel:** kit maps, section table, soft notes and ambiguous bars, as one batch.
-2. **One song-wide question round,** at most three: overall drummer or tightness, plus anything else that applies everywhere.
+2. **One song-wide question round,** at most three: the overall style or tightness, plus anything else that applies everywhere.
 3. **Per repeat group, in song order, at most two questions.** Always accept "your call".
 4. **Repeats inherit.** Ask only if a repeat probably differs, such as a bigger last chorus.
 5. **Ask only when plausible answers would change the controls audibly.** Otherwise assume, and state the assumption.
@@ -241,7 +247,7 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
 - **Maps:** library-neutral, for most modern drum libraries, and no library is special in the code ([ADR 0008](../decisions/0008-library-neutral-drum-maps.md)).
   - A map file is one library and its kits. Each kit lists its articulations, each with its MIDI notes, velocity behavior, CC behavior, channel, and a source and confidence.
   - Canonical articulation names act as the pivot, because General MIDI has no articulations and the same number differs by library: note 39 is a snare variant in one library and a flam in another. Use `family.articulation` names such as `snare.center`, `hat.closed.tip`, `crash.1.choke`. Conversion tries the exact name, then piece substitution, then drops the variant, then the family default, and reports every inexact step ([ADR 0021](../decisions/0021-conversion-falls-back-within-a-family.md)).
-  - M1 reads and writes notes, channels and velocity ranges, and output stays inside an articulation's velocity range. CC behavior is stored, validated and preserved, and CC-driven articulations are resolved in M3 ([ADR 0009](../decisions/0009-m1-resolves-notes-channels-and-velocity-ranges.md)).
+  - M1 reads and writes notes, channels and velocity ranges, and output stays inside an articulation's velocity range. CC behavior is stored, validated and preserved ([ADR 0009](../decisions/0009-m1-resolves-notes-channels-and-velocity-ranges.md)). A render keeps a controller-bound note's controller value, and following and writing controllers wait for a map whose sources give them ([ADR 0053](../decisions/0053-a-controller-bound-note-keeps-its-controller-value.md)).
   - Maps are built in, with no user-supplied map files ([ADR 0010](../decisions/0010-built-in-maps-only.md)). M1 ships General MIDI plus maps for ten libraries ([ADR 0011](../decisions/0011-m1-maps-for-general-midi-and-drum-libraries.md)). **Build each map from its sources, never from memory.** Every note a source mapping defines is either named at its confidence or reported as unresolved.
 - **Maps, as built:**
   - The vocabulary is `data/vocabulary.toml`, and names follow `family[.piece].articulation[.variant...]` ([ADR 0019](../decisions/0019-canonical-names-follow-one-grammar.md)). A map file is one library in TOML, and a map with an unknown name, a missing parent or default, a gap in its pieces, or two overlapping bindings fails to load ([ADR 0020](../decisions/0020-map-files-are-toml-checked-when-they-load.md)).
@@ -270,10 +276,20 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
 - **Exit:** boundary F1 within ±1 bar of at least 0.70, as the mean of each track's F1 over at least 10 labelled tracks, measured with SMF markers off. The mean over the tracks not marked `tuned` is reported beside it, as the check on the tuning ([ADR 0034](../decisions/0034-the-m2-exit-is-scored-on-hand-labelled-section-starts.md)). For scale, a [2025 CNN reached 0.77](https://arxiv.org/abs/2509.16566) on 6,134 multi-track MIDI files, with code released, if heuristics fall short. It is unclear whether it uses drums.
 
 ### M3 Parametric engine and calibration
-- Implement the control vector, compiler, sampler, guards, `generic` mode and preview, using the appendix defaults.
+- M3 is three PRs, in this order, and its gate follows the third ([ADR 0043](../decisions/0043-m3-is-three-prs-and-its-gate-follows-the-third.md)):
+  1. `feat/engine`: the control vector, compiler, sampler, guards and `generic` mode, using the appendix defaults, with the property tests below.
+  2. `feat/calibration`: `tools/infer_map.py`, `tools/calibrate.py` and `data/styles/`, which replace the appendix defaults.
+  3. `feat/preview`: the preview through the IAC Driver, last because the owner has to enable it and try it.
 - `tools/infer_map.py` prints pitch statistics for each folder of performed MIDI in `private/midi/`, so roles can be assigned. **A folder's notes can disagree with its library's map, so each needs verifying.** Exclude and report any folder that cannot be resolved.
-- `tools/calibrate.py` computes attributes per groove of the performed MIDI in `private/midi/` (energy as velocity level, dynamic range, tightness, feel), then fits per-role distributions conditioned on those attributes, by metric level and tempo band. Writes `data/styles/*.toml`: `tight` (default), `medium`, `loose` and named drummers. Commit aggregate statistics only.
-- **Exit:** raising each control moves its measured statistic in the right direction, and all property tests below pass.
+- `tools/calibrate.py` computes attributes per groove of the performed MIDI in `private/midi/` (energy as velocity level, dynamic range, tightness, feel), then fits per-role distributions conditioned on those attributes, by metric level and tempo band. Writes `data/styles/*.toml`: `tight` (the default), `medium` and `loose` only, each pooled across all the performed MIDI by tightness band, so no committed file identifies a source ([ADR 0044](../decisions/0044-m3-ships-tight-medium-and-loose-styles-pooled-by-tightness.md)). Commit aggregate statistics only.
+- **Engine, as built:**
+  - The controls are layered pydantic models: a section's over the song's, over the style's defaults, with a JSON round trip ([ADR 0046](../decisions/0046-controls-are-layered-pydantic-models-with-a-json-round-trip.md)). The modules and the instrument seam, with `drums` and `generic`, are in [ADR 0045](../decisions/0045-the-engine-is-render-modules-behind-a-small-instrument-seam.md).
+  - The only style is `tight`, Appendix A's placeholders with what it leaves out filled in, built in code with no `data/styles/` file until calibration ([ADR 0051](../decisions/0051-the-tight-style-s-placeholders-fill-in-what-appendix-a-leaves-out.md)). Each note's role comes from canonical families and the score, never a pitch, with three readings of Appendix A: a lone crash-family hit or one starting a run on a beat is an accent, only quarter-note rider hits alternate, and fills are capped at 2 bars ([ADR 0047](../decisions/0047-roles-come-from-canonical-families-and-the-score.md)).
+  - Each section draws from its own stream, keyed by its first bar and take, and the song's drifts from their own, so a section rendered again leaves the others as they were. Turning `skip` on or off for a section can move the notes at and just after its boundaries by a step or a few ticks, as they then avoid its fixed notes, even in a section further on when the sections between lack those pitches and drums. Every other control change leaves the other sections byte-identical ([ADR 0049](../decisions/0049-each-section-draws-from-its-own-seeded-stream.md)). The guards hold every backend: the ±12 ms cap, 60% of the grid gap, reflection below 127, velocity ranges, soft below normal, and no repeat on a pitch or on a drum, with rules at section boundaries that never depend on another section's draws ([ADR 0050](../decisions/0050-guards-hold-every-backend-and-keep-each-section-independent.md)).
+  - Notes are written through the target kit by conversion's own fallback order, and only the drum track's notes change ([ADR 0048](../decisions/0048-a-render-writes-the-score-through-the-target-kit-into-the-drum-track.md)). A controller-bound note keeps its controller value, and following and writing controllers wait for a map that gives them ([ADR 0053](../decisions/0053-a-controller-bound-note-keeps-its-controller-value.md)).
+  - `human-o-matic render` writes a new MIDI file by a plan file and prints each section's statistics, with `analyze`'s answers and exit codes ([ADR 0054](../decisions/0054-human-o-matic-render-writes-a-new-midi-file-by-a-plan-and-prints-json.md)).
+  - Exit, as tested on the placeholders: each control moves the statistic it mainly drives strictly the right way over five values and six seeds, and the property tests below pass with `hypothesis` ([ADR 0052](../decisions/0052-each-control-is-tested-against-the-statistic-it-mainly-drives.md)). At the defaults, timing spreads 3.1 ms over a 16-bar groove.
+- **Exit:** raising each control moves its measured statistic in the right direction, and all property tests below pass. It is checked at the gate, after the third PR, on the calibrated styles.
 
 ### M4 MCP, skill and the main gate
 - Build the MCP server and skill. Register with `claude mcp add human-o-matic -- uv run --directory ~/Projects/human-o-matic human-o-matic-mcp`, then test a full session in Claude Code.
@@ -304,15 +320,15 @@ Ghosts, flams, rimshots and chokes, asked about as ordinary questions ("add ghos
 ## Verification
 
 **Property tests** (`hypothesis`)
-- Same session and seed produce byte-identical output. Re-rendering one section with new controls leaves every other section's notes byte-identical.
+- Same session and seed produce byte-identical output. Re-rendering one section with new controls leaves every other section's notes byte-identical. The one exception is turning `skip` on or off for a section: the notes at and just after its boundaries, on the pitches and drums that cross them, can move by a step or a few ticks, because they then avoid its fixed notes, and so can a section further on when the sections between have none of those notes. Every other control change leaves the other sections byte-identical ([ADR 0050](../decisions/0050-guards-hold-every-backend-and-keep-each-section-independent.md)).
 - Note count is unchanged apart from notes the user chose to drop.
 - Outside `skip` sections, input velocities and timing cannot influence output beyond hit type: two inputs with the same notes and types but different numbers render identically.
 - Same-pitch notes never reorder, and each keeps at least 60% of its grid gap.
 - Offsets stay within the cap at every tempo, including dense tempo maps.
-- Velocities stay in 1 to 127. Consecutive velocities on one pitch never repeat.
+- Velocities stay in 1 to 127. Consecutive velocities on one pitch, or on one drum, never repeat ([ADR 0050](../decisions/0050-guards-hold-every-backend-and-keep-each-section-independent.md)).
 - Soft-typed notes always land below normal-typed notes on the same drum in the same section.
 - Rider flip rate stays in 0.70 to 0.85 over a large sample. Default-style unison spread stays at or below about 10 ms.
-- Grace-to-main spacing is preserved. `skip` sections come out unchanged.
+- Grace-to-main spacing is preserved. On the song's first tick, where a grace can't go before its main in the score, its main goes later to keep the gap, up to the cap, and a gap over 12 ms is shortened to it ([ADR 0050](../decisions/0050-guards-hold-every-backend-and-keep-each-section-independent.md)). `skip` sections come out unchanged. To another target kit, they keep their velocity and timing, and take the target's pitch and channel as conversion does, with the velocity moved into the target's range ([ADR 0048](../decisions/0048-a-render-writes-the-score-through-the-target-kit-into-the-drum-track.md)).
 
 **End to end:** in Claude Code, run a real song through the full conversation, preview at least one section through the real kit, export, drag into the DAW, and have the owner listen.
 
@@ -329,7 +345,7 @@ Ghosts, flams, rimshots and chokes, asked about as ordinary questions ("add ghos
 
 ## Appendix A: Engine defaults
 
-Placeholders until M3 replaces them. Velocity anchors are at energy 1.0, 0.5 and 0.2; interpolate between them.
+Placeholders until calibration replaces them, with the values they leave out in [ADR 0051](../decisions/0051-the-tight-style-s-placeholders-fill-in-what-appendix-a-leaves-out.md). Velocity anchors are at energy 1.0, 0.5 and 0.2; interpolate between them.
 
 **Velocity**
 
@@ -358,4 +374,4 @@ Placeholders until M3 replaces them. Velocity anchors are at energy 1.0, 0.5 and
 
 ## Appendix B: Python libraries
 
-`mido` and `python-rtmidi` (lossless I/O, preview), [`symusic`](https://symusic.readthedocs.io/en/latest/introduction.html) (fast batch scanning of MIDI; its speed claims are the maintainers' own), `numpy`, `scipy`, `pydantic`, `typer`, the official `mcp` Python SDK (check current docs, as the spec is moving), `pytest`, `hypothesis`, and PyTorch in M5 only. Each runtime dependency is added in the milestone that first needs it: `mido`, `numpy`, `pydantic` and `typer` in M1, none in M2, `python-rtmidi` and `symusic` in M3, and `mcp` in M4 ([ADR 0012](../decisions/0012-runtime-dependencies-arrive-with-their-milestone.md)). `scipy` comes with the first code that imports it ([ADR 0041](../decisions/0041-m2-adds-no-runtime-dependency.md)).
+`mido` and `python-rtmidi` (lossless I/O, preview), [`symusic`](https://symusic.readthedocs.io/en/latest/introduction.html) (fast batch scanning of MIDI; its speed claims are the maintainers' own), `numpy`, `scipy`, `pydantic`, `typer`, the official `mcp` Python SDK (check current docs, as the spec is moving), `pytest`, `hypothesis`, and PyTorch in M5 only. Each runtime dependency is added in the milestone that first needs it: `mido`, `numpy`, `pydantic` and `typer` in M1, none in M2, `python-rtmidi` and `symusic` in M3, `python-rtmidi` with the preview ([ADR 0043](../decisions/0043-m3-is-three-prs-and-its-gate-follows-the-third.md)), and `mcp` in M4 ([ADR 0012](../decisions/0012-runtime-dependencies-arrive-with-their-milestone.md)). `scipy` comes with the first code that imports it ([ADR 0041](../decisions/0041-m2-adds-no-runtime-dependency.md)).

@@ -1,6 +1,6 @@
 # 0038. A section joins the repeat group it plays most like, from 0.8, and groups are named A, B, C in song order
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - Two sections are as alike as the mean likeness ([ADR 0036](0036-a-bar-is-its-onset-pattern-in-each-family.md)) of their bars compared in order, the first with the first and so on, over the shorter one's length.

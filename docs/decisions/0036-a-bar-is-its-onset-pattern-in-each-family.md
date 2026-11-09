@@ -1,6 +1,6 @@
 # 0036. A bar is its onset pattern in each drum family, and bars are as alike as the cosine of their patterns
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - The section detector reads the score, never the MIDI notes, so it sees canonical families and no library's notes ([ADR 0008](0008-library-neutral-drum-maps.md)). Graces are left out, as ornaments of their main notes ([ADR 0027](0027-hits-on-one-drum-under-45-ms-apart-are-a-grace-and-its-main.md)).

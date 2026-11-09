@@ -46,8 +46,8 @@ type ValueRange = Annotated[tuple[int, int], _range(0, 127)]
 
 
 class Cc(BaseModel):
-    """A controller that selects or shapes an articulation. M1 stores and checks it, and
-    resolves it in M3."""
+    """A controller that selects or shapes an articulation. It is stored and checked, and a
+    render keeps a note's value of it (ADR 0053), but it isn't followed or written yet."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
