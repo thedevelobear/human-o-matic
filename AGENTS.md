@@ -60,3 +60,4 @@ The plan's milestones, M0 to M6, are done in order, each in one or more PRs.
 | `uv run pytest -m "not private"` | The tests CI runs. |
 | `HYPOTHESIS_PROFILE=ci uv run pytest` | The property tests with CI's example count. |
 | `uv run python tools/infer_map.py` | Pitch statistics for each folder of performed MIDI in `private/midi/`, read through its kit ([ADR 0057](docs/decisions/0057-each-folder-s-kit-is-in-a-gitignored-file-under-private-data.md)). `--map LIBRARY[/KIT]` reads through another. |
+| `uv run python tools/calibrate.py measure` | Each groove's statistics in the assigned folders, its timing spread, and the bands some cuts would make ([ADR 0059](docs/decisions/0059-calibration-measures-files-in-windows-of-at-most-16-bars.md)). `--excluded` adds the left-out folders' timing, apart. |
