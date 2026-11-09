@@ -152,7 +152,11 @@ FALLBACK_ORDER = ("piece", "variant", "default")
 def check_fallback_order(row: Row, source: DrumKit, target: DrumKit) -> None:
     """The steps of an inexact row come in the fallback order, each within the family and taken
     only when the name before it won't do: the exact name, then piece substitution, then the
-    name without its last variant, one at a time, then the piece's default."""
+    name without its last variant, one at a time, then the piece's default.
+
+    The exception is a family the vocabulary re-spreads by register, as toms are: piece
+    substitution re-spreads its pieces whenever the kits have different numbers of them, even
+    when the target has the exact name, so 6 toms onto 3 go 1, 1, 2, 2, 3, 3 (ADR 0021)."""
     vocabulary = target.vocabulary
     kinds = [step.kind for step in row.steps]
     assert set(kinds) <= set(FALLBACK_ORDER), row
