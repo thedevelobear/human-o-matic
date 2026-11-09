@@ -80,6 +80,7 @@ What was decided, specifically enough to check the code against.
 | [0042](decisions/0042-a-partly-changed-adr-is-marked-amended.md) | An accepted ADR that a later one changes in part is marked amended | Accepted |
 | [0043](decisions/0043-m3-is-three-prs-and-its-gate-follows-the-third.md) | M3 is three PRs, the engine, calibration and preview, and its gate follows the third | Proposed |
 | [0044](decisions/0044-m3-ships-tight-medium-and-loose-styles-pooled-by-tightness.md) | M3 ships the styles `tight`, `medium` and `loose` only, pooled by tightness band, with no named or numbered drummers | Proposed |
+| [0045](decisions/0045-the-engine-is-render-modules-behind-a-small-instrument-seam.md) | The engine is a set of render modules behind a small instrument seam | Proposed |
 | [0046](decisions/0046-controls-are-layered-pydantic-models-with-a-json-round-trip.md) | The controls are layered pydantic models with a JSON round trip | Proposed |
 | [0047](decisions/0047-roles-come-from-canonical-families-and-the-score.md) | Roles come from canonical families and the score, never from a pitch | Proposed |
 | [0048](decisions/0048-a-render-writes-the-score-through-the-target-kit-into-the-drum-track.md) | A render writes the score through the target kit into the drum track, and nothing else changes | Proposed |
