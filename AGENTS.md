@@ -59,3 +59,4 @@ The plan's milestones, M0 to M6, are done in order, each in one or more PRs.
 | `uv run pytest` | All tests. The private ones skip when `private/` is missing. |
 | `uv run pytest -m "not private"` | The tests CI runs. |
 | `HYPOTHESIS_PROFILE=ci uv run pytest` | The property tests with CI's example count. |
+| `uv run python tools/infer_map.py` | Pitch statistics for each folder of performed MIDI in `private/midi/`, read through its kit ([ADR 0057](docs/decisions/0057-each-folder-s-kit-is-in-a-gitignored-file-under-private-data.md)). `--map LIBRARY[/KIT]` reads through another. |
