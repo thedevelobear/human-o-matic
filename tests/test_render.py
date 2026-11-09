@@ -13,6 +13,7 @@ from hypothesis import strategies as st
 from grooves import (
     ACCENT,
     BAR,
+    BELL,
     COWBELL,
     CRASH,
     GM,
@@ -20,8 +21,11 @@ from grooves import (
     KICK,
     LENGTHS,
     NORMAL,
+    OPEN_HAT,
+    PEDAL,
     PPQ,
     RIDE,
+    SIDESTICK,
     SIXTEENTH,
     SNARE,
     SOFT,
@@ -242,7 +246,12 @@ def test_offsets_stay_within_the_cap_at_every_tempo(
         assert abs(note.offset_ms) <= CAP_MS + slack
 
 
-@given(grooves((KICK, SNARE, CRASH, TOM_1), velocities=(NORMAL, NORMAL, SOFT)), CUTS, st.data())
+SHARED = (HAT, PEDAL, OPEN_HAT, SNARE, SIDESTICK, RIDE, BELL, KICK)
+"""Pitches that share drums: three hats, snare and sidestick, ride bow and bell, so a pitch's
+neighbour and its drum's neighbour are often different notes."""
+
+
+@given(grooves(SHARED, velocities=(NORMAL, NORMAL, SOFT), per_bar=24), CUTS, st.data())
 def test_velocities_are_1_to_127_and_never_repeat_on_a_pitch_or_a_drum(
     hits: list[Hit], cuts: list[int], data: st.DataObject
 ) -> None:
@@ -582,3 +591,44 @@ def test_a_song_in_3_4_then_7_8_with_tempo_changes_renders_on_its_own_beats() ->
         assert abs(note.offset_ms) <= CAP_MS + 2 * result.score.tempos.ms_per_tick(tick)
     for notes in by_key(out.notes, "pitch").values():
         assert all(earlier.note.start < later.note.start for earlier, later in pairwise(notes))
+
+
+def neighbours_differ(out: Rendered) -> None:
+    """No two notes in a row on a pitch, or on a drum, share a velocity."""
+    for key in ("pitch", "drum"):
+        for notes in by_key(out.notes, key).values():
+            for earlier, later in pairwise(notes):
+                assert earlier.note.velocity != later.note.velocity
+
+
+def test_a_pitch_s_neighbours_across_a_boundary_differ_with_its_drum_between_them() -> None:
+    # Each bar opens with a pedal hat, so the closed hats either side of a bar line are a pitch's
+    # neighbours whose places among the hat's notes are two apart: only their pitch tells them.
+    hits: list[Hit] = []
+    for bar in range(32):
+        hits.append((bar * BAR, PEDAL))
+        hits.extend((bar * BAR + eighth * PPQ // 2, HAT) for eighth in range(1, 8))
+    midi = song(hits)
+    result = normalized(midi)
+    flat = ControlVector(dynamic_range=0.0)
+
+    for seed in range(4):
+        plan = plan_for(midi, result, cuts=range(1, 32), controls=flat, seed=seed)
+        neighbours_differ(rendered(midi, plan, result=result))
+
+
+def test_a_drum_s_neighbours_across_a_boundary_differ_on_pitches_it_doesn_t_share() -> None:
+    # Three closed hats in even bars and three open hats in odd ones, a section each, riding one
+    # run. The hats either side of a bar line from an even bar have the same parity of place
+    # among their own pitch's notes, so only their places on the drum tell them apart.
+    hits: list[Hit] = []
+    for bar in range(32):
+        pitch = HAT if bar % 2 == 0 else OPEN_HAT
+        hits.extend((bar * BAR + beat * PPQ, pitch) for beat in range(3))
+    midi = song(hits)
+    result = normalized(midi)
+    flat = ControlVector(dynamic_range=0.0)
+
+    for seed in range(4):
+        plan = plan_for(midi, result, cuts=range(1, 32), controls=flat, seed=seed)
+        neighbours_differ(rendered(midi, plan, result=result))
