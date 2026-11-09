@@ -1,0 +1,143 @@
+# GGD Matt Halpern Signature Pack (ADR 0055). No note mapping of the library is at hand, so each
+# name is inferred from where the library puts its notes, and each entry is low confidence until
+# it is checked in the instrument (ADR 0025). Most notes are at General MIDI's places. A note with
+# too little behind a name is left out, so a note on it is asked about.
+schema = 1
+id = "ggd-matt-halpern"
+name = "GGD Matt Halpern Signature Pack"
+
+[[kits]]
+id = "default"
+name = "Default map"
+
+  [[kits.articulations]]
+  name = "kick.hit"
+  notes = [36]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "snare.center"
+  notes = [38]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.1.hit"
+  notes = [50]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.2.hit"
+  notes = [48]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.3.hit"
+  notes = [43]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.4.hit"
+  notes = [41]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.closed"
+  notes = [42]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.closed.tip"
+  notes = [10]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.tight"
+  notes = [54]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.tight.tip"
+  notes = [62]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.open"
+  notes = [46]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.pedal"
+  notes = [44]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.1.hit"
+  notes = [49]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.2.hit"
+  notes = [57]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.3.hit"
+  notes = [58]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.4.hit"
+  notes = [64]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "ride.1.bow"
+  notes = [51]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "ride.1.bell"
+  notes = [53]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "china.1.hit"
+  notes = [52]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "china.2.hit"
+  notes = [74]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "splash.1.hit"
+  notes = [55]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "stack.1.hit"
+  notes = [24]
+  source = "inferred"
+  confidence = "low"

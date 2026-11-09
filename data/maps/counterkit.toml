@@ -1,0 +1,134 @@
+# Counterkit, from the library's own note mapping (ADR 0055): 22 notes, of which 20 are named here
+# as 20 articulations. Its note names count C3 as note 60. Confidence is high where the mapping's
+# name gives the canonical name directly, and medium where it had to be interpreted. Two hi-hat
+# strokes on notes 64 and 65 are left out until their names are understood, so a note on them is
+# asked about.
+schema = 1
+id = "counterkit"
+name = "Counterkit"
+
+[[kits]]
+id = "default"
+name = "Default map"
+
+  [[kits.articulations]]
+  name = "kick.hit"
+  notes = [36]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "snare.center"
+  notes = [39]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "snare.rimshot"
+  notes = [40]
+  source = "mapping"
+  confidence = "medium"       # read as a rimshot; it could be the rim alone
+
+  [[kits.articulations]]
+  name = "tom.1.hit"
+  notes = [45]
+  source = "mapping"
+  confidence = "medium"       # its rack tom, read as the higher of its two toms
+
+  [[kits.articulations]]
+  name = "tom.2.hit"
+  notes = [43]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.closed"
+  notes = [61]
+  source = "mapping"
+  confidence = "medium"       # its edge stroke, read as the ordinary closed hat
+
+  [[kits.articulations]]
+  name = "hat.closed.tip"
+  notes = [62]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.open"
+  notes = [60]
+  source = "mapping"
+  confidence = "medium"       # its one open hat, read as fully open
+
+  [[kits.articulations]]
+  name = "hat.pedal"
+  notes = [63]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "crash.1.hit"
+  notes = [49]
+  source = "mapping"
+  confidence = "medium"       # its left crash read as crash 1, and its right as crash 2
+
+  [[kits.articulations]]
+  name = "crash.1.choke"
+  notes = [50]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.2.hit"
+  notes = [57]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.2.choke"
+  notes = [58]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "china.1.hit"
+  notes = [52]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "china.1.choke"
+  notes = [54]
+  source = "mapping"
+  confidence = "high"
+
+  # A crash ride, read as its first ride, played on the bow, the bell and the edge.
+  [[kits.articulations]]
+  name = "ride.1.bow"
+  notes = [51]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "ride.1.bell"
+  notes = [53]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "ride.1.crash"
+  notes = [59]
+  source = "mapping"
+  confidence = "medium"
+
+  # Its extra ride cymbal, read as its second ride.
+  [[kits.articulations]]
+  name = "ride.2.bow"
+  notes = [55]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "ride.2.bell"
+  notes = [56]
+  source = "mapping"
+  confidence = "medium"

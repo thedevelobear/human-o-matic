@@ -46,7 +46,7 @@ What was decided, specifically enough to check the code against.
 | [0008](decisions/0008-library-neutral-drum-maps.md) | Drum maps are library-neutral: library, kit and articulation | Accepted |
 | [0009](decisions/0009-m1-resolves-notes-channels-and-velocity-ranges.md) | M1 resolves notes, channels and velocity ranges, and CC-driven articulations wait for M3 | Accepted. Its line that controllers are resolved in M3 is amended by [ADR 0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) |
 | [0010](decisions/0010-built-in-maps-only.md) | Maps are built in, and this version loads no user-supplied map file | Accepted |
-| [0011](decisions/0011-m1-maps-for-general-midi-and-drum-libraries.md) | M1 ships a General MIDI map and maps for ten drum libraries | Accepted |
+| [0011](decisions/0011-m1-maps-for-general-midi-and-drum-libraries.md) | M1 ships a General MIDI map and maps for ten drum libraries | Accepted. Its list of libraries is amended by [ADR 0055](decisions/0055-m3-adds-maps-for-four-drum-libraries.md) |
 | [0012](decisions/0012-runtime-dependencies-arrive-with-their-milestone.md) | M1 adds mido, numpy, pydantic and typer, and other runtime dependencies wait for their milestone | Accepted. Its line on `scipy` is amended by [ADR 0041](decisions/0041-m2-adds-no-runtime-dependency.md), and its line on `symusic` by [ADR 0056](decisions/0056-the-calibration-tools-add-no-dependency.md) |
 | [0013](decisions/0013-midi-is-read-into-notes-and-raw-events.md) | MIDI files are read into paired notes and raw events at absolute ticks | Accepted |
 | [0014](decisions/0014-work-at-a-whole-multiple-of-the-source-ppq.md) | Songs are worked on and written at the smallest multiple of their PPQ that is at least 960 | Accepted |
@@ -58,7 +58,7 @@ What was decided, specifically enough to check the code against.
 | [0020](decisions/0020-map-files-are-toml-checked-when-they-load.md) | A map file is one library in TOML, and an ambiguous map fails to load | Accepted |
 | [0021](decisions/0021-conversion-falls-back-within-a-family.md) | Conversion falls back within a family, and asks instead of changing family | Accepted. Its wait for controllers in M3 is amended by [ADR 0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) |
 | [0022](decisions/0022-the-general-midi-map-follows-the-standard.md) | The General MIDI map follows the GM Level 1 percussion key map | Accepted |
-| [0023](decisions/0023-built-in-library-ids.md) | Built-in libraries have short kebab-case ids | Accepted |
+| [0023](decisions/0023-built-in-library-ids.md) | Built-in libraries have short kebab-case ids | Accepted. Its list of ids is amended by [ADR 0055](decisions/0055-m3-adds-maps-for-four-drum-libraries.md) |
 | [0024](decisions/0024-built-in-data-is-found-beside-the-source.md) | Built-in data is found in `data/` beside the source, by one function | Accepted |
 | [0025](decisions/0025-proposed-names-ship-at-low-confidence.md) | A proposed name ships at low confidence, and only a check raises it | Accepted |
 | [0026](decisions/0026-a-grid-per-beat-by-timing-error-and-complexity.md) | Each beat takes one of four grids, by its timing error in milliseconds plus a complexity penalty | Accepted |
@@ -90,6 +90,7 @@ What was decided, specifically enough to check the code against.
 | [0052](decisions/0052-each-control-is-tested-against-the-statistic-it-mainly-drives.md) | Each control is tested against the statistic it mainly drives, and the plan's properties have exact definitions | Accepted |
 | [0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) | A controller-bound note keeps its controller value, and following and writing controllers wait for a map that gives them | Accepted |
 | [0054](decisions/0054-human-o-matic-render-writes-a-new-midi-file-by-a-plan-and-prints-json.md) | `human-o-matic render` writes a new MIDI file by a plan, and prints its summary and each section's statistics as JSON | Accepted |
+| [0055](decisions/0055-m3-adds-maps-for-four-drum-libraries.md) | M3 adds maps for Counterkit, NI Drum Lab, Krimh Drums and GGD Matt Halpern Signature Pack | Proposed |
 | [0056](decisions/0056-the-calibration-tools-add-no-dependency.md) | The calibration tools add no dependency, and `symusic` is not used | Proposed |
 | [0057](decisions/0057-each-folder-s-kit-is-in-a-gitignored-file-under-private-data.md) | The kit that reads each folder of performed MIDI is in a gitignored file under `private/data/` | Proposed |
 | [0058](decisions/0058-tools-are-scripts-checked-like-src.md) | Tracked tools are scripts in `tools/`, checked as strictly as `src/`, and tested from `tests/` | Proposed |

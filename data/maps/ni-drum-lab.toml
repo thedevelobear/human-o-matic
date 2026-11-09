@@ -1,0 +1,186 @@
+# NI Drum Lab, from the library's own default note mapping (ADR 0055): 39 notes, of which 31 are
+# named here as 28 articulations. Its note names count C3 as note 60. Where an articulation has
+# several notes, the first is the one written and the others are only read. Confidence is high
+# where the mapping's name gives the canonical name directly, and medium where it had to be
+# interpreted. Eight notes are left out, because the vocabulary has no name for what they play: a
+# second kick sound on 37, 59 and 60, three more snare strokes on 62 to 64, and the tip strokes of
+# both crashes on 49 and 51. A note on them is asked about.
+schema = 1
+id = "ni-drum-lab"
+name = "NI Drum Lab"
+
+[[kits]]
+id = "default"
+name = "Default map"
+
+  [[kits.articulations]]
+  name = "kick.hit"
+  notes = [36, 35, 61]
+  source = "mapping"
+  confidence = "medium"       # its main kick sound, one of two, read as the ordinary kick
+
+  [[kits.articulations]]
+  name = "snare.center"
+  notes = [38]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "snare.sidestick"
+  notes = [39]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "snare.offcenter"
+  notes = [40]
+  source = "mapping"
+  confidence = "medium"       # struck halfway to the edge, read as off center
+
+  [[kits.articulations]]
+  name = "snare.rimshot"
+  notes = [41]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.1.hit"
+  notes = [47]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.2.hit"
+  notes = [45]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.3.hit"
+  notes = [43]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "hat.closed"
+  notes = [56]
+  source = "mapping"
+  confidence = "medium"       # its shank stroke, read as the ordinary closed hat
+
+  [[kits.articulations]]
+  name = "hat.closed.tip"
+  notes = [42, 54]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "hat.open.half"
+  notes = [55]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "hat.open"
+  notes = [57]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "hat.pedal"
+  notes = [44]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "hat.pedal.splash"
+  notes = [58]
+  source = "mapping"
+  confidence = "medium"       # the hat opened by the foot, read as a pedal splash
+
+  # An open hat whose openness a controller sets. The mapping doesn't say which one.
+  [[kits.articulations]]
+  name = "hat.variable"
+  notes = [46]
+  cc = { mode = "shape" }
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.1.hit"
+  notes = [48]
+  source = "mapping"
+  confidence = "medium"       # its edge stroke, read as the ordinary crash
+
+  [[kits.articulations]]
+  name = "crash.2.hit"
+  notes = [50]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "ride.1.bow"
+  notes = [53]
+  source = "mapping"
+  confidence = "medium"       # its tip stroke, read as the ordinary ride stroke
+
+  [[kits.articulations]]
+  name = "ride.1.bell"
+  notes = [52]
+  source = "mapping"
+  confidence = "high"
+
+  # Percussion slots, whose sound depends on the percussion the kit has loaded, so they are
+  # sample layers (ADR 0019), from its lowest slot up.
+  [[kits.articulations]]
+  name = "sample.1.hit"
+  notes = [65]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "sample.2.hit"
+  notes = [66]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "sample.3.hit"
+  notes = [67]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "sample.4.hit"
+  notes = [68]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "sample.5.hit"
+  notes = [69]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "sample.6.hit"
+  notes = [70]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "sample.7.hit"
+  notes = [71]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "sample.8.hit"
+  notes = [72]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "sample.9.hit"
+  notes = [73]
+  source = "mapping"
+  confidence = "medium"

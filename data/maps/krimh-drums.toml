@@ -1,0 +1,278 @@
+# Krimh Drums, from the library's own note mapping (ADR 0055): 52 notes, of which 49 are named
+# here as 43 articulations. The mapping draws its notes on a keyboard without note numbers, so
+# each number rests on reading the keyboard's kick at note 36, and every entry is low confidence
+# until one note is checked in the instrument. Where an articulation has several notes, the first
+# is the one written and the others are only read. A hat with more open degrees than the
+# vocabulary's quarter, half, three quarters and fully open takes each at the nearest of them.
+# Three notes are left out, 29, 41 and 49, because the vocabulary has no name for what they
+# play, so a note on them is asked about.
+schema = 1
+id = "krimh-drums"
+name = "Krimh Drums"
+
+[[kits]]
+id = "default"
+name = "Default map"
+
+  [[kits.articulations]]
+  name = "kick.hit"
+  notes = [36, 34]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "kick.2.hit"
+  notes = [35]
+  source = "mapping"
+  confidence = "low"          # read as a second kick; it could be the left foot's
+
+  [[kits.articulations]]
+  name = "snare.center"
+  notes = [38]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "snare.offcenter"
+  notes = [37]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "snare.flam"
+  notes = [39]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "snare.sidestick"
+  notes = [42]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.1.hit"
+  notes = [45]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.2.hit"
+  notes = [46]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.3.hit"
+  notes = [47]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.4.hit"
+  notes = [48]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.closed"
+  notes = [54]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.closed.tip"
+  notes = [53]
+  source = "mapping"
+  confidence = "low"
+
+  # Five open degrees, from the least open, at the nearest of the vocabulary's four.
+  [[kits.articulations]]
+  name = "hat.open.quarter"
+  notes = [55]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.open.half"
+  notes = [56, 57]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.open.three_quarter"
+  notes = [58]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.open"
+  notes = [59]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.open.tip"
+  notes = [62]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.pedal"
+  notes = [60]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.pedal.splash"
+  notes = [61]
+  source = "mapping"
+  confidence = "low"          # the hat opened by the foot, read as a pedal splash
+
+  # A second hi-hat, with six open degrees at the nearest of the vocabulary's four.
+  [[kits.articulations]]
+  name = "hat.2.closed"
+  notes = [94, 82]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.2.open.quarter"
+  notes = [95, 96]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.2.open.half"
+  notes = [97]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.2.open.three_quarter"
+  notes = [98, 99, 83]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.2.open"
+  notes = [100]
+  source = "mapping"
+  confidence = "low"
+
+  # Two crashes on each side, read as crashes 1 to 4, each with its choke. The mapping names the
+  # choke on 71 as the second crash's, which is read as the fourth's, by its place.
+  [[kits.articulations]]
+  name = "crash.1.hit"
+  notes = [64]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.1.choke"
+  notes = [65]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.2.hit"
+  notes = [66]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.2.choke"
+  notes = [67]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.3.hit"
+  notes = [68]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.3.choke"
+  notes = [69]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.4.hit"
+  notes = [70]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.4.choke"
+  notes = [71]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "ride.1.bow"
+  notes = [74]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "ride.1.bell"
+  notes = [73]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "ride.1.crash"
+  notes = [75]
+  source = "mapping"
+  confidence = "low"
+
+  # A china on each side.
+  [[kits.articulations]]
+  name = "china.1.hit"
+  notes = [77]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "china.1.choke"
+  notes = [78]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "china.2.hit"
+  notes = [79]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "china.2.choke"
+  notes = [80]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "splash.1.hit"
+  notes = [85]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "splash.1.choke"
+  notes = [86]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "splash.2.hit"
+  notes = [87]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "splash.2.choke"
+  notes = [88]
+  source = "mapping"
+  confidence = "low"
