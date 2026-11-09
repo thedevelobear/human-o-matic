@@ -1,8 +1,8 @@
 # human-o-matic: guided MIDI drum performance
 
-> **Status:** Active. M0 and M1 are merged.
+> **Status:** Active. M0 and M1 are merged, and M2 is in progress.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-09 (M1 merged, ADRs 0008 to 0033 accepted).
+> Last updated: 2026-11-09 (M1 merged, ADRs 0008 to 0033 accepted; M2 groundwork on `feat/sections`: the labels and scoring of the M2 exit, and the section facts moved to M4, ADRs 0034 and 0035 proposed).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 
@@ -14,7 +14,7 @@ Milestones are done in order, and work stops at each gate ([`AGENTS.md`](../../A
 |---|---|---|---|
 | M0 | Setup | The checks pass on the scaffolding | Merged ([#1](https://github.com/thedevelobear/human-o-matic/pull/1)) |
 | M1 | Normalize | The M1 exit tests | Merged ([#2](https://github.com/thedevelobear/human-o-matic/pull/2)) |
-| M2 | Sections | Boundary F1 of at least 0.70 on at least 10 tracks the owner has hand-labelled | Not started. Needs the owner's labelled tracks |
+| M2 | Sections | Boundary F1 of at least 0.70 on at least 10 tracks the owner has hand-labelled | In progress. Waiting for the owner's first labelled tracks (3 or more); the detector is built and tuned once they are in |
 | M3 | Parametric engine and calibration | Each control moves its statistic the right way, and the property tests pass | Not started |
 | M4 | MCP, skill and the main gate | The blind listening test, judged by the owner | Not started |
 | M5 | Trained model experiment | Follows the controls and wins a blind test, judged by the owner | Not started. Not before M4 |
@@ -126,7 +126,7 @@ Questions come from the agent, not the server. The server provides facts, sugges
     normalize/score.py    the score: canonical hits on a grid, with hit types and source notes
     normalize/pipeline.py normalize(): the steps in turn, and their decision requests
     analyze/sections.py   bar features, similarity matrix, novelty peaks, repeat groups
-    analyze/facts.py      per-section facts and compact ASCII pattern for the agent
+    analyze/facts.py      per-section facts and compact ASCII pattern for the agent, in M4
     controls.py           pydantic ControlVector, SectionPlan, SessionPlan
     render/compiler.py    controls + style into per-role parameters
     render/engine.py      seeded sampling
@@ -136,7 +136,7 @@ Questions come from the agent, not the server. The server provides facts, sugges
     session.py            session JSON on disk: sections, answers, controls, seed
     preview.py            MIDI playback to a virtual port
     mcp_server.py         thin MCP layer over the above
-    cli.py                analyze: a song's summary and decision requests as JSON; headless render later
+    cli.py                analyze: a song's summary, sections and decision requests as JSON; headless render later
   skills/human-o-matic/SKILL.md       question policy and workflow
   skills/human-o-matic/references/vocabulary.md
   data/vocabulary.toml                the canonical articulation vocabulary
@@ -257,8 +257,9 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
 ### M2 Sections
 - Bar features: per-family onset patterns on the grid, density, cymbal type, fill flag.
 - Build a self-similarity matrix, take [novelty peaks](https://arxiv.org/pdf/2309.02243) at 2 to 8 bar scales, prefer 4, 8 and 16 bar lengths, and cluster repeats into groups. SMF markers win when present.
-- Have the owner supply and hand-label at least 10 drum tracks.
-- **Exit:** boundary F1 within ±1 bar of at least 0.70. For scale, a [2025 CNN reached 0.77](https://arxiv.org/abs/2509.16566) on 6,134 multi-track MIDI files, with code released, if heuristics fall short. It is unclear whether it uses drums.
+- `analyze/sections.py` holds these, and `human-o-matic analyze` also prints the sections, each with its bars and repeat group. Each section's facts and ASCII pattern come in M4, with the MCP tools that return them ([ADR 0035](../decisions/0035-m2-finds-the-sections-and-their-facts-wait-for-m4.md)).
+- **Labels:** the owner hand-labels at least 10 whole-song drum tracks, one TOML file each in the gitignored `private/labels/`: `midi`, the song's path, relative to `private/` unless absolute; `from_map`; `bpm` and `track` when needed, as in `analyze`; and `starts`, the bars where sections begin, counted from 0 as a DAW's bar 1 is bar 0, and starting with 0 ([ADR 0034](../decisions/0034-the-m2-exit-is-scored-on-hand-labelled-section-starts.md)).
+- **Exit:** boundary F1 within ±1 bar of at least 0.70, as the mean of each track's F1 over at least 10 labelled tracks, measured with SMF markers off ([ADR 0034](../decisions/0034-the-m2-exit-is-scored-on-hand-labelled-section-starts.md)). For scale, a [2025 CNN reached 0.77](https://arxiv.org/abs/2509.16566) on 6,134 multi-track MIDI files, with code released, if heuristics fall short. It is unclear whether it uses drums.
 
 ### M3 Parametric engine and calibration
 - Implement the control vector, compiler, sampler, guards, `generic` mode and preview, using the appendix defaults.

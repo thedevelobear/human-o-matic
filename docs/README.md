@@ -69,3 +69,5 @@ What was decided, specifically enough to check the code against.
 | [0031](decisions/0031-the-score-is-frozen-canonical-hits-with-their-source-notes.md) | The score is frozen canonical hits on a grid that keep their source notes | Accepted |
 | [0032](decisions/0032-bpm-is-the-only-tempo-a-user-gives.md) | `bpm` is the only tempo a user gives, and there is no `tempo_map` argument | Accepted |
 | [0033](decisions/0033-analyze-takes-flags-and-an-answers-file-and-prints-json.md) | `human-o-matic analyze` takes flags and an answers file, and prints a summary and the requests as JSON | Accepted |
+| [0034](decisions/0034-the-m2-exit-is-scored-on-hand-labelled-section-starts.md) | The M2 exit is scored on hand-labelled section starts in `private/labels/` | Proposed |
+| [0035](decisions/0035-m2-finds-the-sections-and-their-facts-wait-for-m4.md) | M2 finds the sections, and their facts and ASCII pattern wait for M4 | Proposed |
