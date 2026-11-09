@@ -546,3 +546,39 @@ def test_loud_notes_next_to_a_boundary_find_a_velocity_of_their_class_that_doesn
     kicks = [note.note.velocity for note in out.notes]
     assert all(earlier != later for earlier, later in pairwise(kicks))
     assert out.guards.unmet == 0
+
+
+def test_a_song_in_3_4_then_7_8_with_tempo_changes_renders_on_its_own_beats() -> None:
+    three, seven = 3 * PPQ, 7 * PPQ // 2
+    hits: list[Hit] = []
+    for bar in range(4):
+        at = bar * three
+        hits.extend([(at, KICK), (at + PPQ, SNARE), (at + 2 * PPQ, SNARE)])
+        hits.extend((at + eighth * PPQ // 2, HAT) for eighth in range(6))
+    for bar in range(4):
+        at = 4 * three + bar * seven
+        hits.extend([(at, KICK), (at + 2 * PPQ // 2, SNARE), (at + 4 * PPQ // 2, SNARE)])
+        hits.extend((at + eighth * PPQ // 2, HAT) for eighth in range(7))
+    midi = song(
+        hits,
+        signatures=[(0, 3, 4), (4 * three, 7, 8)],
+        tempos=[(2 * three, 90.0), (4 * three, 160.0), (4 * three + 2 * seven, 75.0)],
+    )
+    result = normalized(midi)
+    loose = ControlVector(tightness=0.0, feel=1.0)
+
+    out = rendered(midi, plan_for(midi, result, cuts=(4,), controls=loose))
+
+    assert [section.bars for section in plan_for(midi, result, cuts=(4,)).sections] == [4, 4]
+    assert len(out.notes) == len(hits)
+    backbeats = {
+        result.score.position(result.score.notes[note.position].tick).beat
+        for note in out.notes
+        if note.part.role == "backbeat"
+    }
+    assert backbeats == {1.0, 2.0, 4.0}
+    for note in out.notes:
+        tick = result.score.notes[note.position].tick
+        assert abs(note.offset_ms) <= CAP_MS + 2 * result.score.tempos.ms_per_tick(tick)
+    for notes in by_key(out.notes, "pitch").values():
+        assert all(earlier.note.start < later.note.start for earlier, later in pairwise(notes))
