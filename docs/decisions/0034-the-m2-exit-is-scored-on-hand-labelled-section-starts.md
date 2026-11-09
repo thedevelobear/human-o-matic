@@ -33,4 +33,4 @@
 
 **Why:** Hand labels are the only ground truth for what a section is, and one small file per track is the least work to label. Matching one to one keeps two detections near one labelled boundary from both counting. A path relative to `private/` keeps a label working wherever the repository is.
 
-**Consequences:** The exit can't be measured until at least 10 tracks are labelled. The detector's parameters are tuned on the first few, and those tracks flatter the headline, so the mean over the tracks not marked `tuned` is the check that the tuning holds.
+**Consequences:** The exit can't be measured until at least 10 tracks are labelled. The detector's parameters are tuned on the first few, and those tracks flatter the headline, so the mean over the tracks not marked `tuned` is the check that the tuning holds. M2 builds repeat groups but doesn't score them, since the labels carry boundaries only.
