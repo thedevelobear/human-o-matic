@@ -174,6 +174,43 @@ def test_a_note_is_held_no_lower_than_1_below_the_lowest_where_its_drum_has_soft
     assert tally.frozen().unmet == 1
 
 
+def flam_at_tick_0(*played: int) -> list[Slot]:
+    """Graces played at the first ticks given and their main at the last, all read on tick 0,
+    as the score has them: a grace can't go before tick 0."""
+    *graces, main = (slot(0, start=start, order=order) for order, start in enumerate(played))
+    return [*(replace(grace, main=len(graces)) for grace in graces), main]
+
+
+def test_a_flam_on_tick_0_starts_there_and_keeps_the_gap_it_was_played_at() -> None:
+    # 20 ticks are 10.4 ms, inside the cap. The main is drawn early, so the grace would start
+    # before tick 0, and the main goes later with it.
+    tally = Tally()
+
+    early = hold_timing(flam_at_tick_0(0, 20), np.array([0.0, -5.0]), TEMPO, tally)
+    late = hold_timing(flam_at_tick_0(0, 20), np.array([0.0, 11.0]), TEMPO, Tally())
+
+    assert list(early.starts) == [0, 20]
+    assert early.ends[0] <= early.starts[1]
+    assert late.starts[1] - late.starts[0] == 20
+    assert late.starts[0] > 0
+    counts = tally.frozen()
+    assert (counts.tick_zero, counts.unmet) == (2, 0)
+
+
+def test_the_cap_wins_over_a_flam_s_gap_on_tick_0_and_its_notes_keep_their_order() -> None:
+    # 30 ticks are 15.6 ms, so the main stops at the cap, 23 ticks, with its grace on tick 0.
+    # In the drag, both graces would start before tick 0 at the cap: they keep their order.
+    flam, drag = Tally(), Tally()
+
+    one = hold_timing(flam_at_tick_0(0, 30), np.array([0.0, 0.0]), TEMPO, flam)
+    two = hold_timing(flam_at_tick_0(0, 10, 50), np.array([0.0, 0.0, 0.0]), TEMPO, drag)
+
+    assert list(one.starts) == [0, 23]
+    assert list(two.starts) == [0, 1, 23]
+    assert (flam.frozen().unmet, drag.frozen().unmet) == (1, 1)
+    assert (flam.frozen().tick_zero, drag.frozen().tick_zero) == (1, 2)
+
+
 def test_the_cap_wins_over_the_gap_after_a_kept_note_played_late() -> None:
     # The kept note is 70 ms late, so 0.6 of the 125 ms gap would take the next to +20 ms.
     slots = [slot(1000, section=0, kept=True, start=1134, order=1), slot(1240, section=1, order=2)]

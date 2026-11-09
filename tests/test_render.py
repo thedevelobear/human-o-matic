@@ -391,6 +391,31 @@ def test_a_grace_keeps_its_gap_before_its_main_note() -> None:
         assert abs((written_main.start - written.start) - (main.tick - grace.tick)) <= 1
 
 
+@pytest.mark.parametrize(("first", "gap", "kept"), [(0, 20, 20), (0, 30, 23), (PPQ, 30, 30)])
+def test_a_flam_on_the_first_tick_keeps_its_gap_as_far_as_the_cap_allows(
+    first: int, gap: int, kept: int
+) -> None:
+    # Two kicks `gap` ticks apart from `first`, the main read on `first`. On tick 0 the score
+    # can't put the grace before its main, so the guards place it by the gap it was played at:
+    # 20 ticks are 10.4 ms, inside the cap, and 30 ticks 15.6 ms, so that main stops at the cap,
+    # 23 ticks. On beat 2 the grace is placed in the score, and the whole gap is kept.
+    midi = song(
+        [(first, KICK), (first + gap, KICK), (first + 2 * PPQ, SNARE), (first + 3 * PPQ, KICK)]
+    )
+    result = normalized(midi)
+
+    for seed in range(8):
+        out = rendered(midi, plan_for(midi, result, seed=seed), result=result)
+        grace, main = [note for note in out.notes if note.family == "kick"][:2]
+        assert (grace.grace, main.grace) == (True, False)
+        assert abs((main.note.start - grace.note.start) - kept) <= 1
+        assert grace.note.end <= main.note.start
+        assert abs(main.offset_ms) <= CAP_MS
+        assert out.guards.unmet == (1 if kept < gap else 0)
+        if kept < gap:
+            assert grace.note.start == 0
+
+
 @given(grooves(), CUTS, st.data())
 def test_a_section_played_as_it_came_in_comes_out_unchanged(
     hits: list[Hit], cuts: list[int], data: st.DataObject

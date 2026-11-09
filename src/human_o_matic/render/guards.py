@@ -2,11 +2,16 @@
 
 Timing, in turn:
 1. Each offset is cut to `MAX_OFFSET_MS` either way.
-2. A grace takes its main note's offset, so a main note and its graces move as one.
+2. A grace takes its main note's offset, so a main note and its graces move as one. A grace the
+   score puts on its main's tick, as on the song's first tick, where it can't go before it, is
+   placed before its main by the gap it was played at, from the source notes.
 3. Across a section boundary, two notes in a row on one pitch each keep to their side of it: the
    earlier at most `BOUNDARY_SHARE` of their grid gap late, the later at most that early, so
    they keep `MIN_GAP_SHARE` of the gap whatever the other section draws.
-4. Each note goes to its nearest tick, and to tick 0 when it would be before it.
+4. Each note goes to its nearest tick, and to tick 0 when it would be before it. When a grace
+   would start before tick 0, its main note goes later with it, so the grace starts at tick 0
+   and keeps its gap, up to the cap: past it, the gap is shortened, and `unmet` counts it. A
+   main note and its graces keep their order, a tick or more apart.
 5. In time order, a note after another of its pitch in its own section, or after a note played as
    it came in, keeps `MIN_GAP_SHARE` of their grid gap and at least a tick, by moving later with
    its main note and graces. A note before one played as it came in keeps it by moving earlier.
@@ -102,7 +107,7 @@ class GuardCounts(BaseModel):
     capped: int = 0
     """Offsets cut to the cap."""
     tick_zero: int = 0
-    """Notes moved to tick 0 from before it."""
+    """Notes that would start before tick 0, moved to it, or later with their graces."""
     gap: int = 0
     """Notes moved, later after a note of their pitch or earlier before a kept one, to keep
     their gap. A note that can't keep both gaps keeps the one from the note before, and counts
@@ -118,8 +123,9 @@ class GuardCounts(BaseModel):
     """Velocities moved off a repeat, or onto their class at a boundary."""
     unmet: int = 0
     """Notes a guard couldn't hold, as when a range is too narrow for it, both gaps can't be
-    kept, or the cap keeps a note short of a kept note's gap. Each is also counted under the
-    guard that moved it, if one did, but for the cap."""
+    kept, the cap keeps a note short of a kept note's gap, or a main note on tick 0 short of
+    its grace's gap. Each is also counted under the guard that moved it, if one did, but for
+    the cap."""
 
 
 @dataclass(slots=True)
@@ -157,6 +163,7 @@ def hold_timing(
     """The ticks and ends of the slots, from each note's offset from its grid point."""
     count = len(slots)
     grid_ms = tempos.ticks_to_ms(np.array([slot.tick for slot in slots], dtype=np.int64))
+    places = _places(slots, grid_ms, tempos)
     rendered = np.array([not slot.kept for slot in slots], dtype=np.bool_)
     mains = np.array([slot.main is None for slot in slots], dtype=np.bool_)
     offsets = np.asarray(offsets_ms, dtype=np.float64).copy()
@@ -185,17 +192,29 @@ def hold_timing(
         if floor > ceiling:
             tally.add("unmet")
             floor = ceiling = (floor + ceiling) / 2
-        offsets[held] = min(max(float(offsets[unit]), floor), ceiling)
+        offset = min(max(float(offsets[unit]), floor), ceiling)
+        drawn = np.rint(tempos.ms_to_ticks(places[held] + offset))
+        tally.add("tick_zero", int(np.count_nonzero(drawn < 0)))
+        zero = -float(places[held].min())
+        """The offset that starts the unit's first note at tick 0."""
+        if offset < zero:
+            if zero > ceiling:
+                tally.add("unmet")
+            offset = max(offset, min(zero, ceiling))
+        offsets[held] = offset
         lowest[held] = floor
 
-    starts = np.rint(tempos.ms_to_ticks(grid_ms + offsets)).astype(np.int64)
+    starts = np.rint(tempos.ms_to_ticks(places + offsets)).astype(np.int64)
     for position, slot in enumerate(slots):
         if slot.kept:
             starts[position] = slot.source.start
-    before = rendered & (starts < 0)
-    tally.add("tick_zero", int(np.count_nonzero(before)))
-    starts[before] = 0
-    earliest = np.maximum(np.floor(tempos.ms_to_ticks(grid_ms + lowest)), 0).astype(np.int64)
+    for unit, held in members.items():
+        if not slots[unit].kept:
+            least = 0
+            for member in sorted(held, key=lambda member: (float(places[member]), member)):
+                starts[member] = max(int(starts[member]), least)
+                least = int(starts[member]) + 1
+    earliest = np.maximum(np.floor(tempos.ms_to_ticks(places + lowest)), 0).astype(np.int64)
 
     kept_after = {
         earlier: later
@@ -296,6 +315,19 @@ def hold_timing(
                     off_orders[position] = min(off_orders[position], slots[after].order)
             ends[position] = max(end, int(starts[position]) + 1)
     return Timed(starts=starts, ends=ends, off_orders=tuple(off_orders))
+
+
+def _places(slots: Sequence[Slot], grid_ms: FloatArray, tempos: TempoMap) -> FloatArray:
+    """Where each note sits before its offset, in milliseconds: its grid point, or for a grace
+    the score puts on its main's tick, as on the song's first tick, its main's less the gap it
+    was played at."""
+    places = grid_ms.copy()
+    for position, slot in enumerate(slots):
+        if slot.main is not None and slot.tick >= slots[slot.main].tick:
+            main = slots[slot.main]
+            gap = tempos.tick_to_ms(main.source.start) - tempos.tick_to_ms(slot.source.start)
+            places[position] = grid_ms[slot.main] - gap
+    return places
 
 
 def _earliest(slot: Slot, tick: int) -> int:

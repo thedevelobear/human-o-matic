@@ -2,7 +2,7 @@
 
 > **Status:** Active. M0 to M2 are merged, and M3's engine, the first of its three PRs, is in review.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-09 (M2 merged, ADRs 0034 to 0042 accepted; M3 started as three PRs with three styles, ADRs 0043 and 0044 proposed; the engine built on `feat/engine`, with `human-o-matic render`, ADRs 0045 to 0054 proposed, and ADRs 0009, 0021 and 0031 amended by ADR 0053; the engine in review; after review, two guard fixes, a smaller instrument seam, tests that reach each guard, and the `skip` exception stated).
+> Last updated: 2026-11-09 (M2 merged, ADRs 0034 to 0042 accepted; M3 started as three PRs with three styles, ADRs 0043 and 0044 proposed; the engine built on `feat/engine`, with `human-o-matic render`, ADRs 0045 to 0054 proposed, and ADRs 0009, 0021 and 0031 amended by ADR 0053; the engine in review; after review, two guard fixes, a smaller instrument seam, tests that reach each guard, and the `skip` exception stated; a flam on the song's first tick kept apart, up to the cap).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 
@@ -328,7 +328,7 @@ Ghosts, flams, rimshots and chokes, asked about as ordinary questions ("add ghos
 - Velocities stay in 1 to 127. Consecutive velocities on one pitch, or on one drum, never repeat ([ADR 0050](../decisions/0050-guards-hold-every-backend-and-keep-each-section-independent.md)).
 - Soft-typed notes always land below normal-typed notes on the same drum in the same section.
 - Rider flip rate stays in 0.70 to 0.85 over a large sample. Default-style unison spread stays at or below about 10 ms.
-- Grace-to-main spacing is preserved. `skip` sections come out unchanged. To another target kit, they keep their velocity and timing, and take the target's pitch and channel as conversion does, with the velocity moved into the target's range ([ADR 0048](../decisions/0048-a-render-writes-the-score-through-the-target-kit-into-the-drum-track.md)).
+- Grace-to-main spacing is preserved. On the song's first tick, where a grace can't go before its main in the score, its main goes later to keep the gap, up to the cap, and a gap over 12 ms is shortened to it ([ADR 0050](../decisions/0050-guards-hold-every-backend-and-keep-each-section-independent.md)). `skip` sections come out unchanged. To another target kit, they keep their velocity and timing, and take the target's pitch and channel as conversion does, with the velocity moved into the target's range ([ADR 0048](../decisions/0048-a-render-writes-the-score-through-the-target-kit-into-the-drum-track.md)).
 
 **End to end:** in Claude Code, run a real song through the full conversation, preview at least one section through the real kit, export, drag into the DAW, and have the owner listen.
 
