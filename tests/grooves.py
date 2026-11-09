@@ -2,7 +2,6 @@
 
 from collections.abc import Iterable, Mapping, Sequence
 from itertools import pairwise
-from typing import Any
 
 from hypothesis import strategies as st
 
@@ -59,9 +58,20 @@ def midi_file(
     return build(track(*messages, (messages[-1][0], end())), ppq=PPQ)
 
 
-def song(hits: Iterable[Hit], **options: Any) -> MidiSong:
+def song(
+    hits: Iterable[Hit],
+    *,
+    bpm: float = 120,
+    tempos: Sequence[tuple[int, float]] = (),
+    signatures: Sequence[tuple[int, int, int]] = (),
+    length: int = 10,
+    events: Sequence[tuple[int, MidoMessage]] = (),
+) -> MidiSong:
     """`midi_file`'s song, read back."""
-    return parse_midi(midi_file(hits, **options))
+    data = midi_file(
+        hits, bpm=bpm, tempos=tempos, signatures=signatures, length=length, events=events
+    )
+    return parse_midi(data)
 
 
 def normalized(midi: MidiSong, kit: DrumKit = GM) -> Normalized:
