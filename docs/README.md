@@ -87,3 +87,4 @@ What was decided, specifically enough to check the code against.
 | [0049](decisions/0049-each-section-draws-from-its-own-seeded-stream.md) | Each section draws from its own seeded stream, and the song's drifts from streams of their own | Proposed |
 | [0050](decisions/0050-guards-hold-every-backend-and-keep-each-section-independent.md) | The guards hold every backend's draws, and never make a section depend on another's | Proposed |
 | [0051](decisions/0051-the-tight-style-s-placeholders-fill-in-what-appendix-a-leaves-out.md) | The `tight` style's placeholders are Appendix A with the values it leaves out filled in | Proposed |
+| [0052](decisions/0052-each-control-is-tested-against-the-statistic-it-mainly-drives.md) | Each control is tested against the statistic it mainly drives, and the plan's properties have exact definitions | Proposed |
