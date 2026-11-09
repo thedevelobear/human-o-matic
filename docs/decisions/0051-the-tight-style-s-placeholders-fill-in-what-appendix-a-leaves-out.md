@@ -24,7 +24,7 @@
 | Timing drift | Three slow processes for the song at 16, 64 and 256 quarters, SD 2.5 ms together (Appendix A) |
 | Shared offset per onset | SD 2.2 × (1.5 - t) ms |
 | Limb offsets | Snare +1 ms, riders +0.7 ms, others 0, and each hit's own jitter with SD 3 - 1.2t ms, cut to ±4 ms |
-| Overall | About 3.7 ms of spread at tightness 0.75, inside Appendix A's 3 to 4 ms, capped at ±12 ms ([ADR 0050](0050-guards-hold-every-backend-and-keep-each-section-independent.md)) |
+| Overall | About 3.7 ms of spread at tightness 0.75 with the drifts at their full spread, and 3.1 ms measured over a 16-bar groove, where the slow drifts show less of theirs: inside Appendix A's 3 to 4 ms. Capped at ±12 ms ([ADR 0050](0050-guards-hold-every-backend-and-keep-each-section-independent.md)) |
 
 - How the roles these rows belong to are found, including three readings of Appendix A, is [ADR 0047](0047-roles-come-from-canonical-families-and-the-score.md).
 
