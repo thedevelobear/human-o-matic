@@ -7,16 +7,16 @@
 - A label file has these keys, and any other key is an error:
   - `midi`: the path to the song's MIDI file, relative to `private/` unless it is absolute.
   - `from_map`: the built-in kit the drums are read through, as `analyze` takes `--from-map` ([ADR 0023](0023-built-in-library-ids.md)).
-  - `bpm`, optional: a constant tempo for a file that has none, as `analyze` takes `--bpm` ([ADR 0032](0032-bpm-is-the-only-tempo-a-user-gives.md)).
+  - `bpm`, optional: a constant tempo that replaces the file's own, as `analyze` takes `--bpm` ([ADR 0016](0016-tempo-and-time-signatures.md)). A file with no tempo needs it, and a `bpm` outside 3.577 to 60,000,000 is an error ([ADR 0032](0032-bpm-is-the-only-tempo-a-user-gives.md)).
   - `track`, optional: the drum track, counting from 0, when the rules of [ADR 0017](0017-the-drums-are-one-whole-track.md) don't settle it, as `analyze` takes `--track`.
-  - `starts`: the bar where each section begins, with bars counted from 0 as `analyze` counts them ([ADR 0016](0016-tempo-and-time-signatures.md)), so a DAW's bar 1 is bar 0 here. The list is strictly increasing, begins with 0 and has at least one start after it, and every start is below the song's `bars` in `analyze`'s summary ([ADR 0033](0033-analyze-takes-flags-and-an-answers-file-and-prints-json.md)).
+  - `starts`: the bar where each section begins, with bars counted from 0 as `analyze` counts them ([ADR 0016](0016-tempo-and-time-signatures.md)), so a DAW's bar 1 is bar 0 here. The list is strictly increasing, begins with 0 and has at least one start after it, and every start is below the song's bar count, `bars` in `analyze`'s summary ([ADR 0033](0033-analyze-takes-flags-and-an-answers-file-and-prints-json.md)).
   - `tuned`, optional: a boolean, `true` for a track the detector's parameters were tuned on. Left out, it is `false`.
 - A song whose sections begin at a DAW's bars 1, 9, 25, 41 and 57 is labelled:
 
   ```toml
   midi = "path/to/song.mid"
   from_map = "gm"
-  bpm = 120      # only when the file has no tempo
+  bpm = 120      # replaces the file's tempo; needed when it has none
   track = 1      # only when the drum track isn't clear
   starts = [0, 8, 24, 40, 56]
   tuned = true   # only when the detector was tuned on this track
