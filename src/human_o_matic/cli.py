@@ -30,7 +30,7 @@ from human_o_matic.decisions import DecisionRequest, DecisionRequired
 from human_o_matic.maps.kit import DrumKit
 from human_o_matic.maps.loader import built_in_maps
 from human_o_matic.midi.io import MidiFileError, MidiSong, read_midi
-from human_o_matic.midi.tempo import MICROSECONDS_PER_MINUTE, tempo_map
+from human_o_matic.midi.tempo import MAX_BPM, MICROSECONDS_PER_MINUTE, MIN_BPM, tempo_map
 from human_o_matic.midi.tracks import DrumTrackReason, choose_drum_track, track_name
 from human_o_matic.normalize.answers import AnswerError
 from human_o_matic.normalize.grid import GRIDS, Grid
@@ -42,11 +42,6 @@ EXIT_OPEN = 3
 """The exit code when a decision request is open."""
 FLAGS = ("from_map", "track", "bpm")
 """Answers given as flags, which the answers file doesn't take."""
-MIN_BPM = 3.577
-"""The slowest tempo `--bpm` takes: a MIDI tempo event holds at most 16,777,215 microseconds
-per quarter note, which is about 3.5763 BPM, here rounded up."""
-MAX_BPM = float(MICROSECONDS_PER_MINUTE)
-"""The fastest tempo `--bpm` takes: 1 microsecond per quarter note."""
 
 _PITCH = re.compile(r"[0-9]+")
 _BEAT = re.compile(r"([0-9]+),([0-9]+)")

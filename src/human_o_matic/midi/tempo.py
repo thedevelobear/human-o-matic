@@ -24,6 +24,12 @@ from human_o_matic.midi.io import Event, MidiSong
 META_TEMPO = 0x51
 META_TIME_SIGNATURE = 0x58
 MICROSECONDS_PER_MINUTE = 60_000_000
+MIN_BPM = 3.577
+"""The slowest `bpm` a user may give: a MIDI tempo event holds at most 16,777,215 microseconds
+per quarter note, which is about 3.5763 BPM, here rounded up. The CLI checks the range, and
+`tempo_map` doesn't."""
+MAX_BPM = float(MICROSECONDS_PER_MINUTE)
+"""The fastest `bpm` a user may give: 1 microsecond per quarter note."""
 MAX_DENOMINATOR_EXPONENT = 6
 """Time signatures with a denominator over 64 are treated as malformed and left out."""
 
