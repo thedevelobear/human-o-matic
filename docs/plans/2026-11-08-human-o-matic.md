@@ -269,6 +269,7 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
 
 ### M4 MCP, skill and the main gate
 - Build the MCP server and skill. Register with `claude mcp add human-o-matic -- uv run --directory ~/Projects/human-o-matic human-o-matic-mcp`, then test a full session in Claude Code.
+- Build `analyze/facts.py`, each section's facts and its compact ASCII pattern, with the MCP tools that return them, such as `get_sections` ([ADR 0035](../decisions/0035-m2-finds-the-sections-and-their-facts-wait-for-m4.md)).
 - `references/vocabulary.md` plus a check of about 30 answers against expected control ranges, run through a real agent session.
 - **Blind test:** `tools/make_ab.py` writes shuffled, anonymized sections and a hidden key. The owner renders them through one kit and rates them, ideally with one or two other producers. Variants:
   1. Quantized, one flat velocity
