@@ -34,7 +34,7 @@ add-bounds = "exact"
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["src", "tests"]
+src = ["src", "tests", "tools"]
 
 [tool.ruff.lint]
 select = [
@@ -55,14 +55,18 @@ select = [
 
 [tool.pyright]
 pythonVersion = "3.12"
-include = ["src", "tests"]
+include = ["src", "tests", "tools"]
 typeCheckingMode = "standard"
-strict = ["src"]
+strict = ["src", "tools"]
+# The tools import each other as scripts do, and the tests import them the same way.
+extraPaths = ["tools"]
 # Local stubs for untyped libraries, such as typings/mido.
 stubPath = "typings"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# The tests import the tools in tools/ as the tools import each other.
+pythonpath = ["tools"]
 addopts = ["-ra", "--strict-markers", "--strict-config"]
 xfail_strict = true
 filterwarnings = ["error"]

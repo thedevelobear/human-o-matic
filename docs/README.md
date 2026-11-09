@@ -36,7 +36,7 @@ What was decided, specifically enough to check the code against.
 ### Decisions
 | # | Decision | Status |
 |---|---|---|
-| [0001](decisions/0001-python-312-with-uv-ruff-pyright-and-pytest.md) | Python 3.12 with uv, ruff, pyright and pytest | Accepted |
+| [0001](decisions/0001-python-312-with-uv-ruff-pyright-and-pytest.md) | Python 3.12 with uv, ruff, pyright and pytest | Accepted. Its line that pyright is strict on `src/` is amended by [ADR 0058](decisions/0058-tools-are-scripts-checked-like-src.md) |
 | [0002](decisions/0002-docs-as-decision-record.md) | docs/ is the decision record | Accepted. Its rule for a changed decision is amended by [ADR 0042](decisions/0042-a-partly-changed-adr-is-marked-amended.md) |
 | [0003](decisions/0003-branches-off-main-merged-without-squashing.md) | Work branches off `main` and merges without squashing | Accepted |
 | [0004](decisions/0004-exact-dependency-versions.md) | Dependencies use exact versions | Accepted |
@@ -90,3 +90,4 @@ What was decided, specifically enough to check the code against.
 | [0052](decisions/0052-each-control-is-tested-against-the-statistic-it-mainly-drives.md) | Each control is tested against the statistic it mainly drives, and the plan's properties have exact definitions | Accepted |
 | [0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) | A controller-bound note keeps its controller value, and following and writing controllers wait for a map that gives them | Accepted |
 | [0054](decisions/0054-human-o-matic-render-writes-a-new-midi-file-by-a-plan-and-prints-json.md) | `human-o-matic render` writes a new MIDI file by a plan, and prints its summary and each section's statistics as JSON | Accepted |
+| [0058](decisions/0058-tools-are-scripts-checked-like-src.md) | Tracked tools are scripts in `tools/`, checked as strictly as `src/`, and tested from `tests/` | Proposed |

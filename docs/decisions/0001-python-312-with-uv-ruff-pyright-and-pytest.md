@@ -1,6 +1,6 @@
 # 0001. Python 3.12 with uv, ruff, pyright and pytest
 
-- **Status:** Accepted
+- **Status:** Accepted. Its line that pyright is strict on `src/` is amended by [ADR 0058](0058-tools-are-scripts-checked-like-src.md)
 - **Date:** 2026-11-08
 
 - The project is Python 3.12 or later, pinned to 3.12 in `.python-version`. The package is `human_o_matic`, in a `src/` layout built with `uv_build`, and `uv.lock` is committed.
