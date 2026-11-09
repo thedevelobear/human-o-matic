@@ -7,7 +7,7 @@
   1. Each offset is cut to ±12 ms (Appendix A), and a grace takes its main note's offset, so a main note and its graces move as one.
   2. Across a section boundary, two notes in a row on one pitch each keep to their side: the earlier at most 0.2 of their grid gap late, the later at most 0.2 early, so they keep 0.6 of it whatever the other section draws.
   3. Each note goes to its nearest tick, and to tick 0 when it would be before it, which is counted.
-  4. In time order, a note after another of its pitch in its own section, or after a note played as it came in, keeps 0.6 of their grid gap (Appendix A) and at least a tick, by moving later with its main note and graces. A note before one played as it came in keeps the gap by moving no later.
+  4. In time order, a note after another of its pitch in its own section, or after a note played as it came in, keeps 0.6 of their grid gap (Appendix A) and at least a tick, by moving later with its main note and graces. A note before one played as it came in keeps the gap by moving earlier, with its main note and graces.
   5. A note held to its controller events stays within them ([ADR 0053](0053-a-controller-bound-note-keeps-its-controller-value.md)), which wins over the gap.
   6. Each note keeps its source length, at least a tick, and ends by the time the next note of its pitch starts, or by the earliest that note could start when it is in another section.
 - **Velocity**, in turn:

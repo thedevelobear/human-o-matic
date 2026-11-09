@@ -9,7 +9,8 @@ Timing, in turn:
 4. Each note goes to its nearest tick, and to tick 0 when it would be before it.
 5. In time order, a note after another of its pitch in its own section, or after a note played as
    it came in, keeps `MIN_GAP_SHARE` of their grid gap and at least a tick, by moving later with
-   its main note and graces. A note before one played as it came in keeps it by moving no later.
+   its main note and graces. A note before one played as it came in keeps it by moving earlier.
+   `unmet` counts a note whose gap can't be kept both ways.
 6. A note a controller value decides or shapes stays within its window, between the controller
    events around its source note (ADR 0053), which wins over the gap.
 7. Each note keeps its source length, at least a tick, and ends by the time the next note of its
@@ -52,6 +53,8 @@ BOUNDARY_SHARE = (1 - MIN_GAP_SHARE) / 2
 """How far into their grid gap each of two notes on one pitch across a boundary may move."""
 MAX_NUDGE = 16
 """How far a velocity is searched either way for one that fits."""
+_FAR = 2**62
+"""Further than any shift, for a side a note is free on."""
 
 type Drum = tuple[str, int]
 type Key = tuple[int, int]
@@ -200,9 +203,10 @@ def hold_timing(
     for unit in order:
         held = members[unit]
         if not slots[unit].kept:
-            need = 0
-            least_shift, most_shift = -(2**62), 2**62
-            bounded = False
+            gap_low, gap_high = -_FAR, _FAR
+            """The shifts that keep the gap from the note before and to a kept note after."""
+            held_low, held_high = -_FAR, _FAR
+            """The shifts that keep the notes within their controller windows."""
             for member in held:
                 slot = slots[member]
                 previous = last.get(slot.key)
@@ -211,21 +215,22 @@ def hold_timing(
                 ):
                     grid = slot.tick - slots[previous].tick
                     least = int(starts[previous]) + max(1, ceil(MIN_GAP_SHARE * grid))
-                    need = max(need, least - int(starts[member]))
-                most_shift = min(most_shift, int(latest[member] - starts[member]))
+                    gap_low = max(gap_low, least - int(starts[member]))
+                gap_high = min(gap_high, int(latest[member] - starts[member]))
                 if slot.window is not None:
-                    bounded = True
-                    least_shift = max(least_shift, slot.window[0] - int(starts[member]))
-                    most_shift = min(most_shift, slot.window[1] - int(starts[member]))
-            shift = need
-            if shift > most_shift:
+                    held_low = max(held_low, slot.window[0] - int(starts[member]))
+                    held_high = min(held_high, slot.window[1] - int(starts[member]))
+            if gap_low > gap_high:
                 tally.add("unmet")
-                shift = most_shift
-            if bounded and shift < least_shift:
-                shift = least_shift
-            if bounded and shift != need:
+                gapped = gap_low
+            else:
+                gapped = min(max(0, gap_low), gap_high)
+            shift = min(max(gapped, held_low), held_high)
+            if shift != gapped:
                 tally.add("controller")
-            elif need > 0:
+                if gap_low <= gap_high and not gap_low <= shift <= gap_high:
+                    tally.add("unmet")
+            elif shift:
                 tally.add("gap")
             starts[held] += shift
         for member in held:
