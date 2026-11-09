@@ -78,3 +78,4 @@ What was decided, specifically enough to check the code against.
 | [0040](decisions/0040-analyze-prints-the-sections-and-its-exit-codes-stay.md) | `human-o-matic analyze` prints the sections beside the summary, and its exit codes stay | Accepted |
 | [0041](decisions/0041-m2-adds-no-runtime-dependency.md) | M2 adds no runtime dependency, and `scipy` waits for code that imports it | Accepted |
 | [0042](decisions/0042-a-partly-changed-adr-is-marked-amended.md) | An accepted ADR that a later one changes in part is marked amended | Accepted |
+| [0043](decisions/0043-m3-is-three-prs-and-its-gate-follows-the-third.md) | M3 is three PRs, the engine, calibration and preview, and its gate follows the third | Proposed |
