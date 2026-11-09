@@ -2,6 +2,7 @@
 
 from collections.abc import Iterable, Mapping, Sequence
 from itertools import pairwise
+from typing import Any
 
 from hypothesis import strategies as st
 
@@ -33,7 +34,7 @@ type Hit = tuple[int, int] | tuple[int, int, int]
 """`(tick, pitch)` at `NORMAL`, or `(tick, pitch, velocity)`."""
 
 
-def song(
+def midi_file(
     hits: Iterable[Hit],
     *,
     bpm: float = 120,
@@ -41,8 +42,8 @@ def song(
     signatures: Sequence[tuple[int, int, int]] = (),
     length: int = 10,
     events: Sequence[tuple[int, MidoMessage]] = (),
-) -> MidiSong:
-    """A one-track song at 960 PPQ, read back. `tempos` are `(tick, bpm)` changes after the
+) -> bytes:
+    """The bytes of a one-track song at 960 PPQ. `tempos` are `(tick, bpm)` changes after the
     first, `signatures` are `(tick, numerator, denominator)`, each note lasts `length` ticks, and
     `events` are other messages at their ticks."""
     items: list[tuple[int, int, MidoMessage]] = [(0, 0, name("Drums")), (0, 0, tempo(bpm))]
@@ -55,7 +56,12 @@ def song(
         items.extend([(tick, 3, on(pitch, velocity)), (tick + length, 2, off(pitch))])
     items.sort(key=lambda item: (item[0], item[1]))
     messages = [(tick, message) for tick, _, message in items]
-    return parse_midi(build(track(*messages, (messages[-1][0], end())), ppq=PPQ))
+    return build(track(*messages, (messages[-1][0], end())), ppq=PPQ)
+
+
+def song(hits: Iterable[Hit], **options: Any) -> MidiSong:
+    """`midi_file`'s song, read back."""
+    return parse_midi(midi_file(hits, **options))
 
 
 def normalized(midi: MidiSong, kit: DrumKit = GM) -> Normalized:

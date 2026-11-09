@@ -89,3 +89,4 @@ What was decided, specifically enough to check the code against.
 | [0051](decisions/0051-the-tight-style-s-placeholders-fill-in-what-appendix-a-leaves-out.md) | The `tight` style's placeholders are Appendix A with the values it leaves out filled in | Proposed |
 | [0052](decisions/0052-each-control-is-tested-against-the-statistic-it-mainly-drives.md) | Each control is tested against the statistic it mainly drives, and the plan's properties have exact definitions | Proposed |
 | [0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) | A controller-bound note keeps its controller value, and following and writing controllers wait for a map that gives them | Proposed |
+| [0054](decisions/0054-human-o-matic-render-writes-a-new-midi-file-by-a-plan-and-prints-json.md) | `human-o-matic render` writes a new MIDI file by a plan, and prints its summary and each section's statistics as JSON | Proposed |

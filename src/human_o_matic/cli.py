@@ -1,4 +1,4 @@
-"""The command line: `human-o-matic analyze`, for tests and scripting.
+"""The command line: `human-o-matic analyze` and `human-o-matic render`, for tests and scripting.
 
 `analyze` reads a MIDI file through a built-in kit, normalizes its drums and finds their
 sections, then prints one line of compact JSON on stdout: a summary of what was found, the
@@ -9,6 +9,11 @@ and the requests, and it only reads: it writes no file and converts to no other 
 The requests are answered by running it again. `--from-map`, `--track` and `--bpm` are flags, and
 `--answers` names a JSON file holding `unmapped`, `grids` and `hit_types`, the other arguments a
 request's `answer_with` names (ADR 0033).
+
+`render` does the same, then renders the drums by a plan and writes them to a new MIDI file,
+through `--to-map` when given, and prints its summary and each section's statistics instead
+(ADR 0054). Its answers file also takes `substitutions`, and `--plan` names a JSON file of the
+song's controls and each section's. It writes nothing while a request is open.
 
 The exit code is 0 when no request is open and 3 when one is, with the JSON printed either way.
 A usage error, such as a map that doesn't exist, a `--bpm` outside `MIN_BPM` to `MAX_BPM`, or an
@@ -29,9 +34,17 @@ import typer
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, JsonValue, ValidationError
 
 from human_o_matic.analyze.sections import Sections, SectionSource, drum_bars, find_sections
+from human_o_matic.controls import (
+    MAX_SEED,
+    ControlVector,
+    SectionPlan,
+    SessionPlan,
+    StyleName,
+)
 from human_o_matic.decisions import DecisionRequest, DecisionRequired
+from human_o_matic.maps.kit import DrumKit
 from human_o_matic.maps.loader import find_kit
-from human_o_matic.midi.io import MidiFileError, MidiSong, read_midi
+from human_o_matic.midi.io import MidiFileError, MidiSong, read_midi, write_midi
 from human_o_matic.midi.tempo import MAX_BPM, MICROSECONDS_PER_MINUTE, MIN_BPM, tempo_map
 from human_o_matic.midi.tracks import DrumTrackReason, choose_drum_track, track_name
 from human_o_matic.normalize.answers import AnswerError
@@ -39,6 +52,11 @@ from human_o_matic.normalize.grid import GRIDS, Grid
 from human_o_matic.normalize.hit_types import HitTypeBounds
 from human_o_matic.normalize.pipeline import normalize
 from human_o_matic.normalize.score import Normalized
+from human_o_matic.render.engine import render
+from human_o_matic.render.guards import GuardCounts
+from human_o_matic.render.measure import SectionStats, section_stats
+from human_o_matic.render.style import STYLES
+from human_o_matic.render.target import place_score
 
 EXIT_OPEN = 3
 """The exit code when a decision request is open."""
@@ -413,3 +431,324 @@ def analyze(
     typer.echo(report(summary, sections, normalized.decisions))
     if normalized.decisions:
         raise typer.Exit(EXIT_OPEN)
+
+
+class RenderAnswers(Answers):
+    """The answers file of `render`: those of `analyze`, and `substitutions`, from a source
+    articulation to an articulation of the target kit or `"drop"`, for `conversion` requests."""
+
+    substitutions: dict[str, str] = Field(default_factory=dict[str, str])
+
+
+def read_render_answers(text: str) -> RenderAnswers:
+    """The answers in the text of `render`'s answers file. Raises `ValueError` saying what is
+    wrong."""
+    try:
+        return RenderAnswers.model_validate_json(text)
+    except ValidationError as error:
+        raise ValueError("; ".join(_problems(error))) from error
+
+
+def _bar(value: object) -> object:
+    """A bar key, written in decimal, as a number."""
+    if isinstance(value, str):
+        if _PITCH.fullmatch(value) is None:
+            raise ValueError(f"{value!r} is not a bar, counted from 0")
+        return int(value)
+    return value
+
+
+type BarKey = Annotated[int, BeforeValidator(_bar), Field(ge=0)]
+
+
+class PlanFile(BaseModel):
+    """The plan file of `render`: the song's `controls`, and each section's under `sections`,
+    by the bar it starts at, counted from 0 as `analyze` prints `start`, such as `"8"`."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    controls: ControlVector = ControlVector()
+    sections: dict[BarKey, ControlVector] = Field(default_factory=dict[BarKey, ControlVector])
+
+
+def read_plan(text: str) -> PlanFile:
+    """The plan in the text of a plan file. Raises `ValueError` saying what is wrong."""
+    try:
+        return PlanFile.model_validate_json(text)
+    except ValidationError as error:
+        raise ValueError("; ".join(_problems(error))) from error
+
+
+class RenderedNotes(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    written: int
+    """The drum notes written."""
+    kept: int
+    """Of those, the notes of sections played as they came in."""
+    dropped: int
+    """Drum notes an `unmapped` or `substitutions` answer left out."""
+
+
+class RenderSummary(BaseModel):
+    """What `render` wrote, as counts. No note is listed."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    file: str
+    output: str
+    kit: str
+    """The kit the file was read with, as `library/kit`."""
+    to_kit: str
+    """The kit it was written to."""
+    style: StyleName
+    placeholder: bool
+    """Whether the style's numbers are placeholders calibration hasn't replaced yet."""
+    seed: int
+    notes: RenderedNotes
+    guards: GuardCounts
+
+
+class RenderedSection(BaseModel):
+    """One section as `render` prints it."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    start: int
+    bars: int
+    group: str
+    skip: bool
+    """Played as it came in."""
+    stats: SectionStats
+
+
+def render_report(
+    summary: RenderSummary | None,
+    sections: Sequence[RenderedSection | SectionEntry],
+    decisions: Sequence[DecisionRequest],
+) -> str:
+    """The compact JSON `render` prints: the summary unless nothing was written, the sections,
+    and the decision requests."""
+    out: dict[str, JsonValue] = {}
+    if summary is not None:
+        out["summary"] = summary.model_dump(mode="json")
+    out["sections"] = [section.model_dump(mode="json") for section in sections]
+    out["decisions"] = [request.model_dump(mode="json") for request in decisions]
+    return json.dumps(out, separators=(",", ":"))
+
+
+def _kit(name: str, flag: str) -> DrumKit:
+    try:
+        return find_kit(name)
+    except KeyError as error:
+        raise typer.BadParameter(str(error.args[0]), param_hint=f"'{flag}'") from error
+
+
+@app.command(name="render")
+def render_song(
+    midi_file: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            metavar="MIDI_FILE",
+            help="The MIDI file to read.",
+        ),
+    ],
+    from_map: Annotated[
+        str,
+        typer.Option(
+            "--from-map",
+            metavar="LIBRARY[/KIT]",
+            help="The built-in map the file is in. A library with one kit needs no kit.",
+        ),
+    ],
+    output: Annotated[
+        Path,
+        typer.Option(
+            "--output",
+            "-o",
+            dir_okay=False,
+            help="The MIDI file to write: never the input, and not one that exists unless "
+            "--overwrite is given.",
+        ),
+    ],
+    seed: Annotated[
+        int,
+        typer.Option(
+            min=0,
+            max=MAX_SEED,
+            help="The seed. The same file, answers, plan and seed write the same bytes.",
+        ),
+    ],
+    to_map: Annotated[
+        str | None,
+        typer.Option(
+            "--to-map",
+            metavar="LIBRARY[/KIT]",
+            help="The built-in map to write to. Left out, the file's own.",
+        ),
+    ] = None,
+    track: Annotated[
+        int | None, typer.Option(min=0, help="The track that holds the drums, from 0.")
+    ] = None,
+    bpm: Annotated[
+        float | None,
+        typer.Option(
+            help=f"A constant tempo, which replaces the file's: {MIN_BPM:g} to {MAX_BPM:.0f} BPM."
+        ),
+    ] = None,
+    style: Annotated[
+        str, typer.Option(help="The style. Only tight exists until calibration.")
+    ] = "tight",
+    answers: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="A JSON file of answers: unmapped, grids, hit_types and substitutions.",
+        ),
+    ] = None,
+    plan: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True,
+            dir_okay=False,
+            readable=True,
+            help="A JSON file of controls: the song's, and each section's by its first bar.",
+        ),
+    ] = None,
+    overwrite: Annotated[
+        bool, typer.Option("--overwrite", help="Replace the output file if it exists.")
+    ] = False,
+) -> None:
+    """Normalize a song's drums, find their sections, render them by a plan and write a new MIDI
+    file, then print a summary and each section's statistics as JSON."""
+    kit = _kit(from_map, "--from-map")
+    target = _kit(to_map, "--to-map") if to_map is not None else kit
+    if bpm is not None and not MIN_BPM <= bpm <= MAX_BPM:
+        raise typer.BadParameter(
+            f"{bpm} is outside {MIN_BPM:g} to {MAX_BPM:.0f} BPM, a range of tempos a MIDI file "
+            "can hold",
+            param_hint="'--bpm'",
+        )
+    chosen: StyleName | None = None
+    for name in STYLES:
+        if name == style:
+            chosen = name
+    if chosen is None:
+        raise typer.BadParameter(
+            f"{style!r} is not a style; there is {', '.join(STYLES)}", param_hint="'--style'"
+        )
+    if output.resolve() == midi_file.resolve():
+        raise typer.BadParameter(
+            "it is the input file, which is never overwritten", param_hint="'--output'"
+        )
+    if output.exists() and not overwrite:
+        raise typer.BadParameter(
+            f"{output} exists; give --overwrite to replace it", param_hint="'--output'"
+        )
+    given = RenderAnswers()
+    if answers is not None:
+        try:
+            given = read_render_answers(answers.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            raise typer.BadParameter(str(error), param_hint="'--answers'") from error
+    controls = PlanFile()
+    if plan is not None:
+        try:
+            controls = read_plan(plan.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            raise typer.BadParameter(str(error), param_hint="'--plan'") from error
+    try:
+        song = read_midi(midi_file)
+    except (OSError, MidiFileError) as error:
+        raise typer.BadParameter(str(error), param_hint="'MIDI_FILE'") from error
+    try:
+        normalized = normalize(
+            song,
+            kit,
+            track=track,
+            bpm=bpm,
+            unmapped=given.unmapped,
+            grids=given.grids,
+            hit_types=given.hit_types,
+        )
+    except DecisionRequired as asked:
+        typer.echo(render_report(None, (), [asked.request]))
+        raise typer.Exit(EXIT_OPEN) from None
+    except MidiFileError as error:
+        raise typer.BadParameter(str(error), param_hint="'MIDI_FILE'") from error
+    except AnswerError as error:
+        raise typer.BadParameter(answer_problem(error), param_hint="'--answers'") from error
+    found = find_sections(song, normalized.score)
+    entries = [
+        SectionEntry(start=section.start, bars=section.bars, group=section.group)
+        for section in found.sections
+    ]
+    try:
+        placement = place_score(normalized.score, kit, target, given.substitutions)
+    except AnswerError as error:
+        raise typer.BadParameter(answer_problem(error), param_hint="'--answers'") from error
+    except ValueError as error:
+        raise typer.BadParameter(f"substitutions.{error}", param_hint="'--answers'") from error
+    decisions = [*normalized.decisions, *placement.decisions]
+    if decisions:
+        typer.echo(render_report(None, entries, decisions))
+        raise typer.Exit(EXIT_OPEN)
+    starts = [section.start for section in found.sections]
+    for start in sorted(controls.sections):
+        if start not in starts:
+            listed = ", ".join(str(bar) for bar in starts)
+            raise typer.BadParameter(
+                f"sections.{start}: no section starts at bar {start}; they start at {listed}",
+                param_hint="'--plan'",
+            )
+    session = SessionPlan(
+        style=chosen,
+        seed=seed,
+        controls=controls.controls,
+        sections=tuple(
+            SectionPlan(
+                start=section.start,
+                bars=section.bars,
+                group=section.group,
+                controls=controls.sections.get(section.start, ControlVector()),
+            )
+            for section in found.sections
+        ),
+    )
+    rendered = render(song, normalized, placement, session)
+    try:
+        write_midi(rendered.song, output, overwrite=overwrite)
+    except OSError as error:
+        raise typer.BadParameter(str(error), param_hint="'--output'") from error
+    defaults = STYLES[chosen].defaults
+    summary = RenderSummary(
+        file=str(midi_file),
+        output=str(output),
+        kit=kit.ref,
+        to_kit=target.ref,
+        style=chosen,
+        placeholder=STYLES[chosen].placeholder,
+        seed=seed,
+        notes=RenderedNotes(
+            written=len(rendered.notes),
+            kept=sum(note.kept for note in rendered.notes),
+            dropped=len(normalized.dropped) + len(placement.dropped),
+        ),
+        guards=rendered.guards,
+    )
+    sections = [
+        RenderedSection(
+            start=section.start,
+            bars=section.bars,
+            group=section.group,
+            skip=session.controls_of(section, defaults).skip,
+            stats=section_stats([note for note in rendered.notes if note.section == number]),
+        )
+        for number, section in enumerate(session.sections)
+    ]
+    typer.echo(render_report(summary, sections, ()))
