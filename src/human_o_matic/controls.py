@@ -36,7 +36,7 @@ class Controls(BaseModel):
     model_config = _STRICT
 
     energy: Unit
-    """Velocity centres and floors, and accent strength."""
+    """Velocity centers and floors, and accent strength."""
     groove: Unit
     """Accent contrast, soft note presence, and the riders' strong and weak hits."""
     dynamic_range: Unit
