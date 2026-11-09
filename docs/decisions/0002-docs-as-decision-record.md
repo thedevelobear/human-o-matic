@@ -1,6 +1,6 @@
 # 0002. docs/ is the decision record
 
-- **Status:** Accepted
+- **Status:** Accepted. Its rule for a changed decision is amended by [ADR 0042](0042-a-partly-changed-adr-is-marked-amended.md)
 - **Date:** 2026-11-08
 
 `docs/` records what was decided and why, indexed by `docs/README.md`:

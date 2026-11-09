@@ -6,7 +6,7 @@ What happened in this repo and why, for people and coding agents. Start here, th
 The layout and its rules are set in [ADR 0002](decisions/0002-docs-as-decision-record.md).
 
 - `plans/` holds plans for multi-PR work, named `YYYY-MM-DD-topic.md`. A plan is a living document: each PR updates its progress table and any section the PR changes. A plan that is replaced wholesale stays unchanged, apart from a status line pointing at its successor.
-- `decisions/` holds architecture decision records (ADRs), one decision per file, named `NNNN-topic.md`. An ADR is never edited after merge, except its status line. A changed decision gets a new ADR, and the old one is marked `Superseded by NNNN`.
+- `decisions/` holds architecture decision records (ADRs), one decision per file, named `NNNN-topic.md`. An ADR is never edited after merge, except its status line. A changed decision gets a new ADR, and the old one is marked `Superseded by NNNN`, or `Accepted. Its <part> is amended by NNNN` when the new ADR changes only part of it ([ADR 0042](decisions/0042-a-partly-changed-adr-is-marked-amended.md)).
 
 A PR that makes or changes a decision adds the ADR and updates the active plan in the same PR.
 
@@ -16,7 +16,7 @@ ADRs are short. They state what was decided and why, not who decided it, how, or
 ```md
 # NNNN. Title stating the decision
 
-- **Status:** Proposed | Accepted | Superseded by [NNNN](NNNN-topic.md)
+- **Status:** Proposed | Accepted | Accepted. Its <part> is amended by [ADR NNNN](NNNN-topic.md) | Superseded by [NNNN](NNNN-topic.md)
 - **Date:** YYYY-MM-DD
 
 What was decided, specifically enough to check the code against.
@@ -37,7 +37,7 @@ What was decided, specifically enough to check the code against.
 | # | Decision | Status |
 |---|---|---|
 | [0001](decisions/0001-python-312-with-uv-ruff-pyright-and-pytest.md) | Python 3.12 with uv, ruff, pyright and pytest | Accepted |
-| [0002](decisions/0002-docs-as-decision-record.md) | docs/ is the decision record | Accepted |
+| [0002](decisions/0002-docs-as-decision-record.md) | docs/ is the decision record | Accepted. Its rule for a changed decision is amended by [ADR 0042](decisions/0042-a-partly-changed-adr-is-marked-amended.md) |
 | [0003](decisions/0003-branches-off-main-merged-without-squashing.md) | Work branches off `main` and merges without squashing | Accepted |
 | [0004](decisions/0004-exact-dependency-versions.md) | Dependencies use exact versions | Accepted |
 | [0005](decisions/0005-orchestrated-agents.md) | Claude Code works through an orchestrator, a developer and QA | Accepted |
@@ -47,7 +47,7 @@ What was decided, specifically enough to check the code against.
 | [0009](decisions/0009-m1-resolves-notes-channels-and-velocity-ranges.md) | M1 resolves notes, channels and velocity ranges, and CC-driven articulations wait for M3 | Accepted |
 | [0010](decisions/0010-built-in-maps-only.md) | Maps are built in, and this version loads no user-supplied map file | Accepted |
 | [0011](decisions/0011-m1-maps-for-general-midi-and-drum-libraries.md) | M1 ships a General MIDI map and maps for ten drum libraries | Accepted |
-| [0012](decisions/0012-runtime-dependencies-arrive-with-their-milestone.md) | M1 adds mido, numpy, pydantic and typer, and other runtime dependencies wait for their milestone | Accepted. Its `scipy` line superseded by 0041 |
+| [0012](decisions/0012-runtime-dependencies-arrive-with-their-milestone.md) | M1 adds mido, numpy, pydantic and typer, and other runtime dependencies wait for their milestone | Accepted. Its line on `scipy` is amended by [ADR 0041](decisions/0041-m2-adds-no-runtime-dependency.md) |
 | [0013](decisions/0013-midi-is-read-into-notes-and-raw-events.md) | MIDI files are read into paired notes and raw events at absolute ticks | Accepted |
 | [0014](decisions/0014-work-at-a-whole-multiple-of-the-source-ppq.md) | Songs are worked on and written at the smallest multiple of their PPQ that is at least 960 | Accepted |
 | [0015](decisions/0015-unclear-input-is-a-decision-request.md) | Unclear input is a decision request, raised as `DecisionRequired` | Accepted |
@@ -68,7 +68,7 @@ What was decided, specifically enough to check the code against.
 | [0030](decisions/0030-hit-types-cluster-each-familys-velocities.md) | Hit types come from clear groups in each family's velocities, and anything else is normal and asked about | Accepted |
 | [0031](decisions/0031-the-score-is-frozen-canonical-hits-with-their-source-notes.md) | The score is frozen canonical hits on a grid that keep their source notes | Accepted |
 | [0032](decisions/0032-bpm-is-the-only-tempo-a-user-gives.md) | `bpm` is the only tempo a user gives, and there is no `tempo_map` argument | Accepted |
-| [0033](decisions/0033-analyze-takes-flags-and-an-answers-file-and-prints-json.md) | `human-o-matic analyze` takes flags and an answers file, and prints a summary and the requests as JSON | Accepted. Its printed line extended by 0040 |
+| [0033](decisions/0033-analyze-takes-flags-and-an-answers-file-and-prints-json.md) | `human-o-matic analyze` takes flags and an answers file, and prints a summary and the requests as JSON | Accepted. Its printed line is amended by [ADR 0040](decisions/0040-analyze-prints-the-sections-and-its-exit-codes-stay.md) |
 | [0034](decisions/0034-the-m2-exit-is-scored-on-hand-labelled-section-starts.md) | The M2 exit is scored on hand-labelled section starts in `private/labels/` | Proposed |
 | [0035](decisions/0035-m2-finds-the-sections-and-their-facts-wait-for-m4.md) | M2 finds the sections, and their facts and ASCII pattern wait for M4 | Proposed |
 | [0036](decisions/0036-a-bar-is-its-onset-pattern-in-each-family.md) | A bar is its onset pattern in each drum family, and bars are as alike as the cosine of their patterns | Proposed |
@@ -77,3 +77,4 @@ What was decided, specifically enough to check the code against.
 | [0039](decisions/0039-smf-markers-start-sections-at-the-nearest-bar-line.md) | An SMF marker starts a section at the nearest bar line, and markers win when one starts a section | Proposed |
 | [0040](decisions/0040-analyze-prints-the-sections-and-its-exit-codes-stay.md) | `human-o-matic analyze` prints the sections beside the summary, and its exit codes stay | Proposed |
 | [0041](decisions/0041-m2-adds-no-runtime-dependency.md) | M2 adds no runtime dependency, and `scipy` waits for code that imports it | Proposed |
+| [0042](decisions/0042-a-partly-changed-adr-is-marked-amended.md) | An accepted ADR that a later one changes in part is marked amended | Proposed |
