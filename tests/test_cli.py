@@ -28,6 +28,10 @@ UNCLEAR = [(0, UNMAPPED, 100), (0, KICK, 100), (PPQ + 340, SNARE, 100), (2 * PPQ
 """An unmapped note, a beat that could be 16ths or 8th triplets, and one velocity."""
 ALL_NORMAL = {"hit_types": {"kick": {}, "snare": {}, "hat": {}}}
 
+type Json = dict[str, Any]
+"""Parsed JSON, which the assertions index freely. A precise JSON type would need narrowing at
+every step, so its values are `Any`."""
+
 runner = CliRunner()
 
 
@@ -60,7 +64,7 @@ def analyze(*args: str | Path) -> Result:
     return runner.invoke(app, ["analyze", *(str(arg) for arg in args)])
 
 
-def output(result: Result) -> dict[str, Any]:
+def output(result: Result) -> Json:
     out = json.loads(result.stdout)
     assert isinstance(out, dict)
     return out
@@ -154,7 +158,7 @@ def test_an_unclear_drum_track_prints_only_its_request(tmp_path: Path) -> None:
     assert output(answered)["summary"]["track"] == {"index": 1, "name": "", "reason": "argument"}
 
 
-def answer(request: dict[str, Any]) -> dict[str, Any]:
+def answer(request: Json) -> Json:
     """The answers file entry that settles a request, built from what the request lists."""
     details = request["details"]
     match request["kind"]:
@@ -189,7 +193,7 @@ def test_an_answer_built_from_its_request_settles_it(tmp_path: Path, kind: str) 
 def test_answers_to_every_request_close_them_all(tmp_path: Path) -> None:
     song = drums(tmp_path, UNCLEAR)
     asked = output(analyze(song, "--from-map", "gm"))
-    answers: dict[str, Any] = {}
+    answers: Json = {}
     for request in asked["decisions"]:
         answers |= answer(request)
 
