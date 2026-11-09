@@ -312,13 +312,16 @@ def test_bad_flags_are_usage_errors(tmp_path: Path, args: list[str]) -> None:
     usage_error(analyze(*(str(song) if arg == "DRUMS" else arg for arg in args)))
 
 
-@pytest.mark.parametrize("bpm", ["0", "-120", "1e-320", "3.576", "60000001", "inf", "nan"])
-def test_a_tempo_a_midi_file_cant_hold_is_a_usage_error(tmp_path: Path, bpm: str) -> None:
+@pytest.mark.parametrize(
+    "bpm", ["0", "-120", "1e-320", "3.576", "3.5765", "60000001", "inf", "nan"]
+)
+def test_a_bpm_outside_its_range_is_a_usage_error(tmp_path: Path, bpm: str) -> None:
+    # 3.5765 BPM fits a tempo event, but the range starts at 3.577, the slowest tempo rounded up.
     result = analyze(drums(tmp_path, GROOVE), "--from-map", "gm", "--bpm", bpm)
 
     stderr = usage_error(result)
     assert "Invalid value for '--bpm'" in stderr
-    assert "is not a tempo a MIDI file can hold, from 3.577 to 60000000 BPM" in stderr
+    assert f"{float(bpm)} is outside 3.577 to 60000000 BPM, a range of tempos a MIDI" in stderr
 
 
 @pytest.mark.parametrize("bpm", ["3.577", "60000000"])

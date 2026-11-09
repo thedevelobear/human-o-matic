@@ -10,8 +10,9 @@ The requests are answered by running it again. `--from-map`, `--track` and `--bp
 request's `answer_with` names (ADR 0033).
 
 The exit code is 0 when no request is open and 3 when one is, with the JSON printed either way.
-A usage error, such as a map that doesn't exist, a tempo a MIDI file can't hold, or an answer
-that names something the song doesn't have (`AnswerError`), is 2 with its message on stderr.
+A usage error, such as a map that doesn't exist, a `--bpm` outside `MIN_BPM` to `MAX_BPM`, or an
+answer that names something the song doesn't have (`AnswerError`), is 2 with its message on
+stderr.
 Anything else is a crash, 1.
 """
 
@@ -349,7 +350,8 @@ def analyze(
         raise typer.BadParameter(str(error.args[0]), param_hint="'--from-map'") from error
     if bpm is not None and not MIN_BPM <= bpm <= MAX_BPM:
         raise typer.BadParameter(
-            f"{bpm} is not a tempo a MIDI file can hold, from {MIN_BPM:g} to {MAX_BPM:.0f} BPM",
+            f"{bpm} is outside {MIN_BPM:g} to {MAX_BPM:.0f} BPM, a range of tempos a MIDI file "
+            "can hold",
             param_hint="'--bpm'",
         )
     given = Answers()
