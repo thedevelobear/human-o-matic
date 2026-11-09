@@ -14,7 +14,7 @@
 | Bands | Velocities reflect below the center less 6 for kick and backbeats and less 8 for accent cymbals (Appendix A's 116, 117 and floor 114 at energy 1.0), and below 1 for the rest |
 | Velocity noise | SD 2.5 × (0.5 + d), for every role |
 | Double kick | Feet ±3 about the center |
-| Rider | Strong hits the gap above the center, weak ones the gap below: gap (4 + 10d) × (0.6 + 0.8g). One alternating hit is strong and the next weak, or the other way, 0.775 of the time (Appendix A's 0.75 to 0.80) |
+| Rider | Strong hits half the gap above the center, weak ones half the gap below: gap (4 + 10d) × (0.6 + 0.8g). One alternating hit is strong and the next weak, or the other way, 0.775 of the time (Appendix A's 0.75 to 0.80) |
 | Accent-typed notes | The center plus (2 + 6e) × (0.5 + g), reflected below 127 |
 | Soft-typed notes | Center 25 + 30 × (0.6 gl + 0.2 e + 0.2 g), held from 0 to 1 inside, SD 2.5 |
 | Fills | The other-snare center + 6 × (fi - 0.5), plus 6, 5, 2 or 0 on a quarter, 8th, 16th or elsewhere, ±2 by hands in turn, and a crescendo rising to 11 × fi over the fill's last 4 quarters at most |

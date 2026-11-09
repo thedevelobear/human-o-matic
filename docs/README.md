@@ -81,4 +81,5 @@ What was decided, specifically enough to check the code against.
 | [0043](decisions/0043-m3-is-three-prs-and-its-gate-follows-the-third.md) | M3 is three PRs, the engine, calibration and preview, and its gate follows the third | Proposed |
 | [0044](decisions/0044-m3-ships-tight-medium-and-loose-styles-pooled-by-tightness.md) | M3 ships the styles `tight`, `medium` and `loose` only, pooled by tightness band, with no named or numbered drummers | Proposed |
 | [0046](decisions/0046-controls-are-layered-pydantic-models-with-a-json-round-trip.md) | The controls are layered pydantic models with a JSON round trip | Proposed |
+| [0047](decisions/0047-roles-come-from-canonical-families-and-the-score.md) | Roles come from canonical families and the score, never from a pitch | Proposed |
 | [0051](decisions/0051-the-tight-style-s-placeholders-fill-in-what-appendix-a-leaves-out.md) | The `tight` style's placeholders are Appendix A with the values it leaves out filled in | Proposed |
