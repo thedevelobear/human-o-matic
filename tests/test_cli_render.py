@@ -7,10 +7,11 @@ from typing import Any
 import pytest
 from typer.testing import CliRunner, Result
 
-from grooves import BAR, COWBELL, KICK, PPQ, RIDE, SNARE, Hit, midi_file, rock
+from grooves import BAR, COWBELL, HAT, KICK, PPQ, RIDE, SNARE, Hit, midi_file, rock
 from human_o_matic.cli import app, read_plan
 from human_o_matic.controls import MAX_SEED, ControlVector
 from human_o_matic.midi.io import read_midi
+from midi_files import MidoMessage, build, end, name, off, on, tempo, track
 
 type Json = dict[str, Any]
 """Parsed JSON, which the assertions index freely."""
@@ -94,13 +95,17 @@ def test_a_clean_render_writes_the_file_and_prints_its_summary(tmp_path: Path) -
 
 
 def test_the_same_file_answers_plan_and_seed_write_the_same_bytes(tmp_path: Path) -> None:
-    first = render(*clean_args(tmp_path))
-    again = render(*clean_args(tmp_path), "--overwrite")
-    other = tmp_path / "other.mid"
+    out_file = tmp_path / "out.mid"
 
-    assert first.exit_code == again.exit_code == 0
-    render(*clean_args(tmp_path)[:-2], "-o", other)
-    assert (tmp_path / "out.mid").read_bytes() == other.read_bytes()
+    first = render(*clean_args(tmp_path))
+    written = out_file.read_bytes()
+    again = render(*clean_args(tmp_path), "--overwrite")
+    other = render(*clean_args(tmp_path)[:-2], "--seed", "8", "-o", tmp_path / "other.mid")
+
+    assert first.exit_code == again.exit_code == other.exit_code == 0
+    assert out_file.read_bytes() == written
+    assert first.stdout == again.stdout
+    assert (tmp_path / "other.mid").read_bytes() != written
 
 
 def test_an_open_request_prints_the_sections_and_requests_writes_nothing_and_exits_3(
@@ -260,3 +265,69 @@ def test_an_error_in_the_render_is_a_crash_and_writes_nothing(
     assert result.exit_code == 1
     assert isinstance(result.exception, ValueError)
     assert not (tmp_path / "out.mid").exists()
+
+
+def test_track_settles_which_track_holds_the_drums(tmp_path: Path) -> None:
+    def part(pitches: tuple[int, int]) -> list[MidoMessage]:
+        items: list[tuple[int, MidoMessage]] = [(0, tempo(120))]
+        for beat in range(8):
+            pitch = pitches[beat % 2]
+            items.extend([(beat * PPQ, on(pitch, channel=0)), (beat * PPQ + 10, off(pitch, 0))])
+        return track(*items, (8 * PPQ, end()))
+
+    song = tmp_path / "two.mid"
+    song.write_bytes(build(part((60, 64)), part((KICK, SNARE)), ppq=PPQ))
+    answers = json_file(tmp_path, "answers.json", {"hit_types": {"kick": TYPED, "snare": TYPED}})
+    args = [song, "--from-map", "gm", "--answers", answers, "--seed", "1"]
+
+    asked = render(*args, "-o", tmp_path / "a.mid")
+    chosen = render(*args, "--track", "1", "-o", tmp_path / "b.mid")
+
+    assert asked.exit_code == 3, asked.output
+    assert output(asked) == {"sections": [], "decisions": output(asked)["decisions"]}
+    assert [request["kind"] for request in output(asked)["decisions"]] == ["drum_track"]
+    assert not (tmp_path / "a.mid").exists()
+    assert chosen.exit_code == 0, chosen.output
+    written = read_midi(tmp_path / "b.mid")
+    assert [note.pitch for note in written.notes if note.track == 0] == [60, 64] * 4
+
+
+def test_bpm_gives_a_file_with_no_tempo_its_tempo(tmp_path: Path) -> None:
+    items: list[tuple[int, MidoMessage]] = [(0, name("Drums"))]
+    for hit in sorted(rock(2)):
+        items.extend([(hit[0], on(hit[1])), (hit[0] + 10, off(hit[1]))])
+    items.sort(key=lambda item: item[0])
+    song = tmp_path / "untimed.mid"
+    song.write_bytes(build(track(*items, (2 * BAR, end())), ppq=PPQ))
+    answers = json_file(tmp_path, "answers.json", ANSWERS)
+    args = [song, "--from-map", "gm", "--answers", answers, "--seed", "1"]
+
+    asked = render(*args, "-o", tmp_path / "a.mid")
+    given = render(*args, "--bpm", "100", "-o", tmp_path / "b.mid")
+
+    assert asked.exit_code == 3, asked.output
+    assert [request["kind"] for request in output(asked)["decisions"]] == ["tempo"]
+    assert given.exit_code == 0, given.output
+
+
+def test_bpm_replaces_the_file_s_tempo_for_the_timing_and_the_file_keeps_its_own(
+    tmp_path: Path,
+) -> None:
+    hats: list[Hit] = [(eighth * PPQ // 2, HAT) for eighth in range(64)]
+    song = tmp_path / "slow.mid"
+    song.write_bytes(midi_file(hats, bpm=60))
+    answers = json_file(tmp_path, "answers.json", {"hit_types": {"hat": TYPED}})
+    loose = json_file(tmp_path, "plan.json", {"controls": {"tightness": 0, "feel": 1}})
+    args = [song, "--from-map", "gm", "--answers", answers, "--plan", loose, "--seed", "5"]
+
+    as_written = render(*args, "-o", tmp_path / "file.mid")
+    replaced = render(*args, "--bpm", "240", "-o", tmp_path / "given.mid")
+
+    def furthest(name: str) -> int:
+        written = sorted(note.start for note in read_midi(tmp_path / name).notes)
+        return max(abs(start - hit[0]) for start, hit in zip(written, hats, strict=True))
+
+    assert as_written.exit_code == replaced.exit_code == 0
+    # 12 ms is 12 ticks at 60 BPM and 46 at 240, so only the given tempo reaches past 13.
+    assert furthest("file.mid") <= 13 < furthest("given.mid") <= 47
+    assert read_midi(tmp_path / "given.mid").events == read_midi(song).events
