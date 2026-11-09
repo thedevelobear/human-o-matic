@@ -1,12 +1,13 @@
 """The guards on slots built by hand: each rule, and what each counts (ADR 0050)."""
 
+from dataclasses import replace
 from math import ceil
 
 import numpy as np
 
 from human_o_matic.midi.io import Note
 from human_o_matic.midi.tempo import TempoMap
-from human_o_matic.render.guards import Slot, Tally, hold_timing
+from human_o_matic.render.guards import Slot, Tally, hold_timing, hold_velocity
 
 PPQ = 960
 TEMPO = TempoMap.constant(PPQ, 120)
@@ -148,3 +149,26 @@ def test_a_note_inside_its_controller_window_stays_and_one_before_it_moves_to_it
     assert inside.starts[0] == 1050
     assert before.starts[0] == 1060
     assert tally.frozen().controller == 1
+
+
+def test_a_note_is_held_no_lower_than_1_below_the_lowest_where_its_drum_has_soft_notes() -> None:
+    # A soft snare, then a snare at the lowest normal velocity, a sidestick, and a snare that
+    # can't repeat the snare or the sidestick before it, nor the kept snare after it. Below 59
+    # it would meet the soft note at 58, so it repeats instead, and says so.
+    def velocity_slot(pitch: int, order: int, soft: bool = False, high: int = 127) -> Slot:
+        return replace(slot(1000, order=order), pitch=pitch, soft=soft, velocity=(1, high))
+
+    kept = slot(1100, section=1, kept=True, order=5)
+    slots = [
+        velocity_slot(38, 1, soft=True),
+        velocity_slot(38, 2, high=61),
+        velocity_slot(37, 3),
+        velocity_slot(38, 4, high=61),
+        replace(kept, source=replace(kept.source, velocity=59)),
+    ]
+    tally = Tally()
+
+    out = hold_velocity(slots, np.array([70.0, 60.0, 61.0, 60.0, 0.0]), np.ones(5), tally)
+
+    assert list(out) == [58, 60, 61, 60, 59]
+    assert tally.frozen().unmet == 1
