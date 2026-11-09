@@ -2,7 +2,7 @@
 
 > **Status:** Active. M0 and M1 are merged, and M2 is in progress.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-09 (M1 merged, ADRs 0008 to 0033 accepted; M2 on `feat/sections`: the labels and scoring of the M2 exit, and the section facts moved to M4, ADRs 0034 and 0035 proposed; the section detector, the label reader and the scoring built and measured on the three tuned tracks, and `analyze` printing the sections, ADRs 0036 to 0041 proposed).
+> Last updated: 2026-11-09 (M1 merged, ADRs 0008 to 0033 accepted; M2 on `feat/sections`: the labels and scoring of the M2 exit, and the section facts moved to M4, ADRs 0034 and 0035 proposed; the section detector, the label reader and the scoring built and measured on the three tuned tracks, and `analyze` printing the sections, ADRs 0036 to 0041 proposed; the detector's memory made to grow with a song's length, the measurement's report made to name tracks by number, and a status form for an ADR changed in part, ADR 0042 proposed).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 
