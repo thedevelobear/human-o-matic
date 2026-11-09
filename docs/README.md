@@ -94,3 +94,6 @@ What was decided, specifically enough to check the code against.
 | [0056](decisions/0056-the-calibration-tools-add-no-dependency.md) | The calibration tools add no dependency, and `symusic` is not used | Proposed |
 | [0057](decisions/0057-each-folder-s-kit-is-in-a-gitignored-file-under-private-data.md) | The kit that reads each folder of performed MIDI is in a gitignored file under `private/data/` | Proposed |
 | [0058](decisions/0058-tools-are-scripts-checked-like-src.md) | Tracked tools are scripts in `tools/`, checked as strictly as `src/`, and tested from `tests/` | Proposed |
+| [0059](decisions/0059-calibration-measures-files-in-windows-of-at-most-16-bars.md) | Calibration measures each file in windows of at most 16 bars, around what the file leaves open | Proposed |
+| [0060](decisions/0060-a-groove-held-to-the-grid-is-left-out-of-timing.md) | A groove held to the grid is left out of the timing statistics | Proposed |
+| [0061](decisions/0061-calibration-measures-the-engine-s-statistics-with-feel-against-the-kick.md) | Calibration measures the engine's statistics, with feel taken against the kick | Proposed |
