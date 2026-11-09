@@ -1,6 +1,6 @@
 # 0045. The engine is a set of render modules behind a small instrument seam
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - The engine's modules, as the plan's architecture lays them out, with some it didn't list:

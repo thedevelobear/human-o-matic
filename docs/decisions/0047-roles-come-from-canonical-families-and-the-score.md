@@ -1,6 +1,6 @@
 # 0047. Roles come from canonical families and the score, never from a pitch
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - `instruments/drums.py` gives each score note a part: its role, which picks the style's velocity row ([ADR 0051](0051-the-tight-style-s-placeholders-fill-in-what-appendix-a-leaves-out.md)), and its limb, which picks the timing offset. It reads families, canonical names, ticks, beats and hit types, and never a pitch or a library ([ADR 0008](0008-library-neutral-drum-maps.md)). Lengths are quarter notes, which is what Appendix A calls beats. Graces take their main note's part. In turn:

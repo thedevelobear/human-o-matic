@@ -1,8 +1,8 @@
 # human-o-matic: guided MIDI drum performance
 
-> **Status:** Active. M0 to M2 are merged, and M3's engine, the first of its three PRs, is in review.
+> **Status:** Active. M0 to M2 are merged, M3's engine, the first of its three PRs, is merged, and calibration, the second, is under way.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-09 (M2 merged, ADRs 0034 to 0042 accepted; M3 started as three PRs with three styles, ADRs 0043 and 0044 proposed; the engine built on `feat/engine`, with `human-o-matic render`, ADRs 0045 to 0054 proposed, and ADRs 0009, 0021 and 0031 amended by ADR 0053; the engine in review; after review, two guard fixes, a smaller instrument seam, tests that reach each guard, and the `skip` exception stated; a flam on the song's first tick kept apart, up to the cap).
+> Last updated: 2026-11-09 (M2 merged, ADRs 0034 to 0042 accepted; M3 started as three PRs with three styles, ADRs 0043 and 0044 proposed; the engine built on `feat/engine`, with `human-o-matic render`, ADRs 0045 to 0054 proposed, and ADRs 0009, 0021 and 0031 amended by ADR 0053; the engine in review; after review, two guard fixes, a smaller instrument seam, tests that reach each guard, and the `skip` exception stated; a flam on the song's first tick kept apart, up to the cap; the engine merged, ADRs 0043 to 0054 accepted, and calibration started on `feat/calibration`).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 
@@ -15,7 +15,7 @@ Milestones are done in order, and work stops at each gate ([`AGENTS.md`](../../A
 | M0 | Setup | The checks pass on the scaffolding | Merged ([#1](https://github.com/thedevelobear/human-o-matic/pull/1)) |
 | M1 | Normalize | The M1 exit tests | Merged ([#2](https://github.com/thedevelobear/human-o-matic/pull/2)) |
 | M2 | Sections | Boundary F1 of at least 0.70 on at least 10 tracks the owner has hand-labelled | Merged ([#3](https://github.com/thedevelobear/human-o-matic/pull/3)) |
-| M3 | Parametric engine and calibration | Each control moves its statistic the right way, and the property tests pass | In progress: the engine in review, the first of three PRs |
+| M3 | Parametric engine and calibration | Each control moves its statistic the right way, and the property tests pass | In progress: the engine merged ([#4](https://github.com/thedevelobear/human-o-matic/pull/4)), and calibration, the second of three PRs, under way |
 | M4 | MCP, skill and the main gate | The blind listening test, judged by the owner | Not started |
 | M5 | Trained model experiment | Follows the controls and wins a blind test, judged by the owner | Not started. Not before M4 |
 | M6 | Added notes | The owner confirms the priority first | Not started |

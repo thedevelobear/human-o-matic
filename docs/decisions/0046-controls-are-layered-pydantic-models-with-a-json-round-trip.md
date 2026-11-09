@@ -1,6 +1,6 @@
 # 0046. The controls are layered pydantic models with a JSON round trip
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - `human_o_matic/controls.py` holds frozen, strict pydantic models that take no unknown field, so a string or a boolean is never read as a number:

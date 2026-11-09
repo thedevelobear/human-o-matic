@@ -1,6 +1,6 @@
 # 0053. A controller-bound note keeps its controller value, and following and writing controllers wait for a map that gives them
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - A note whose articulation a controller value decides or shapes keeps the value set for it. Its note-on never moves across an event of its controllers on its channel in the drum track: it stays from the last such event before its source note to the first one after it, by tick and by order at a tick, and keeps its order among the track's messages so it stays on its side of either event (`render/controllers.py`, [ADR 0048](0048-a-render-writes-the-score-through-the-target-kit-into-the-drum-track.md)).

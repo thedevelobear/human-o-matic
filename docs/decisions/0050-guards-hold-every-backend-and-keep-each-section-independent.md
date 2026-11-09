@@ -1,6 +1,6 @@
 # 0050. The guards hold every backend's draws, and never make a section depend on another's
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - `render/guards.py` runs after the song's drifts, on every backend's draws. **Timing**, in turn:
