@@ -47,7 +47,7 @@ What was decided, specifically enough to check the code against.
 | [0009](decisions/0009-m1-resolves-notes-channels-and-velocity-ranges.md) | M1 resolves notes, channels and velocity ranges, and CC-driven articulations wait for M3 | Accepted |
 | [0010](decisions/0010-built-in-maps-only.md) | Maps are built in, and this version loads no user-supplied map file | Accepted |
 | [0011](decisions/0011-m1-maps-for-general-midi-and-drum-libraries.md) | M1 ships a General MIDI map and maps for ten drum libraries | Accepted |
-| [0012](decisions/0012-runtime-dependencies-arrive-with-their-milestone.md) | M1 adds mido, numpy, pydantic and typer, and other runtime dependencies wait for their milestone | Accepted |
+| [0012](decisions/0012-runtime-dependencies-arrive-with-their-milestone.md) | M1 adds mido, numpy, pydantic and typer, and other runtime dependencies wait for their milestone | Accepted. Its `scipy` line superseded by 0041 |
 | [0013](decisions/0013-midi-is-read-into-notes-and-raw-events.md) | MIDI files are read into paired notes and raw events at absolute ticks | Accepted |
 | [0014](decisions/0014-work-at-a-whole-multiple-of-the-source-ppq.md) | Songs are worked on and written at the smallest multiple of their PPQ that is at least 960 | Accepted |
 | [0015](decisions/0015-unclear-input-is-a-decision-request.md) | Unclear input is a decision request, raised as `DecisionRequired` | Accepted |
@@ -76,3 +76,4 @@ What was decided, specifically enough to check the code against.
 | [0038](decisions/0038-a-section-joins-the-repeat-group-it-plays-most-like.md) | A section joins the repeat group it plays most like, from 0.8, and groups are named A, B, C in song order | Proposed |
 | [0039](decisions/0039-smf-markers-start-sections-at-the-nearest-bar-line.md) | An SMF marker starts a section at the nearest bar line, and markers win when one starts a section | Proposed |
 | [0040](decisions/0040-analyze-prints-the-sections-and-its-exit-codes-stay.md) | `human-o-matic analyze` prints the sections beside the summary, and its exit codes stay | Proposed |
+| [0041](decisions/0041-m2-adds-no-runtime-dependency.md) | M2 adds no runtime dependency, and `scipy` waits for code that imports it | Proposed |
