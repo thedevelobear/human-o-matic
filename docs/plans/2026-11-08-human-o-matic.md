@@ -2,7 +2,7 @@
 
 > **Status:** Active. M0 and M1 are merged, and M2 is in progress.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-09 (M1 merged, ADRs 0008 to 0033 accepted; M2 groundwork on `feat/sections`: the labels and scoring of the M2 exit, and the section facts moved to M4, ADRs 0034 and 0035 proposed).
+> Last updated: 2026-11-09 (M1 merged, ADRs 0008 to 0033 accepted; M2 on `feat/sections`: the labels and scoring of the M2 exit, and the section facts moved to M4, ADRs 0034 and 0035 proposed; the section detector, the label reader and the scoring built and measured on the three tuned tracks, and `analyze` printing the sections, ADRs 0036 to 0041 proposed).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 
@@ -14,7 +14,7 @@ Milestones are done in order, and work stops at each gate ([`AGENTS.md`](../../A
 |---|---|---|---|
 | M0 | Setup | The checks pass on the scaffolding | Merged ([#1](https://github.com/thedevelobear/human-o-matic/pull/1)) |
 | M1 | Normalize | The M1 exit tests | Merged ([#2](https://github.com/thedevelobear/human-o-matic/pull/2)) |
-| M2 | Sections | Boundary F1 of at least 0.70 on at least 10 tracks the owner has hand-labelled | In progress. Waiting for the owner's first labelled tracks (3 or more); the detector is built and tuned once they are in |
+| M2 | Sections | Boundary F1 of at least 0.70 on at least 10 tracks the owner has hand-labelled | In progress |
 | M3 | Parametric engine and calibration | Each control moves its statistic the right way, and the property tests pass | Not started |
 | M4 | MCP, skill and the main gate | The blind listening test, judged by the owner | Not started |
 | M5 | Trained model experiment | Follows the controls and wins a blind test, judged by the owner | Not started. Not before M4 |
@@ -125,7 +125,9 @@ Questions come from the agent, not the server. The server provides facts, sugges
     normalize/hit_types.py soft, normal and accent from each family's velocities
     normalize/score.py    the score: canonical hits on a grid, with hit types and source notes
     normalize/pipeline.py normalize(): the steps in turn, and their decision requests
-    analyze/sections.py   bar features, similarity matrix, novelty peaks, repeat groups
+    analyze/sections.py   bar patterns, similarity matrix, novelty peaks, silences, markers, repeat groups
+    analyze/scoring.py    boundaries matched one to one within a bar, and their F1
+    analyze/labels.py     hand-label files, and the detector measured on them
     analyze/facts.py      per-section facts and compact ASCII pattern for the agent, in M4
     controls.py           pydantic ControlVector, SectionPlan, SessionPlan
     render/compiler.py    controls + style into per-role parameters
@@ -259,6 +261,12 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
 - Build a self-similarity matrix, take [novelty peaks](https://arxiv.org/pdf/2309.02243) at 2 to 8 bar scales, prefer 4, 8 and 16 bar lengths, and cluster repeats into groups. SMF markers win when present.
 - `analyze/sections.py` holds these, and `human-o-matic analyze` also prints the sections, each with its bars and repeat group. Each section's facts and ASCII pattern come in M4, with the MCP tools that return them ([ADR 0035](../decisions/0035-m2-finds-the-sections-and-their-facts-wait-for-m4.md)).
 - **Labels:** the owner hand-labels at least 10 whole-song drum tracks, one TOML file each in the gitignored `private/labels/`: `midi`, the song's path, relative to `private/` unless absolute; `from_map`; `bpm` and `track` when needed, as in `analyze`; `starts`, the bars where sections begin, counted from 0 as a DAW's bar 1 is bar 0, and starting with 0; and `tuned = true` on a track the detector was tuned on ([ADR 0034](../decisions/0034-the-m2-exit-is-scored-on-hand-labelled-section-starts.md)).
+- **Sections, as built:**
+  - A bar is its onset pattern in each family of the score, 24 slots to a quarter note, with graces left out, and two bars are as alike as the cosine of their patterns, each family scaled to count the same. Density and cymbal type are in the patterns, and there is no fill flag ([ADR 0036](../decisions/0036-a-bar-is-its-onset-pattern-in-each-family.md)).
+  - Boundaries are peaks of the novelty at 2, 4 and 8 bars, never on an empty bar, chosen by an exact dynamic program: each is worth its novelty less 0.2, and a section that isn't 4, 8 or 16 bars long costs 0.2. A stretch of 4 or more empty bars is a section of its own, started by a stop and ended by a lead-in, while a shorter silence ends the section before it ([ADR 0037](../decisions/0037-boundaries-are-novelty-peaks-that-favour-4-8-and-16-bar-sections.md)).
+  - A section joins the repeat group it plays most like, comparing bars in order, from 0.8, and groups are named A, B, C in song order ([ADR 0038](../decisions/0038-a-section-joins-the-repeat-group-it-plays-most-like.md)). SMF markers, meta events of type 6, snap to the nearest bar line and win when one starts a section, and `find_sections(..., markers=False)` leaves them out ([ADR 0039](../decisions/0039-smf-markers-start-sections-at-the-nearest-bar-line.md)).
+  - `human-o-matic analyze` prints the sections as `{"start", "bars", "group"}` beside the summary, which counts them and says whether the markers or the drums set them, and its exit codes stay ([ADR 0040](../decisions/0040-analyze-prints-the-sections-and-its-exit-codes-stay.md)). M2 adds no runtime dependency, and `scipy` waits for code that imports it ([ADR 0041](../decisions/0041-m2-adds-no-runtime-dependency.md)).
+  - The label reader, the matcher and the F1 are tested in CI on cases built in code, and a `private` test measures the detector on `private/labels/`. On the three tuned tracks the mean F1 is 0.93 and the pooled F1 0.93. Those tracks are the ones its costs were chosen on, so this flatters it, and it isn't the exit, which needs 10 tracks.
 - **Exit:** boundary F1 within ±1 bar of at least 0.70, as the mean of each track's F1 over at least 10 labelled tracks, measured with SMF markers off. The mean over the tracks not marked `tuned` is reported beside it, as the check on the tuning ([ADR 0034](../decisions/0034-the-m2-exit-is-scored-on-hand-labelled-section-starts.md)). For scale, a [2025 CNN reached 0.77](https://arxiv.org/abs/2509.16566) on 6,134 multi-track MIDI files, with code released, if heuristics fall short. It is unclear whether it uses drums.
 
 ### M3 Parametric engine and calibration
@@ -350,4 +358,4 @@ Placeholders until M3 replaces them. Velocity anchors are at energy 1.0, 0.5 and
 
 ## Appendix B: Python libraries
 
-`mido` and `python-rtmidi` (lossless I/O, preview), [`symusic`](https://symusic.readthedocs.io/en/latest/introduction.html) (fast batch scanning of MIDI; its speed claims are the maintainers' own), `numpy`, `scipy`, `pydantic`, `typer`, the official `mcp` Python SDK (check current docs, as the spec is moving), `pytest`, `hypothesis`, and PyTorch in M5 only. Each runtime dependency is added in the milestone that first needs it: `mido`, `numpy`, `pydantic` and `typer` in M1, `scipy` in M2, `python-rtmidi` and `symusic` in M3, and `mcp` in M4 ([ADR 0012](../decisions/0012-runtime-dependencies-arrive-with-their-milestone.md)).
+`mido` and `python-rtmidi` (lossless I/O, preview), [`symusic`](https://symusic.readthedocs.io/en/latest/introduction.html) (fast batch scanning of MIDI; its speed claims are the maintainers' own), `numpy`, `scipy`, `pydantic`, `typer`, the official `mcp` Python SDK (check current docs, as the spec is moving), `pytest`, `hypothesis`, and PyTorch in M5 only. Each runtime dependency is added in the milestone that first needs it: `mido`, `numpy`, `pydantic` and `typer` in M1, none in M2, `python-rtmidi` and `symusic` in M3, and `mcp` in M4 ([ADR 0012](../decisions/0012-runtime-dependencies-arrive-with-their-milestone.md)). `scipy` comes with the first code that imports it ([ADR 0041](../decisions/0041-m2-adds-no-runtime-dependency.md)).
