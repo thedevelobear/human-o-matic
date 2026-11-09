@@ -1,0 +1,17 @@
+# 0048. A render writes the score through the target kit into the drum track, and nothing else changes
+
+- **Status:** Proposed
+- **Date:** 2026-11-09
+
+- **Placing notes** (`render/target.py`): in the kit the score was read with, a note keeps its pitch and channel, and its velocities stay within the ranges of the bindings that read it. In another kit, its articulation is placed by conversion's fallback order through the same function `convert` uses (`maps.convert.place`), and it takes the target binding's note, its channel or else the kit's or else the note's own, and its velocity range ([ADR 0020](0020-map-files-are-toml-checked-when-they-load.md), [ADR 0021](0021-conversion-falls-back-within-a-family.md)).
+- What the fallback order can't settle is a `conversion` request, as converting asks it. The answer is `substitutions`, from a source articulation to an articulation of the target or `drop`, which leaves its notes out. A substitution the target can't play is an error, and one for an articulation the score doesn't have is an `AnswerError` of `substitutions`.
+- `render` refuses, with a `ValueError`, while a note waits for an `unmapped_notes` or a `conversion` answer, so an incomplete map never loses a note in silence. Notes the user left out are the only ones missing from a render.
+- **A section played as it came in** (`skip`) keeps each note's ticks, length and velocity. With another target kit, its notes take the target's pitch and channel as conversion gives them, and their velocities move into the target's range, as `convert` moves them.
+- **Writing** (`render/output.py`): only the drum track's notes change. Every other track, and every event of the drum track, controllers, meta events and the file's own tempo even when `bpm` replaced it for the timing, stays as read.
+- Each rendered note keeps its source note's track and release velocity, and its source length, at least a tick, trimmed by the guards ([ADR 0050](0050-guards-hold-every-backend-and-keep-each-section-independent.md)). A note played as it came in, or one held to its controller events ([ADR 0053](0053-a-controller-bound-note-keeps-its-controller-value.md)), keeps its order among the track's messages. Any other takes its place in play order after all of them, so at a shared tick the events come first and the order never depends on how the notes were played. Where a note-off meets the next note-on of its pitch, it takes the lower order ([ADR 0013](0013-midi-is-read-into-notes-and-raw-events.md)).
+- The drum track ends with its last note or event as rendered. An end the file sets after all of its notes and events is kept.
+- **Play order:** the engine takes notes by tick, then by family, piece, articulation, channel and pitch, never by the order the score gives notes on one grid point, which is the order they were played in.
+
+**Why:** Placing through `convert`'s own fallback order means a render converts exactly as conversion does. Keeping everything but the drums' notes keeps the M1 rule that a round trip loses nothing. A source order, a source length's end or a track end set by the last note-off would carry the input's timing into the file, which the plan forbids outside a `skip` section.
+
+**Consequences:** Input note lengths still reach the output, as lengths, not as timing. A section played as it came in to another kit is as unchanged as conversion allows, not byte for byte.
