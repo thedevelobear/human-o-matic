@@ -28,8 +28,7 @@ import typer
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, JsonValue, ValidationError
 
 from human_o_matic.decisions import DecisionRequest, DecisionRequired
-from human_o_matic.maps.kit import DrumKit
-from human_o_matic.maps.loader import built_in_maps
+from human_o_matic.maps.loader import find_kit
 from human_o_matic.midi.io import MidiFileError, MidiSong, read_midi
 from human_o_matic.midi.tempo import MAX_BPM, MICROSECONDS_PER_MINUTE, MIN_BPM, tempo_map
 from human_o_matic.midi.tracks import DrumTrackReason, choose_drum_track, track_name
@@ -113,13 +112,6 @@ def answer_problem(error: AnswerError) -> str:
     key = error.key
     where = f"{key[0]},{key[1]}" if isinstance(key, tuple) else str(key)
     return f"{error.argument}.{where}: {error}"
-
-
-def find_kit(name: str) -> DrumKit:
-    """The built-in kit named `library/kit`, or `library` alone when it has one kit (ADR 0023).
-    Raises `KeyError` naming what exists."""
-    library, slash, kit = name.partition("/")
-    return built_in_maps().kit(library, kit if slash else None)
 
 
 class DrumTrack(BaseModel):

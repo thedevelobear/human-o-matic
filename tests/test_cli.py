@@ -9,9 +9,9 @@ import numpy as np
 import pytest
 from typer.testing import CliRunner, Result
 
-from human_o_matic.cli import EXIT_OPEN, app, find_kit, read_answers, summarize
+from human_o_matic.cli import EXIT_OPEN, app, read_answers, summarize
 from human_o_matic.decisions import DecisionRequest
-from human_o_matic.maps.loader import built_in_maps
+from human_o_matic.maps.loader import built_in_maps, find_kit
 from human_o_matic.midi.io import read_midi
 from human_o_matic.midi.tempo import MAX_BPM, MIN_BPM
 from human_o_matic.normalize.hit_types import HitTypeBounds
