@@ -71,3 +71,7 @@ What was decided, specifically enough to check the code against.
 | [0033](decisions/0033-analyze-takes-flags-and-an-answers-file-and-prints-json.md) | `human-o-matic analyze` takes flags and an answers file, and prints a summary and the requests as JSON | Accepted |
 | [0034](decisions/0034-the-m2-exit-is-scored-on-hand-labelled-section-starts.md) | The M2 exit is scored on hand-labelled section starts in `private/labels/` | Proposed |
 | [0035](decisions/0035-m2-finds-the-sections-and-their-facts-wait-for-m4.md) | M2 finds the sections, and their facts and ASCII pattern wait for M4 | Proposed |
+| [0036](decisions/0036-a-bar-is-its-onset-pattern-in-each-family.md) | A bar is its onset pattern in each drum family, and bars are as alike as the cosine of their patterns | Proposed |
+| [0037](decisions/0037-boundaries-are-novelty-peaks-that-favour-4-8-and-16-bar-sections.md) | Boundaries are novelty peaks chosen to favour 4, 8 and 16 bar sections, and a long silence is a section of its own | Proposed |
+| [0038](decisions/0038-a-section-joins-the-repeat-group-it-plays-most-like.md) | A section joins the repeat group it plays most like, from 0.8, and groups are named A, B, C in song order | Proposed |
+| [0039](decisions/0039-smf-markers-start-sections-at-the-nearest-bar-line.md) | An SMF marker starts a section at the nearest bar line, and markers win when one starts a section | Proposed |

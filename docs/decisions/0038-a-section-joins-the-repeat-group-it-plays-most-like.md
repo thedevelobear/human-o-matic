@@ -1,0 +1,12 @@
+# 0038. A section joins the repeat group it plays most like, from 0.8, and groups are named A, B, C in song order
+
+- **Status:** Proposed
+- **Date:** 2026-11-09
+
+- Two sections are as alike as the mean likeness ([ADR 0036](0036-a-bar-is-its-onset-pattern-in-each-family.md)) of their bars compared in order, the first with the first and so on, over the shorter one's length.
+- In song order, a section joins the group whose sections it is most alike on average, the first of equals, when that is at least 0.8. Otherwise it starts a group of its own.
+- Groups are named A to Z, then AA, AB and on, in the order they first appear. Silent sections fall into one group, since empty bars are alike.
+
+**Why:** Comparing bars in order means a repeat has to play the same bars in the same order, not just the same mix. On the sections the tuned tracks' labels give, repeats score 0.88 and above and different sections at most 0.77, so 0.8 sits between them. Letters are how the plan's product flow names them.
+
+**Consequences:** Repeat groups aren't scored, since the labels carry boundaries only ([ADR 0034](0034-the-m2-exit-is-scored-on-hand-labelled-section-starts.md)). A wrong boundary shifts the bars a section is compared on, so it can split a repeat from its group.
