@@ -8,6 +8,8 @@ other fields are set only for the roles that use them.
 from dataclasses import dataclass
 from typing import Literal
 
+from human_o_matic.normalize.score import ScoreNote
+
 type Role = Literal[
     "kick", "double_kick", "backbeat", "snare", "rider", "accent_cymbal", "fill", "other"
 ]
@@ -52,3 +54,11 @@ class Part:
     """For a fill note, +1 and -1 by turns."""
     crescendo: float = 0.0
     """For a fill note, how far it is into the fill's crescendo, from 0 to 1."""
+
+
+def play_key(note: ScoreNote) -> tuple[int, str, int, str, int, int]:
+    """The order the engine takes notes in: by tick, then by drum, name, channel and pitch. The
+    score orders notes on one grid point by when they were played, and this never depends on
+    it, so input timing can't change a render through the order of its draws."""
+    source = note.source
+    return note.tick, note.family, note.piece, note.articulation, source.channel, source.pitch

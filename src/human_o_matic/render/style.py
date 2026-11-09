@@ -80,9 +80,8 @@ class Style(BaseModel):
     """A fill's notes are louder than the snare's center by this times `fill_intensity` less
     0.5."""
     fill_crescendo: float
-    """The crescendo at a fill's end, times `fill_intensity`."""
-    fill_crescendo_quarters: float
-    """The crescendo runs over at most this much of the fill's end."""
+    """The crescendo at a fill's end, times `fill_intensity`, over the fill's last 4 quarters at
+    most (`instruments/drums.py`)."""
     snare_loudness: float
     """How much louder snare notes are at `feel` +1, and in proportion when laid back less."""
     arc_span: float
@@ -158,7 +157,6 @@ TIGHT = Style(
     fill_hand=2,
     fill_shift=6,
     fill_crescendo=11,
-    fill_crescendo_quarters=4,
     snare_loudness=4,
     arc_span=0.15,
     energy_drift_sd=2,

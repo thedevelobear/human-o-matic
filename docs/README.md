@@ -83,5 +83,6 @@ What was decided, specifically enough to check the code against.
 | [0046](decisions/0046-controls-are-layered-pydantic-models-with-a-json-round-trip.md) | The controls are layered pydantic models with a JSON round trip | Proposed |
 | [0047](decisions/0047-roles-come-from-canonical-families-and-the-score.md) | Roles come from canonical families and the score, never from a pitch | Proposed |
 | [0048](decisions/0048-a-render-writes-the-score-through-the-target-kit-into-the-drum-track.md) | A render writes the score through the target kit into the drum track, and nothing else changes | Proposed |
+| [0049](decisions/0049-each-section-draws-from-its-own-seeded-stream.md) | Each section draws from its own seeded stream, and the song's drifts from streams of their own | Proposed |
 | [0050](decisions/0050-guards-hold-every-backend-and-keep-each-section-independent.md) | The guards hold every backend's draws, and never make a section depend on another's | Proposed |
 | [0051](decisions/0051-the-tight-style-s-placeholders-fill-in-what-appendix-a-leaves-out.md) | The `tight` style's placeholders are Appendix A with the values it leaves out filled in | Proposed |

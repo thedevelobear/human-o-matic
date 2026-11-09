@@ -25,8 +25,11 @@ Appendix A calls beats. Graces take their main note's part. In turn:
 from collections.abc import Sequence
 from itertools import pairwise
 
+from human_o_matic.controls import Controls
 from human_o_matic.normalize.score import Score, ScoreNote
-from human_o_matic.render.parts import Limb, Part, RiderShape, Role
+from human_o_matic.render.compiler import Params, compile_section
+from human_o_matic.render.parts import Limb, Part, RiderShape, Role, play_key
+from human_o_matic.render.style import Style
 
 FILL_FAMILIES = frozenset({"snare", "tom"})
 FILL_GAP = 0.5
@@ -44,10 +47,35 @@ RUN_GAP = 2.0
 type Drum = tuple[str, int]
 
 
+class Drums:
+    """The drums: every control, and a role for each note."""
+
+    @property
+    def name(self) -> str:
+        return "drums"
+
+    @property
+    def controls(self) -> frozenset[str]:
+        return frozenset(Controls.model_fields)
+
+    def parts(self, score: Score) -> tuple[Part, ...]:
+        return drum_parts(score)
+
+    def compile(self, controls: Controls, style: Style) -> Params:
+        return compile_section(controls, style)
+
+
+DRUMS = Drums()
+
+
 def drum_parts(score: Score) -> tuple[Part, ...]:
-    """The part of each of the score's notes, in the order of `Score.notes`."""
+    """The part of each of the score's notes, in the order of `Score.notes`. Notes are taken in
+    `play_key` order, so a tie on one tick never depends on how the notes were played."""
     notes = score.notes
-    mains = [position for position, note in enumerate(notes) if note.grace_of is None]
+    mains = sorted(
+        (position for position, note in enumerate(notes) if note.grace_of is None),
+        key=lambda position: (play_key(notes[position]), position),
+    )
     fills = _fills(score, mains)
     feet = _double_kick(score, mains)
     accents = _accent_cymbals(score, mains)
