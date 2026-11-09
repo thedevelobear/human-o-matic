@@ -344,6 +344,23 @@ def test_a_file_that_isnt_midi_is_a_usage_error(tmp_path: Path) -> None:
     assert "not a readable MIDI file" in usage_error(analyze(file, "--from-map", "gm"))
 
 
+def test_an_empty_file_is_a_usage_error(tmp_path: Path) -> None:
+    file = tmp_path / "empty.mid"
+    file.write_bytes(b"")
+
+    stderr = usage_error(analyze(file, "--from-map", "gm"))
+
+    assert "Invalid value for 'MIDI_FILE': not a readable MIDI file: EOFError" in stderr
+
+
+def test_a_file_with_no_notes_is_a_usage_error(tmp_path: Path) -> None:
+    file = save(tmp_path / "silent.mid", track((0, tempo(120)), (0, name("Drums")), (960, end())))
+
+    stderr = usage_error(analyze(file, "--from-map", "gm"))
+
+    assert "Invalid value for 'MIDI_FILE': the file has no notes" in stderr
+
+
 def test_another_error_is_a_crash_not_a_bad_answer(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -385,10 +402,12 @@ def test_analyze_writes_no_file(tmp_path: Path) -> None:
     song = drums(tmp_path, UNCLEAR)
     file = answers_file(tmp_path, {"unmapped": {"99": "drop"}})
     before = sorted(tmp_path.iterdir())
+    data = song.read_bytes()
 
     analyze(song, "--from-map", "gm", "--answers", file)
 
     assert sorted(tmp_path.iterdir()) == before
+    assert song.read_bytes() == data
 
 
 def test_the_printed_summary_is_the_summary_function(tmp_path: Path) -> None:
