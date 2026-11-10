@@ -40,7 +40,7 @@ def test_both_instruments_meet_the_seam() -> None:
 
     for instrument in instruments:
         assert len(instrument.parts(score)) == len(score.notes)
-        assert instrument.compile(style.defaults, style).controls == style.defaults
+        assert instrument.compile(style.defaults, style, 120.0).controls == style.defaults
 
 
 def test_generic_mode_plays_every_note_with_no_role_and_feel_moves_them_all() -> None:

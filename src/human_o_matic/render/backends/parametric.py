@@ -5,12 +5,12 @@ the offset its hits share, then per note one for its own jitter, one for its vel
 uniform value that may swap a rider's label. So the draws depend only on how many notes and
 onsets the section has, and the same section and stream always draw the same numbers.
 
-A note's velocity is its role's center at its energy, moved by what its part and type add, plus
-noise. A soft-typed note is drawn about the soft center instead, whatever its role. Its offset is
-its limb's, the onset's shared offset and its own jitter, cut to the clip. A grace's offset is
-left at 0, since the guards give it its main note's. The song's drifts and the guards come after
-(`render/engine.py`, `render/guards.py`), so they hold for every backend.
-"""
+A note's velocity is its role's center at its energy, moved by what its part, its metric level
+and its type add, plus noise. A soft-typed note is drawn about the soft center instead, whatever
+its role. Its offset is its limb's, the onset's shared offset and its own jitter, cut to the
+clip. A grace's offset is left at 0, since the guards give it its main note's. The song's drifts
+and the guards come after (`render/engine.py`, `render/guards.py`), so they hold for every
+backend."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -79,6 +79,8 @@ def sample(
                 )
                 strong[position] = is_strong
                 center += params.rider_gap / 2 if is_strong else -params.rider_gap / 2
+            if part.role != "fill":
+                center += params.metric_velocity[part.role][part.metric]
             if note.hit_type == "accent":
                 center += params.accent_at(energy)
             if part.limb == "snare":

@@ -172,7 +172,7 @@ def render(
             notes,
             [parts[position] for position in members],
             [min(max((note.tick - first) / length, 0.0), 1.0) for note in notes],
-            instrument.compile(controls, style),
+            instrument.compile(controls, style, score.tempos.bpm(first)),
             section_stream(plan.seed, section.start, section.take),
         )
         for index, position in enumerate(members):

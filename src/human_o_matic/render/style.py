@@ -1,8 +1,9 @@
 """Styles: the numbers a performance is drawn from, before the controls shape them.
 
-A style gives each role's velocity center at energy 1.0, 0.5 and 0.2, and the spreads, gaps and
-offsets the compiler scales by the controls (`compiler.py`). It also gives the controls' defaults,
-which a section's and the song's controls override.
+A style gives each role's velocity center at energy 1.0, 0.5 and 0.2, what a note adds by its
+metric level, and the spreads, gaps and offsets the compiler scales by the controls
+(`compiler.py`), its timing by tempo band. It also gives the controls' defaults, which a
+section's and the song's controls override.
 
 The only style until calibration is `tight`, and its numbers are placeholders: the plan's
 Appendix A, with the values it leaves out set as ADR 0051 records. Calibration replaces them
@@ -10,6 +11,7 @@ with statistics of performed MIDI, and adds `medium` and `loose` (ADR 0044). Eve
 style is in milliseconds, and every length in quarter notes.
 """
 
+import bisect
 from typing import Self
 
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -43,6 +45,27 @@ class Anchors(BaseModel):
         return self.half + (self.full - self.half) * (energy - 0.5) / 0.5
 
 
+class Timing(BaseModel):
+    """The timing of one tempo band."""
+
+    model_config = _FROZEN
+
+    shared_sd: float
+    """The spread of the offset all hits of one onset share, at `tightness` 0.5."""
+    jitter_sd: tuple[float, float]
+    """The spread of each hit's own offset at `tightness` 0 and 1."""
+    jitter_clip: float
+    """Each hit's own offset is cut to this either way."""
+    limb_ms: dict[Limb, float]
+    """Each limb's mean offset."""
+
+    @model_validator(mode="after")
+    def _check(self) -> Self:
+        if any(limb not in self.limb_ms for limb in LIMBS):
+            raise ValueError("limb_ms has an offset for every limb")
+        return self
+
+
 class Style(BaseModel):
     """The numbers of one style."""
 
@@ -54,6 +77,9 @@ class Style(BaseModel):
     defaults: Controls
     velocity: dict[Role, Anchors]
     """Each role's velocity centers."""
+    metric_velocity: dict[Role, tuple[float, ...]]
+    """What a note of each role adds to its center on a quarter note, an 8th, a 16th and
+    elsewhere, counted from the bar. A fill note takes `fill_metric` instead."""
     noise_sd: float
     """The spread of a note's velocity about its center, at `dynamic_range` 0.5."""
     feet: float
@@ -94,14 +120,10 @@ class Style(BaseModel):
     """The spread of the song's slow drift in timing, its processes together."""
     drift_quarters: tuple[float, ...]
     """Their time constants."""
-    shared_sd: float
-    """The spread of the offset all hits of one onset share, at `tightness` 0.5."""
-    jitter_sd: tuple[float, float]
-    """The spread of each hit's own offset at `tightness` 0 and 1."""
-    jitter_clip: float
-    """Each hit's own offset is cut to this either way."""
-    limb_ms: dict[Limb, float]
-    """Each limb's mean offset."""
+    tempo_cuts: tuple[float, ...]
+    """The tempos, in BPM, between the tempo bands, rising."""
+    timing: tuple[Timing, ...]
+    """Each tempo band's timing, from the slowest: one more than the cuts."""
     feel_ms: tuple[float, float]
     """The snare's and riders' offset at `feel` +1, laid back, and how early at -1, pushed."""
 
@@ -112,9 +134,18 @@ class Style(BaseModel):
             raise ValueError(f"the style has no velocities for {', '.join(missing)}")
         if len(self.fill_metric) != METRIC_LEVELS:
             raise ValueError(f"fill_metric has {METRIC_LEVELS} values, one per metric level")
-        if any(limb not in self.limb_ms for limb in LIMBS):
-            raise ValueError("limb_ms has an offset for every limb")
+        for role in ROLES:
+            if len(self.metric_velocity.get(role, ())) != METRIC_LEVELS:
+                raise ValueError(f"metric_velocity has {METRIC_LEVELS} values for {role}")
+        if len(self.timing) != len(self.tempo_cuts) + 1:
+            raise ValueError("the style has one timing more than it has tempo cuts")
+        if list(self.tempo_cuts) != sorted(set(self.tempo_cuts)):
+            raise ValueError("the tempo cuts rise")
         return self
+
+    def timing_at(self, bpm: float) -> Timing:
+        """The timing of the tempo band `bpm` falls in. A cut belongs to the faster band."""
+        return self.timing[bisect.bisect_right(self.tempo_cuts, bpm)]
 
 
 _SNARE = Anchors(full=106, half=88, low=68)
@@ -144,6 +175,7 @@ TIGHT = Style(
         "fill": _SNARE,
         "other": _SNARE,
     },
+    metric_velocity=dict.fromkeys(ROLES, (0.0, 0.0, 0.0, 0.0)),
     noise_sd=2.5,
     feet=3,
     rider_gap=(4, 14),
@@ -163,10 +195,15 @@ TIGHT = Style(
     energy_drift_quarters=64,
     drift_sd=2.5,
     drift_quarters=(16, 64, 256),
-    shared_sd=2.2,
-    jitter_sd=(3, 1.8),
-    jitter_clip=4,
-    limb_ms={"snare": 1.0, "rider": 0.7, "other": 0.0},
+    tempo_cuts=(),
+    timing=(
+        Timing(
+            shared_sd=2.2,
+            jitter_sd=(3, 1.8),
+            jitter_clip=4,
+            limb_ms={"snare": 1.0, "rider": 0.7, "other": 0.0},
+        ),
+    ),
     feel_ms=(6, 3),
 )
 """The `tight` style's placeholders (ADR 0051)."""
