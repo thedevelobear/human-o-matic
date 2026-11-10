@@ -4,10 +4,12 @@ import json
 import math
 import tomllib
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
-from calibrate import Detail, FileResult, Groove
+import calibrate
+from calibrate import Detail, FileResult, Groove, _fit
 from fit_styles import (
     MIN_GROOVES,
     QUARTERS,
@@ -116,13 +118,11 @@ def test_velocities_are_shared_and_rise_through_the_anchors(fitted: Fit) -> None
         assert tight.velocity[role].full - kick.full == pytest.approx(OFFSETS[role], abs=0.02)
         assert tight.velocity[role].band == PLACEHOLDER.velocity[role].band
     assert tight.metric_velocity["kick"] == (1.0, 0.0, -1.0, 0.0)
-    assert (tight.noise_sd, tight.soft_sd, tight.fill_crescendo) == (
+    assert (tight.noise_sd, tight.soft_sd) == (
         pytest.approx(math.sqrt(16 - drift_variance(2.0, (64.0,))), abs=0.01),
         5.0,
-        8.0,
     )
     assert tight.fill_metric == (3.0, 1.0, -1.0, -2.0)
-    assert tight.rider_gap == pytest.approx((6 * 4 / 9, 6 * 14 / 9), abs=0.01)
 
 
 def test_timing_comes_from_each_band_s_grooves_by_tempo(fitted: Fit) -> None:
@@ -146,6 +146,21 @@ def test_what_a_performance_can_t_give_keeps_the_placeholder_exactly(fitted: Fit
         for name in ("feet", "rider_flip", "rider_groove", "soft_mix", "fill_hand", "drift_sd"):
             assert getattr(style, name) == getattr(PLACEHOLDER, name), name
     assert "| rider_flip | 0.775 | kept | kept | kept |" in table(fitted)
+
+
+def test_the_rider_gap_accent_and_crescendo_keep_the_placeholder_though_grooves_give_them(
+    fitted: Fit,
+) -> None:
+    # The grooves built here measure a rider gap of 6, an accent contrast of 20 and a rise of 2.
+    for style in fitted.styles.values():
+        assert (style.rider_gap, style.accent, style.fill_crescendo) == (
+            PLACEHOLDER.rider_gap,
+            PLACEHOLDER.accent,
+            PLACEHOLDER.fill_crescendo,
+        )
+    text = table(fitted)
+    for row in ("rider_gap | [4.0, 14.0]", "accent | [2.0, 6.0]", "fill_crescendo | 11.0"):
+        assert f"| {row} | kept | kept | kept |" in text
 
 
 def test_a_style_file_reads_back_as_the_style(fitted: Fit) -> None:
@@ -191,6 +206,31 @@ def test_contradictions_name_what_runs_against_appendix_a(fitted: Fit) -> None:
     assert any("pushed side" in problem for problem in problems)
     assert any("the snare plays early" in problem for problem in problems)
     assert any("crescendo doesn't rise" in problem for problem in problems)
+
+
+def test_an_accepted_contradiction_is_printed_and_the_check_still_passes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # As in the performed grooves: `medium` pushes further than it lays back, and `loose`'s riders
+    # play early at fast tempos.
+    found: list[Groove] = []
+    for groove in grooves():
+        if groove.spread_ms == 4.0 and groove.feel_ms is not None:
+            groove = replace(groove, feel_ms=-groove.feel_ms)
+        if groove.spread_ms == 8.0 and groove.detail.bpm >= 150:
+            groove = replace(
+                groove, detail=replace(groove.detail, limbs={"snare": 1.0, "rider": -1.0})
+            )
+        found.append(groove)
+    results = [FileResult(path="a/x.mid", folder="a", grooves=found)]
+    monkeypatch.setattr(calibrate, "data_dir", lambda: tmp_path)
+
+    assert _fit(results, check=False) == 0
+    assert _fit(results, check=True) == 0
+
+    text = capsys.readouterr().out
+    assert "contradicts: medium: feel's pushed side, 2.0, isn't under its laid-back 1.0" in text
+    assert "contradicts: loose, tempo band 1: the rider plays early, -1.0 ms" in text
 
 
 def test_the_drift_within_a_groove_is_the_engine_s_own() -> None:

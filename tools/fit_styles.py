@@ -8,16 +8,16 @@ The grooves are `calibrate.py`'s, and every statistic here is one the engine dra
   styles share them (ADR 0065). A groove's energy is its rank in velocity level among them, from
   0 to 1, so a role's center at energy 0.2, 0.5 and 1.0 is the median of its mean velocity over
   the grooves ranked within `WINDOW` of it, and what each metric level adds is the median of how
-  far that level's notes sit from the role's mean. The spreads, the rider gap, the accent
-  contrast, the soft notes and the fills' accents and rise are medians or simple lines over the
-  grooves.
+  far that level's notes sit from the role's mean. The spreads, the soft notes and the fills'
+  accents are medians or percentiles over the grooves.
 - **Timing** is fitted per band of timing spread, on the performed grooves the grid fits (ADRs
   0060, 0064), by tempo band. A groove's offsets are taken apart as the engine draws them: each
   limb's mean less the `other` limb's, the spread an onset's hits share and each hit's own. The
   song's slow drift stays modelled, so the spread it adds within a groove is taken out of the
   shared part. A style draws its band's medians at the default tightness, and the control's
   shape about them stays the placeholder's.
-- What a performance can't give keeps the placeholder's value (`KEPT`).
+- What a performance can't give keeps the placeholder's value, and so do three values whose fit
+  runs against Appendix A or ADR 0052's tests (`KEPT`).
 
 The fitted numbers are rounded to hundredths, and the kept ones are the placeholder's exactly, so
 running the fit again on the same grooves gives the same files byte for byte.
@@ -77,12 +77,22 @@ KEPT = (
     "energy_drift_quarters",
     "drift_sd",
     "drift_quarters",
+    "rider_gap",
+    "accent",
+    "fill_crescendo",
 )
 """What keeps the placeholder's value: the controls' defaults and the shapes of their effects,
 which a performance plays at one setting only; which foot is which, and which hand, which MIDI
 doesn't say; the rider's flip rate, which needs labels a performance doesn't have; the loudness
 laid-back playing adds, which needs the control; and the song's drifts, which loops are too
-short to show. A velocity band is a floor the plan sets for loud kicks and backbeats."""
+short to show. A velocity band is a floor the plan sets for loud kicks and backbeats.
+
+Three the grooves do give run against Appendix A or ADR 0052's tests, so they keep it too:
+- the rider gap, under half a step in the grooves, too small for `dynamic_range` and `groove`
+  to move by 2 steps;
+- the accent, whose line in energy pushes accents past 127, so their contrast falls as `groove`
+  rises;
+- a fill's crescendo, which the grooves' fills fit at none, where Appendix A's rise."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -228,31 +238,16 @@ def _velocity(grooves: Sequence[Groove], fallbacks: list[str]) -> dict[str, obje
 
     energy_drift = drift_variance(PLACEHOLDER.energy_drift_sd, (PLACEHOLDER.energy_drift_quarters,))
     noise = _median(g.detail.noise for g in grooves if g.detail.noise is not None)
-    gap = _median(g.detail.rider_gap for g in grooves if g.detail.rider_gap is not None)
-    low_gap, high_gap = PLACEHOLDER.rider_gap
-    middle = (low_gap + high_gap) / 2
-    accent_points = [(rank[id(g)], g.detail.accent) for g in grooves if g.detail.accent is not None]
     softs = [g.detail.soft for g in grooves if g.detail.soft is not None]
     soft_sd = _median(g.detail.soft_sd for g in grooves if g.detail.soft_sd is not None)
     fill_metric = [
         _median(g.detail.fill_metric[level] for g in grooves if level in g.detail.fill_metric)
         for level in range(METRIC_LEVELS)
     ]
-    rise = _median(g.detail.fill_rise for g in grooves if g.detail.fill_rise is not None)
     fields: dict[str, object] = {"velocity": velocity, "metric_velocity": metric}
     fields["noise_sd"] = (
         math.sqrt(max(noise**2 - energy_drift, 0.0)) if noise is not None else PLACEHOLDER.noise_sd
     )
-    fields["rider_gap"] = (
-        [gap * low_gap / middle, gap * high_gap / middle]
-        if gap is not None
-        else list(PLACEHOLDER.rider_gap)
-    )
-    if len(accent_points) >= MIN_GROOVES:
-        slope, base = np.polyfit([x for x, _ in accent_points], [y for _, y in accent_points], 1)
-        fields["accent"] = [float(base), float(slope)]
-    else:
-        fields["accent"] = list(PLACEHOLDER.accent)
     if len(softs) >= MIN_GROOVES:
         low, high = np.percentile(softs, [10, 90]).tolist()
         fields["soft"] = [low, high - low]
@@ -264,15 +259,7 @@ def _velocity(grooves: Sequence[Groove], fallbacks: list[str]) -> dict[str, obje
     else:
         fields["fill_metric"] = list(PLACEHOLDER.fill_metric)
         fallbacks.append("fill_metric: kept")
-    # A crescendo rising C over the fill's end puts its second half C/2 above its first, and the
-    # default `fill_intensity`, 0.5, draws half the style's crescendo.
-    fields["fill_crescendo"] = 4 * rise if rise is not None else PLACEHOLDER.fill_crescendo
-    for name, value in (
-        ("noise_sd", noise),
-        ("rider_gap", gap),
-        ("soft_sd", soft_sd),
-        ("fill_crescendo", rise),
-    ):
+    for name, value in (("noise_sd", noise), ("soft_sd", soft_sd)):
         if value is None:
             fallbacks.append(f"{name}: kept")
     return fields
