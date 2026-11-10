@@ -5,19 +5,25 @@ metric level, and the spreads, gaps and offsets the compiler scales by the contr
 (`compiler.py`), its timing by tempo band. It also gives the controls' defaults, which a
 section's and the song's controls override.
 
-The only style until calibration is `tight`, and its numbers are placeholders: the plan's
-Appendix A, with the values it leaves out set as ADR 0051 records. Calibration replaces them
-with statistics of performed MIDI, and adds `medium` and `loose` (ADR 0044). Every time in the
-style is in milliseconds, and every length in quarter notes.
+The built-in styles, `tight`, `medium` and `loose`, are fitted by calibration and read from
+`data/styles/` (ADRs 0044, 0069, 0070), each checked as it loads. `PLACEHOLDER` is the plan's
+Appendix A, with the values it leaves out set as ADR 0051 records: the fit keeps its values where
+a performance can't give one (ADR 0068), and it is never rendered. Every time in the style is in
+milliseconds, and every length in quarter notes.
 """
 
 import bisect
+import json
+import tomllib
+from functools import cache
+from pathlib import Path
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 
 from human_o_matic.controls import Controls, StyleName
 from human_o_matic.render.parts import LIMBS, METRIC_LEVELS, ROLES, Limb, Role
+from human_o_matic.resources import data_dir
 
 _FROZEN = ConfigDict(frozen=True, extra="forbid", strict=True)
 
@@ -208,8 +214,31 @@ PLACEHOLDER = Style(
 )
 """Appendix A's placeholders, with the values it leaves out filled in (ADR 0051)."""
 
-TIGHT = PLACEHOLDER
-"""The `tight` style, the placeholders until calibration."""
+STYLE_NAMES: tuple[StyleName, ...] = ("tight", "medium", "loose")
+"""The built-in styles, from the tightest. `tight` is the default."""
 
-STYLES: dict[StyleName, Style] = {"tight": TIGHT}
-"""The built-in styles by name."""
+
+class StyleError(ValueError):
+    """A built-in style file is missing or invalid."""
+
+
+def load_style(path: Path) -> Style:
+    """A style file, checked. Raises `StyleError` naming the file and what is wrong."""
+    try:
+        with path.open("rb") as handle:
+            data = tomllib.load(handle)
+        return Style.model_validate_json(json.dumps(data))
+    except (OSError, tomllib.TOMLDecodeError, ValidationError) as error:
+        raise StyleError(f"{path}: {error}") from error
+
+
+@cache
+def built_in_styles() -> dict[StyleName, Style]:
+    """The styles in `data/styles/`, by name, each read from `<name>.toml` (ADR 0070)."""
+    found: dict[StyleName, Style] = {}
+    for name in STYLE_NAMES:
+        style = load_style(data_dir() / "styles" / f"{name}.toml")
+        if style.name != name:
+            raise StyleError(f"data/styles/{name}.toml holds the style {style.name}")
+        found[name] = style
+    return found

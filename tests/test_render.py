@@ -42,12 +42,13 @@ from grooves import (
     rock,
     song,
 )
-from human_o_matic.controls import ControlVector, SessionPlan
+from human_o_matic.controls import ControlVector, SessionPlan, StyleName
 from human_o_matic.maps.convert import DROP
 from human_o_matic.midi.io import MidiSong, Note, midi_bytes, parse_midi
 from human_o_matic.normalize.answers import AnswerError
 from human_o_matic.normalize.score import Normalized
 from human_o_matic.render.engine import Rendered, RenderedNote, drift, render
+from human_o_matic.render.style import STYLE_NAMES
 from human_o_matic.render.target import place_score
 from map_files import articulation, load_kit
 from midi_files import MidoMessage, build, cc, end, name, off, on, tempo, track
@@ -55,6 +56,8 @@ from midi_files import MidoMessage, build, cc, end, name, off, on, tempo, track
 FLAM = round(PPQ * 30 / 500)
 """30 ms at 120 BPM: a grace's gap before its main."""
 CUTS = st.lists(st.integers(1, 5), max_size=3)
+STYLES = st.sampled_from(STYLE_NAMES)
+"""Every property holds in every style."""
 CAP_MS = 12.0
 """The plan's cap on an offset from the grid."""
 GAP_SHARE = 0.6
@@ -76,13 +79,13 @@ def drum_notes(midi: MidiSong) -> list[Note]:
     return [note for note in midi.notes if note.track == 0]
 
 
-@given(grooves(), CUTS, st.integers(0, 2**53 - 1))
+@given(grooves(), CUTS, st.integers(0, 2**53 - 1), STYLES)
 def test_the_same_song_plan_and_seed_give_the_same_bytes(
-    hits: list[Hit], cuts: list[int], seed: int
+    hits: list[Hit], cuts: list[int], seed: int, style: StyleName
 ) -> None:
     midi = song(hits)
     result = normalized(midi)
-    plan = plan_for(midi, result, cuts=cuts, seed=seed)
+    plan = plan_for(midi, result, cuts=cuts, seed=seed, style=style)
 
     assert midi_bytes(rendered(midi, plan).song) == midi_bytes(rendered(midi, plan).song)
 
@@ -105,10 +108,11 @@ def test_rendering_one_section_again_leaves_the_others_as_they_were(
 ) -> None:
     midi = song(hits)
     result = normalized(midi)
-    plan = plan_for(midi, result, cuts=cuts)
+    style = data.draw(STYLES, label="style")
+    plan = plan_for(midi, result, cuts=cuts, style=style)
     changed = data.draw(st.integers(0, len(plan.sections) - 1), label="section")
     controls = data.draw(control_vectors(skip=False), label="controls")
-    again = plan_for(midi, result, cuts=cuts, sections={changed: controls})
+    again = plan_for(midi, result, cuts=cuts, sections={changed: controls}, style=style)
 
     before = {note.position: note.note for note in rendered(midi, plan).notes}
     after = rendered(midi, again).notes
@@ -126,8 +130,9 @@ def test_every_note_comes_out_once_and_only_a_drop_leaves_one_out(
     result = normalized(midi)
     names = sorted({note.articulation for note in result.score.notes})
     drop = data.draw(st.sets(st.sampled_from(names)), label="dropped")
+    plan = plan_for(midi, result, cuts=cuts, style=data.draw(STYLES, label="style"))
 
-    out = rendered(midi, plan_for(midi, result, cuts=cuts), substitutions=dict.fromkeys(drop, DROP))
+    out = rendered(midi, plan, substitutions=dict.fromkeys(drop, DROP))
 
     expected = [note for note in result.score.notes if note.articulation not in drop]
     assert sorted(note.position for note in out.notes) == sorted(
@@ -154,9 +159,9 @@ def _played_twice(draw: st.DrawFn) -> tuple[list[Hit], list[Hit]]:
     return played[0], played[1]
 
 
-@given(_played_twice(), CUTS, st.integers(0, 2**53 - 1))
+@given(_played_twice(), CUTS, st.integers(0, 2**53 - 1), STYLES)
 def test_input_velocities_and_timing_change_nothing_but_the_hit_types(
-    takes: tuple[list[Hit], list[Hit]], cuts: list[int], seed: int
+    takes: tuple[list[Hit], list[Hit]], cuts: list[int], seed: int, style: StyleName
 ) -> None:
     first, second = (song(take) for take in takes)
     one, two = normalized(first), normalized(second)
@@ -166,7 +171,7 @@ def test_input_velocities_and_timing_change_nothing_but_the_hit_types(
         return sorted((note.tick, note.articulation, note.hit_type) for note in notes)
 
     assume(score(one) == score(two))
-    plan = plan_for(first, one, cuts=cuts, seed=seed)
+    plan = plan_for(first, one, cuts=cuts, seed=seed, style=style)
 
     assert midi_bytes(rendered(first, plan, result=one).song) == midi_bytes(
         rendered(second, plan, result=two).song
@@ -181,8 +186,10 @@ def at_corners(
     *,
     loose: bool = False,
 ) -> SessionPlan:
-    """A plan whose sections' controls are drawn at their ends often, where the guards bind.
-    `loose` sets the song's tightness to 0 and its feel to -1 or +1, under the sections'."""
+    """A plan in a drawn style whose sections' controls are drawn at their ends often, where
+    the guards bind. `loose` sets the song's tightness to 0 and its feel to -1 or +1, under the
+    sections'."""
+    style = data.draw(STYLES, label="style")
     count = len(plan_for(midi, result, cuts=cuts).sections)
     controls = {
         number: data.draw(control_vectors(corners=True), label=f"section {number}")
@@ -192,7 +199,7 @@ def at_corners(
     if loose:
         feel = data.draw(st.sampled_from((-1.0, 1.0)), label="feel")
         song_controls = ControlVector(tightness=0.0, feel=feel)
-    return plan_for(midi, result, cuts=cuts, sections=controls, controls=song_controls)
+    return plan_for(midi, result, cuts=cuts, sections=controls, controls=song_controls, style=style)
 
 
 DENSE = grooves((KICK, SNARE, HAT), per_bar=36)
@@ -278,26 +285,30 @@ def test_velocities_are_1_to_127_and_never_repeat_on_a_pitch_or_a_drum(
                     assert earlier.note.velocity != later.note.velocity
 
 
+@pytest.mark.parametrize("style", STYLE_NAMES)
 @pytest.mark.parametrize("cuts", [(), tuple(range(1, 32))])
-def test_16ths_at_600_bpm_played_loose_keep_most_of_their_gap(cuts: tuple[int, ...]) -> None:
+def test_16ths_at_600_bpm_played_loose_keep_most_of_their_gap(
+    cuts: tuple[int, ...], style: StyleName
+) -> None:
     midi = song([(step * SIXTEENTH, HAT) for step in range(32 * 16)], bpm=600)
     result = normalized(midi)
     loose = ControlVector(tightness=0.0, feel=1.0)
 
     for seed in range(4):
-        plan = plan_for(midi, result, cuts=cuts, controls=loose, seed=seed)
+        plan = plan_for(midi, result, cuts=cuts, controls=loose, seed=seed, style=style)
         starts = [note.note.start for note in rendered(midi, plan, result=result).notes]
         gaps = [later - earlier for earlier, later in pairwise(starts)]
         assert min(gaps) >= GAP_SHARE * SIXTEENTH - 1
 
 
-def test_neighbours_across_a_boundary_never_share_a_velocity() -> None:
+@pytest.mark.parametrize("style", STYLE_NAMES)
+def test_neighbours_across_a_boundary_never_share_a_velocity(style: StyleName) -> None:
     midi = song([(beat * PPQ, KICK) for beat in range(4 * 32)])
     result = normalized(midi)
     flat = ControlVector(dynamic_range=0.0)
 
     for seed in range(4):
-        plan = plan_for(midi, result, cuts=range(1, 32), controls=flat, seed=seed)
+        plan = plan_for(midi, result, cuts=range(1, 32), controls=flat, seed=seed, style=style)
         kicks = [note.note.velocity for note in rendered(midi, plan, result=result).notes]
         assert all(earlier != later for earlier, later in pairwise(kicks))
 
@@ -325,11 +336,11 @@ def test_soft_notes_land_below_the_other_notes_of_their_drum_in_a_section(
 
 
 def test_soft_notes_are_held_below_where_their_center_meets_the_others() -> None:
+    # A rider's weak hits at energy 0 and full dynamic range reach down to the soft center.
     hits: list[Hit] = []
     for bar in range(8):
         hits.extend(
-            (bar * BAR + step * SIXTEENTH, SNARE, SOFT if step % 4 else NORMAL)
-            for step in range(16)
+            (bar * BAR + step * SIXTEENTH, HAT, SOFT if step % 4 else NORMAL) for step in range(16)
         )
     midi = song(hits)
     result = normalized(midi)
@@ -343,9 +354,11 @@ def test_soft_notes_are_held_below_where_their_center_meets_the_others() -> None
     assert held > 0
 
 
-def test_rider_hits_alternate_strong_and_weak_about_three_times_in_four() -> None:
+@pytest.mark.parametrize("style", STYLE_NAMES)
+def test_rider_hits_alternate_strong_and_weak_about_three_times_in_four(style: StyleName) -> None:
     midi = song(rock(256))
-    out = rendered(midi, plan_for(midi, normalized(midi), cuts=range(8, 256, 8)))
+    plan = plan_for(midi, normalized(midi), cuts=range(8, 256, 8), style=style)
+    out = rendered(midi, plan)
 
     alternating = [note for note in out.notes if note.part.rider == "alternate"]
     pairs = [
@@ -468,9 +481,11 @@ def test_a_section_played_as_it_came_in_comes_out_unchanged(
     result = normalized(midi)
     count = len(plan_for(midi, result, cuts=cuts).sections)
     kept = data.draw(st.integers(0, count - 1), label="kept")
+    style = data.draw(STYLES, label="style")
 
     out = rendered(
-        midi, plan_for(midi, result, cuts=cuts, sections={kept: ControlVector(skip=True)})
+        midi,
+        plan_for(midi, result, cuts=cuts, sections={kept: ControlVector(skip=True)}, style=style),
     )
 
     for note in out.notes:

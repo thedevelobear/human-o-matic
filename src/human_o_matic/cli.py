@@ -55,7 +55,7 @@ from human_o_matic.normalize.score import Normalized
 from human_o_matic.render.engine import render
 from human_o_matic.render.guards import GuardCounts
 from human_o_matic.render.measure import SectionStats, section_stats
-from human_o_matic.render.style import STYLES
+from human_o_matic.render.style import STYLE_NAMES, built_in_styles
 from human_o_matic.render.target import place_score
 
 EXIT_OPEN = 3
@@ -600,7 +600,7 @@ def render_song(
         ),
     ] = None,
     style: Annotated[
-        str, typer.Option(help="The style. Only tight exists until calibration.")
+        str, typer.Option(help="The style: tight, the default, medium or loose.")
     ] = "tight",
     answers: Annotated[
         Path | None,
@@ -635,12 +635,13 @@ def render_song(
             param_hint="'--bpm'",
         )
     chosen: StyleName | None = None
-    for name in STYLES:
+    for name in STYLE_NAMES:
         if name == style:
             chosen = name
     if chosen is None:
         raise typer.BadParameter(
-            f"{style!r} is not a style; there is {', '.join(STYLES)}", param_hint="'--style'"
+            f"{style!r} is not a style; there are {', '.join(STYLE_NAMES)}",
+            param_hint="'--style'",
         )
     if output.resolve() == midi_file.resolve():
         raise typer.BadParameter(
@@ -725,14 +726,14 @@ def render_song(
         write_midi(rendered.song, output, overwrite=overwrite)
     except OSError as error:
         raise typer.BadParameter(str(error), param_hint="'--output'") from error
-    defaults = STYLES[chosen].defaults
+    defaults = built_in_styles()[chosen].defaults
     summary = RenderSummary(
         file=str(midi_file),
         output=str(output),
         kit=kit.ref,
         to_kit=target.ref,
         style=chosen,
-        placeholder=STYLES[chosen].placeholder,
+        placeholder=built_in_styles()[chosen].placeholder,
         seed=seed,
         notes=RenderedNotes(
             written=len(rendered.notes),

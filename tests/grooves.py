@@ -6,7 +6,7 @@ from itertools import pairwise
 from hypothesis import strategies as st
 
 from human_o_matic.analyze.sections import drum_bars
-from human_o_matic.controls import Arc, ControlVector, SectionPlan, SessionPlan
+from human_o_matic.controls import Arc, ControlVector, SectionPlan, SessionPlan, StyleName
 from human_o_matic.maps.kit import DrumKit
 from human_o_matic.maps.loader import find_kit
 from human_o_matic.midi.io import MidiSong, parse_midi
@@ -100,6 +100,7 @@ def plan_for(
     sections: Mapping[int, ControlVector] | None = None,
     controls: ControlVector | None = None,
     seed: int = 1,
+    style: StyleName = "tight",
 ) -> SessionPlan:
     """A plan whose sections start at bar 0 and at each cut inside the drums' bars, with the
     controls `sections` gives by section number."""
@@ -108,6 +109,7 @@ def plan_for(
     given = sections or {}
     return SessionPlan(
         seed=seed,
+        style=style,
         controls=controls or ControlVector(),
         sections=tuple(
             SectionPlan(

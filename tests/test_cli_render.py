@@ -78,7 +78,7 @@ def test_a_clean_render_writes_the_file_and_prints_its_summary(tmp_path: Path) -
     assert out["decisions"] == []
     summary = out["summary"]
     assert summary["kit"] == summary["to_kit"] == "gm/default"
-    assert (summary["style"], summary["placeholder"], summary["seed"]) == ("tight", True, 7)
+    assert (summary["style"], summary["placeholder"], summary["seed"]) == ("tight", False, 7)
     assert summary["notes"] == {"written": 96, "kept": 0, "dropped": 0}
     assert set(summary["guards"]) >= {"capped", "tick_zero", "gap", "nudged", "unmet"}
     (section,) = out["sections"]
@@ -221,7 +221,7 @@ def test_the_input_is_never_overwritten(tmp_path: Path) -> None:
     [
         ["--seed", "-1"],
         ["--seed", str(MAX_SEED + 1)],
-        ["--style", "loose"],
+        ["--style", "sloppy"],
         ["--to-map", "nope"],
         ["--bpm", "2"],
     ],
