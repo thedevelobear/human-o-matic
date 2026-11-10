@@ -12,7 +12,8 @@ The columns:
 - `down`: the share on the bar's first beat;
 - `gap`: the median distance to the next note of the pitch in the same file, in 16ths;
 - `reads as`: the kit's articulation, several joined by `|` with `(controller)` when a controller
-  value decides among them or shapes it, or `unmapped`.
+  value decides among them or shapes it, `unmapped`, or `left out` for a pitch the assignments
+  leave out of the folder.
 
 Folders are found by listing `private/midi/`, and the kit that reads each comes from
 `private/data/midi-folders.toml` (`midi_folders`), unless `--map` names one. Files that the
@@ -54,6 +55,7 @@ from midi_folders import (
 BEAT_TOLERANCE = 1 / 12
 """How far from a beat a note may be, in quarter notes, and still count as on it."""
 UNMAPPED = "unmapped"
+LEFT_OUT = "left out"
 CONTROLLER = " (controller)"
 EXIT_USAGE = 2
 HEADER = (
@@ -104,7 +106,8 @@ class FolderReport:
 
     def count(self, kind: str) -> int:
         """Notes the kit reads as one articulation (`mapped`), as one a controller decides or
-        shapes (`controller`), or as none (`unmapped`)."""
+        shapes (`controller`), or as none (`unmapped`), or that the assignments leave out
+        (`left_out`)."""
         return sum(
             count
             for stats in self.pitches.values()
@@ -124,6 +127,8 @@ class FolderReport:
 def _kind(reading: str) -> str:
     if reading == UNMAPPED:
         return "unmapped"
+    if reading == LEFT_OUT:
+        return "left_out"
     return "controller" if reading.endswith(CONTROLLER) else "mapped"
 
 
@@ -147,7 +152,8 @@ def scan(
     every_file: bool = False,
 ) -> FolderReport:
     """The report on `files`, each with what the assignments say of it. A file whose assignment
-    isn't the folder's own, `own`, is counted as elsewhere, unless `every_file` is set."""
+    isn't the folder's own, `own`, is counted as elsewhere, unless `every_file` is set, which
+    also reads the pitches the assignments leave out."""
     report = FolderReport(name=name, kit=kit, excluded=own.exclude if own else None)
     for path, assignment in files:
         if not every_file and _key(assignment) != _key(own):
@@ -163,12 +169,14 @@ def scan(
             report.skipped["the drum track is unclear"] += 1
             continue
         report.files += 1
+        leave_out = assignment.leave_out if assignment and not every_file else frozenset[int]()
         _add(
             report,
             report.files,
             [note for note in song.notes if note.track == drums],
             time_signature_map(song),
             song.ppq,
+            leave_out,
         )
     return report
 
@@ -178,7 +186,12 @@ def _key(assignment: Assignment | None) -> str | None:
 
 
 def _add(
-    report: FolderReport, file: int, notes: Sequence[Note], signatures: TimeSignatureMap, ppq: int
+    report: FolderReport,
+    file: int,
+    notes: Sequence[Note],
+    signatures: TimeSignatureMap,
+    ppq: int,
+    leave_out: frozenset[int],
 ) -> None:
     starts: dict[int, list[int]] = {}
     for note in notes:
@@ -186,7 +199,9 @@ def _add(
         stats.velocities.append(note.velocity)
         stats.files.add(file)
         report.channels[note.channel + 1] += 1
-        if report.kit is not None:
+        if note.pitch in leave_out:
+            stats.reads[LEFT_OUT] += 1
+        elif report.kit is not None:
             stats.reads[reading(report.kit, note)] += 1
         starts.setdefault(note.pitch, []).append(note.start)
         signature = signatures.signature_at(note.start)
@@ -226,11 +241,17 @@ def format_report(report: FolderReport) -> str:
         mapped, controller = report.count("mapped"), report.count("controller")
         unmapped = report.unmapped()
         missing = sum(unmapped.values())
+        left_out = report.count("left_out")
         lines.append(
             f"through {report.kit.ref}: {mapped} read ({_share(mapped, total)}), "
             f"{controller} by a controller value ({_share(controller, total)}), "
             f"{missing} unmapped ({_share(missing, total)})"
             + (": " + ", ".join(f"{p} ({n})" for p, n in unmapped.items()) if unmapped else "")
+            + (
+                f"; {left_out} left out by the assignments ({_share(left_out, total)})"
+                if left_out
+                else ""
+            )
         )
     if total:
         lines.append(HEADER)

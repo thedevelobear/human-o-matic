@@ -11,13 +11,13 @@ groove gets the statistics the engine is tested on (`render/measure.py`, ADR 006
 - **feel:** the mean offset of its snare and rider hits less that of its kicks, in ms.
 
 What a file leaves open is measured around (ADR 0059): notes its kit doesn't map are left out and
-counted, ambiguous beats keep the quantizer's best guess, and a file without a tempo has its
-velocities measured and its timing not. A file that can't be read, or whose drum track is unclear,
-is counted with why. Timing is measured only on a groove with at least `MIN_NOTES` notes, and not
-on one held to the grid (ADR 0060): more than `ON_GRID` of its notes at one offset from the grid,
-exactly on it or all shifted alike, more than a performance recorded at 480 PPQ or finer puts at
-one tick by chance. Such a groove was quantized, in whole or in part, and would pass for a tight
-drummer.
+counted, as are notes on the pitches its folder's assignment leaves out (ADR 0057), ambiguous beats
+keep the quantizer's best guess, and a file without a tempo has its velocities measured and its
+timing not. A file that can't be read, or whose drum track is unclear, is counted with why. Timing
+is measured only on a groove with at least `MIN_NOTES` notes, and not on one held to the grid (ADR
+0060): more than `ON_GRID` of its notes at one offset from the grid, exactly on it or all shifted
+alike, more than a performance recorded at 480 PPQ or finer puts at one tick by chance. Such a
+groove was quantized, in whole or in part, and would pass for a tight drummer.
 
 `measure` prints, for every folder pooled and then for each one, how many files and grooves were
 measured and why any weren't, the distribution of timing spread of the grooves with performed
@@ -39,7 +39,7 @@ import sys
 import time
 from collections import Counter
 from collections.abc import Callable, Iterable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from itertools import pairwise
 from pathlib import Path, PurePosixPath
 from typing import Literal
@@ -53,6 +53,7 @@ from human_o_matic.maps.loader import built_in_vocabulary
 from human_o_matic.maps.schema import Library
 from human_o_matic.midi.io import MidiFileError, read_midi
 from human_o_matic.midi.tempo import tempo_map
+from human_o_matic.midi.tracks import choose_drum_track
 from human_o_matic.normalize.pipeline import normalize
 from human_o_matic.normalize.score import Score, ScoreNote
 from human_o_matic.render.parts import Part
@@ -116,8 +117,18 @@ class FileResult:
     """Why the file wasn't measured."""
     unmapped: int = 0
     """Notes its kit doesn't map, left out of every statistic."""
+    left_out: int = 0
+    """Notes on pitches its folder's assignment leaves out, left out of every statistic."""
     ambiguous_beats: int = 0
     tempo: bool = True
+
+
+@dataclass(frozen=True, slots=True)
+class Source:
+    """How a file is read: through a kit, with some pitches left out."""
+
+    kit: DrumKit
+    leave_out: frozenset[int] = frozenset()
 
 
 def every_pitch_kit() -> DrumKit:
@@ -149,7 +160,7 @@ def every_pitch_kit() -> DrumKit:
 
 
 def measure_file(
-    path: Path, relative: PurePosixPath, kit: DrumKit, on_grid: float = ON_GRID
+    path: Path, relative: PurePosixPath, source: Source, on_grid: float = ON_GRID
 ) -> FileResult:
     """A file's grooves, or why it couldn't be measured. `on_grid` is the share of notes exactly
     on the grid above which a groove's timing is left out."""
@@ -157,15 +168,27 @@ def measure_file(
     result = FileResult(path=str(relative), folder=folder)
     try:
         song = read_midi(path)
+        drums = choose_drum_track(song).track
     except (OSError, MidiFileError) as error:
         result.problem = f"not read: {error}"
         return result
+    except DecisionRequired as asked:
+        result.problem = f"{asked.request.kind}: needs an answer"
+        return result
+    if source.leave_out:
+        kept = tuple(
+            note for note in song.notes if note.track != drums or note.pitch not in source.leave_out
+        )
+        result.left_out = len(song.notes) - len(kept)
+        song = replace(song, notes=kept)
     try:
         tempo_map(song)
     except DecisionRequired:
         result.tempo = False
     try:
-        normalized = normalize(song, kit, bpm=None if result.tempo else NO_TEMPO_BPM)
+        normalized = normalize(
+            song, source.kit, track=drums, bpm=None if result.tempo else NO_TEMPO_BPM
+        )
     except DecisionRequired as asked:
         result.problem = f"{asked.request.kind}: needs an answer"
         return result
@@ -278,18 +301,18 @@ def _flat(notes: Sequence[ScoreNote]) -> bool:
 def measure(
     root: Path,
     names: Iterable[str],
-    kit_of: Callable[[PurePosixPath], DrumKit | None],
+    source_of: Callable[[PurePosixPath], Source | None],
     on_grid: float = ON_GRID,
 ) -> list[FileResult]:
-    """Every file of the named folders, each read through the kit `kit_of` gives its path, or
-    left out when it gives none."""
+    """Every file of the named folders, each read as `source_of` says for its path, or left out
+    when it gives nothing."""
     results: list[FileResult] = []
     for name in names:
         for path in midi_files(root / name):
             relative = PurePosixPath(path.relative_to(root).as_posix())
-            kit = kit_of(relative)
-            if kit is not None:
-                results.append(measure_file(path, relative, kit, on_grid))
+            source = source_of(relative)
+            if source is not None:
+                results.append(measure_file(path, relative, source, on_grid))
     return results
 
 
@@ -389,7 +412,9 @@ def _counts(results: Sequence[FileResult], grooves: Sequence[Groove]) -> list[st
         ),
         f"  without a tempo: {sum(not result.tempo for result in measured)}; with unmapped notes:"
         f" {sum(result.unmapped > 0 for result in measured)} files, "
-        f"{sum(result.unmapped for result in measured)} notes left out; with ambiguous beats: "
+        f"{sum(result.unmapped for result in measured)} notes left out; notes on pitches the "
+        f"assignments leave out: {sum(result.left_out for result in measured)}; with ambiguous "
+        "beats: "
         f"{sum(result.ambiguous_beats > 0 for result in measured)} files",
     ]
     kinds = Counter(groove.timing for groove in grooves)
@@ -525,9 +550,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     started = time.perf_counter()
     names = [folder.name for folder in folders(args.root)]
 
-    def assigned(relative: PurePosixPath) -> DrumKit | None:
+    def assigned(relative: PurePosixPath) -> Source | None:
         found = assignments.find(relative)
-        return found.kit if found else None
+        if found is None or found.kit is None:
+            return None
+        return Source(found.kit, found.leave_out)
 
     results = measure(args.root, names, assigned, args.on_grid)
     print("== every assigned folder")
@@ -538,9 +565,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"\n== {name}")
             print(report(mine, args.cuts))
     if args.excluded:
-        neutral = every_pitch_kit()
+        neutral = Source(every_pitch_kit())
 
-        def left_out(relative: PurePosixPath) -> DrumKit | None:
+        def left_out(relative: PurePosixPath) -> Source | None:
             found = assignments.find(relative)
             return neutral if found is not None and found.kit is None else None
 

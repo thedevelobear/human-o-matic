@@ -131,6 +131,19 @@ def test_the_assignments_choose_the_kit_and_leave_out_other_entries(root: Path) 
     assert (sub.kit, sub.excluded, sub.files) == (None, "copies of another folder", 1)
 
 
+def test_an_assignment_can_leave_pitches_out_of_its_folder(root: Path) -> None:
+    assignments = Assignments({"a": Entry(map="gm", leave_out=(SNARE, ODD))})
+
+    (report,) = reports(root, ["a"], assignments, None)
+    (given,) = reports(root, ["a"], assignments, report.kit)
+
+    assert dict(report.pitches[SNARE].reads) == {"left out": 2}
+    assert (report.count("left_out"), report.unmapped()) == (3, {})
+    assert "3 left out by the assignments (33.33%)" in format_report(report)
+    # A kit given reads every note, whatever the assignments leave out.
+    assert given.count("left_out") == 0
+
+
 def test_a_kit_given_reads_every_file_whatever_the_assignments(root: Path, kit: DrumKit) -> None:
     assignments = Assignments({"a/sub": Entry(exclude="copies")})
 
@@ -179,6 +192,8 @@ def test_an_assignments_file_is_checked_when_it_is_read(tmp_path: Path) -> None:
         ("schema = 1\n[folders.a]\n", "either"),
         ('schema = 2\n[folders.a]\nmap = "gm"\n', "schema"),
         ('schema = 1\n[folders."/a"]\nmap = "gm"\n', "not a path"),
+        ('schema = 1\n[folders.a]\nexclude = "why"\nleave_out = [54]\n', "goes with a `map`"),
+        ('schema = 1\n[folders.a]\nmap = "gm"\nleave_out = [128]\n', "127"),
     ):
         path.write_text(text)
         with pytest.raises(AssignmentError, match=problem):

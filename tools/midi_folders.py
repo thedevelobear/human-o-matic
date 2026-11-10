@@ -9,9 +9,13 @@ follows the longest key its path starts with:
 
     [folders.a-folder]
     map = "library/kit"            # or "library", for a library with one kit
+    leave_out = [54, 58]           # pitches the kit names as something the folder doesn't play
 
     [folders."a-folder/a-subfolder"]
     exclude = "why it is left out"
+
+A folder read through a kit can leave pitches out: the kit would read them by a name the folder
+doesn't play, so their notes are left out of every statistic rather than read wrongly.
 
 A folder is found by listing `private/midi/`, and links are followed, since each folder there is
 a link to where its files are installed. Only the tools in `tools/` read this module.
@@ -22,7 +26,7 @@ import tomllib
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
@@ -49,11 +53,15 @@ class Entry(BaseModel):
     map: str | None = None
     """A built-in kit, as `library/kit` or `library` alone when it has one kit (ADR 0023)."""
     exclude: str | None = None
+    leave_out: tuple[Annotated[int, Field(ge=0, le=127)], ...] = ()
+    """Pitches whose notes are left out of every statistic, with a `map`."""
 
     @model_validator(mode="after")
     def _check(self) -> Self:
         if (self.map is None) == (self.exclude is None):
             raise ValueError("give either `map` or `exclude`")
+        if self.leave_out and self.map is None:
+            raise ValueError("`leave_out` goes with a `map`")
         return self
 
 
@@ -72,6 +80,8 @@ class Assignment:
     kit: DrumKit | None
     """None when the key's folder is left out."""
     exclude: str | None
+    leave_out: frozenset[int] = frozenset()
+    """Pitches whose notes are left out of every statistic."""
 
 
 class Assignments:
@@ -93,7 +103,9 @@ class Assignments:
                     kit = find_kit(entry.map)
                 except KeyError as error:
                     raise AssignmentError(f"{key}: {error.args[0]}") from error
-            self._entries[path] = Assignment(key=str(path), kit=kit, exclude=entry.exclude)
+            self._entries[path] = Assignment(
+                key=str(path), kit=kit, exclude=entry.exclude, leave_out=frozenset(entry.leave_out)
+            )
 
     @classmethod
     def read(cls, path: Path = ASSIGNMENTS) -> Self:

@@ -9,6 +9,7 @@ from calibrate import (
     MIN_NOTES,
     WINDOW_BARS,
     Groove,
+    Source,
     alternatives,
     balanced_thirds,
     bands,
@@ -84,7 +85,7 @@ def kit(tmp_path: Path) -> DrumKit:
 
 
 def measured(path: Path, kit: DrumKit) -> list[Groove]:
-    result = measure_file(path, PurePosixPath("f", path.name), kit)
+    result = measure_file(path, PurePosixPath("f", path.name), Source(kit))
     assert result.problem is None
     return result.grooves
 
@@ -158,7 +159,7 @@ def test_a_file_without_a_tempo_has_its_velocities_measured_and_its_timing_not(
     notes = beat_notes(4)
     path = write(tmp_path / "x.mid", notes, cycle(SPREAD, len(notes)), with_tempo=False)
 
-    result = measure_file(path, PurePosixPath("f", "x.mid"), kit)
+    result = measure_file(path, PurePosixPath("f", "x.mid"), Source(kit))
 
     (groove,) = result.grooves
     assert (result.tempo, groove.timing, groove.spread_ms) == (False, "no_tempo", None)
@@ -179,11 +180,24 @@ def test_unmapped_notes_are_left_out_and_counted(tmp_path: Path, kit: DrumKit) -
     notes.sort()
     path = write(tmp_path / "odd.mid", notes, cycle(SPREAD, len(notes)))
 
-    result = measure_file(path, PurePosixPath("f", "odd.mid"), kit)
+    result = measure_file(path, PurePosixPath("f", "odd.mid"), Source(kit))
 
     assert result.unmapped == 2
     (groove,) = result.grooves
     assert (groove.notes, groove.timing) == (48, "performed")
+
+
+def test_pitches_an_assignment_leaves_out_are_left_out_and_counted(
+    tmp_path: Path, kit: DrumKit
+) -> None:
+    notes = beat_notes(4)
+    path = write(tmp_path / "x.mid", notes, cycle(SPREAD, len(notes)))
+
+    result = measure_file(path, PurePosixPath("f", "x.mid"), Source(kit, frozenset({SNARE})))
+
+    (groove,) = result.grooves
+    assert result.left_out == 8
+    assert groove.notes == len(notes) - 8
 
 
 def test_a_file_that_cannot_be_measured_says_why(tmp_path: Path, kit: DrumKit) -> None:
@@ -196,8 +210,8 @@ def test_a_file_that_cannot_be_measured_says_why(tmp_path: Path, kit: DrumKit) -
         ppq=PPQ,
     )
 
-    broken = measure_file(tmp_path / "broken.mid", PurePosixPath("f", "broken.mid"), kit)
-    unclear = measure_file(two, PurePosixPath("f", "two.mid"), kit)
+    broken = measure_file(tmp_path / "broken.mid", PurePosixPath("f", "broken.mid"), Source(kit))
+    unclear = measure_file(two, PurePosixPath("f", "two.mid"), Source(kit))
 
     assert str(broken.problem).startswith("not read")
     assert unclear.problem == "drum_track: needs an answer"
@@ -256,7 +270,7 @@ def test_the_report_counts_grooves_spreads_and_bands(tmp_path: Path, kit: DrumKi
         write(root / "a" / f"{index}.mid", notes, offsets)
     write(root / "a" / "grid.mid", notes)
 
-    results = measure(root, ["a"], lambda _: kit)
+    results = measure(root, ["a"], lambda _: Source(kit))
     text = report(results)
 
     assert "files: 4, 4 measured" in text
