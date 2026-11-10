@@ -347,8 +347,9 @@ def style_toml(style: Style) -> str:
         f"The `{style.name}` style, written by `tools/calibrate.py fit` from performed MIDI: "
         "aggregate statistics only (ADRs 0007, 0044). The velocities are fitted once and shared "
         "by the three styles (ADR 0065), and the timing is this style's band's, by tempo band. "
-        "Values a performance can't give keep the placeholder's (ADR 0068). Don't edit it: "
-        "change the fit and run it again."
+        "Values a performance can't give keep the placeholder's, and so do the rider gap, accent "
+        "and fill crescendo, whose fits run against Appendix A or ADR 0052's tests (ADR 0068). "
+        "Don't edit it: change the fit and run it again."
     )
     lines = textwrap.wrap(header, width=98, initial_indent="# ", subsequent_indent="# ")
     _table(lines, [], cast(dict[str, Json], style.model_dump(mode="json")))
