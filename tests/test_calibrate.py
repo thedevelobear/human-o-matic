@@ -14,11 +14,14 @@ from calibrate import (
     balanced_thirds,
     bands,
     every_pitch_kit,
+    grid_test,
     main,
     measure,
     measure_file,
     report,
     thirds,
+    timed,
+    velocity_grooves,
 )
 from human_o_matic.maps.kit import DrumKit
 from map_files import articulation, load_kit
@@ -114,7 +117,7 @@ def test_a_performed_groove_has_the_spread_and_feel_of_its_offsets(
     assert groove.feel_ms == pytest.approx(float(np.mean(upper) - np.mean(kicks)), abs=1e-6)
     assert groove.energy is not None
     assert not groove.flat
-    assert groove.on_grid <= 0.2
+    assert groove.at_one_offset <= 0.2
 
 
 def test_a_quantized_groove_is_on_the_grid_and_keeps_its_velocities(
@@ -122,7 +125,7 @@ def test_a_quantized_groove_is_on_the_grid_and_keeps_its_velocities(
 ) -> None:
     (groove,) = measured(write(tmp_path / "grid.mid", beat_notes(4)), kit)
 
-    assert (groove.timing, groove.on_grid, groove.spread_ms) == ("on_grid", 1.0, None)
+    assert (groove.timing, groove.at_one_offset, groove.spread_ms) == ("on_grid", 1.0, None)
     assert (groove.energy, groove.dynamic_range, groove.flat) == (100.0, 0.0, True)
 
 
@@ -136,7 +139,60 @@ def test_a_quantized_groove_shifted_as_a_whole_is_on_the_grid_too(
     (groove,) = measured(write(tmp_path / "shifted.mid", notes, offsets), kit)
 
     assert groove.timing == "on_grid"
-    assert groove.on_grid == pytest.approx(0.9, abs=0.05)
+    assert groove.at_one_offset == pytest.approx(0.9, abs=0.05)
+
+
+TIGHT = (0, 0, 0, 0, 0, 1, 1, 1, 1, -1, -1, -1, -1, 2, 2, -2, -2, 3, -3, 4)
+"""A narrow, smooth spread: a quarter of the notes at 0, almost as many one tick either side."""
+
+
+def test_a_tight_smooth_groove_is_performed_though_a_quarter_of_it_sits_on_the_grid(
+    tmp_path: Path, kit: DrumKit
+) -> None:
+    notes = beat_notes(4)
+
+    (groove,) = measured(write(tmp_path / "t.mid", notes, cycle(TIGHT, len(notes))), kit)
+
+    assert groove.at_one_offset > 0.2
+    assert groove.spike < 2
+    assert groove.timing == "performed"
+
+
+def test_quantized_drums_under_moving_ones_pile_up_and_hold_the_groove(
+    tmp_path: Path, kit: DrumKit
+) -> None:
+    notes = beat_notes(4)
+    hats = iter(cycle(SPREAD, len(notes)))
+    offsets = [next(hats) if pitch == HAT else 0 for _, pitch in notes]
+
+    (groove,) = measured(write(tmp_path / "part.mid", notes, offsets), kit)
+
+    assert groove.spike > 2
+    assert groove.timing == "on_grid"
+
+
+def test_a_tick_of_jitter_on_quantized_notes_is_held_to_the_grid(
+    tmp_path: Path, kit: DrumKit
+) -> None:
+    notes = beat_notes(4)
+
+    (groove,) = measured(write(tmp_path / "j.mid", notes, cycle((0, 1, -1), len(notes))), kit)
+
+    assert groove.steps < 1.5
+    assert groove.timing == "on_grid"
+
+
+@pytest.mark.parametrize(
+    ("offsets", "held"),
+    [
+        ([0] * 40, True),
+        ([7] * 40, True),
+        ([0, 2, -2, 4, -4, 6, -6] * 6, False),  # a performance saved at twice its resolution
+        ([0, 0, 0, 0, 2, -2, 4, -4, 6, -6] * 4, True),
+    ],
+)
+def test_the_grid_test_counts_in_the_offsets_own_steps(offsets: list[int], held: bool) -> None:
+    assert grid_test(offsets).held is held
 
 
 def test_a_long_file_is_cut_into_equal_windows_of_at_most_16_bars(
@@ -229,21 +285,50 @@ def test_every_pitch_kit_measures_timing_without_any_name(tmp_path: Path) -> Non
     assert groove.spread_ms == pytest.approx(expected)
 
 
-def groove(spread: float, folder: str = "a", pack: str = "a") -> Groove:
+def groove(spread: float, folder: str = "a", pack: str = "a", far: float = 0.0) -> Groove:
     return Groove(
         folder=folder,
         pack=pack,
         file=f"{folder}/x.mid",
         bars=(0, 4),
         notes=48,
-        on_grid=0.1,
+        at_one_offset=0.1,
+        spike=1.0,
+        steps=4.0,
         timing="performed",
+        far=far,
+        ambiguous=0.0,
         spread_ms=spread,
         feel_ms=0.0,
         energy=100.0,
         dynamic_range=5.0,
         flat=False,
     )
+
+
+def test_grooves_the_grid_does_not_fit_are_left_out_only_when_asked() -> None:
+    grooves = [groove(3.0, far=0.0), groove(12.0, far=0.25), groove(5.0, far=0.05)]
+
+    assert timed(grooves) == grooves
+    assert timed(grooves, 0.1) == [grooves[0], grooves[2]]
+    text = report([], [], 0.1)
+    assert "the grid doesn't fit 0 of 0 performed grooves" in text
+
+
+def test_the_shared_velocity_fit_takes_every_groove_whose_velocities_vary(
+    tmp_path: Path, kit: DrumKit
+) -> None:
+    notes = beat_notes(4)
+    varied = [90 + index % 23 for index in range(len(notes))]
+    played = measured(write(tmp_path / "p.mid", notes, cycle(SPREAD, len(notes)), varied), kit)
+    grid = measured(write(tmp_path / "g.mid", notes, None, varied), kit)
+    flat = measured(write(tmp_path / "f.mid", notes), kit)
+    short = measured(write(tmp_path / "s.mid", beat_notes(1)[:3], None, [90, 100, 110]), kit)
+
+    chosen = velocity_grooves([*played, *grid, *flat, *short])
+
+    assert [g.timing for g in chosen] == ["performed", "on_grid"]
+    assert (flat[0].flat, short[0].flat) == (True, None)
 
 
 def test_cuts_make_three_bands_and_flag_a_band_one_folder_supplies() -> None:
@@ -256,7 +341,11 @@ def test_cuts_make_three_bands_and_flag_a_band_one_folder_supplies() -> None:
     assert [band.name for band in bands((low, high))] == ["tight", "medium", "loose"]
     assert low < high
     assert found["given 4 and 8 ms"] == (4.0, 8.0)
-    assert set(found) >= {"equal thirds", "whole milliseconds near the thirds"}
+    assert set(found) >= {
+        "equal thirds",
+        "whole milliseconds near the thirds",
+        "thirds counting each pack the same",
+    }
     # Counted alike, folder b's one groove weighs as much as folder a's nine.
     assert balanced_thirds(grooves, lambda g: g.folder)[1] >= 9.0
     assert "files: 0, 0 measured" in text
@@ -274,10 +363,10 @@ def test_the_report_counts_grooves_spreads_and_bands(tmp_path: Path, kit: DrumKi
     text = report(results)
 
     assert "files: 4, 4 measured" in text
-    assert "grooves: 4 (windows of up to 16 bars); performed timing 3, on the grid 1" in text
-    assert "timing spread, ms, of 3 grooves with performed timing" in text
+    assert "grooves: 4 (windows of up to 16 bars); performed timing 3, held to the grid 1" in text
+    assert "timing spread, ms, of the 3 grooves for the timing fits" in text
     assert "  p5 " in text
-    assert "one folder alone: a 100%" in text
+    assert "one pack alone: a" in text
 
 
 def test_main_measures_the_assigned_folders_and_the_left_out_ones_apart(
@@ -291,7 +380,7 @@ def test_main_measures_the_assigned_folders_and_the_left_out_ones_apart(
     assignments.write_text('schema = 1\n[folders.a]\nmap = "gm"\n[folders.b]\nexclude = "why"\n')
     options = ["measure", "--root", str(root), "--assignments", str(assignments)]
 
-    assert main([*options, "--excluded", "--cuts", "4,8", "--on-grid", "0.3"]) == 0
+    assert main([*options, "--excluded", "--cuts", "4,8", "--misfit", "0.1"]) == 0
     out = capsys.readouterr().out
     assert out.startswith("== every assigned folder\nfiles: 1, 1 measured")
     assert "\n== a\n" in out

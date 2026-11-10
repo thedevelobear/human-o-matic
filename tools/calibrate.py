@@ -11,26 +11,35 @@ groove gets the statistics the engine is tested on (`render/measure.py`, ADR 006
 - **feel:** the mean offset of its snare and rider hits less that of its kicks, in ms.
 
 What a file leaves open is measured around (ADR 0059): notes its kit doesn't map are left out and
-counted, as are notes on the pitches its folder's assignment leaves out (ADR 0057), ambiguous beats
-keep the quantizer's best guess, and a file without a tempo has its velocities measured and its
-timing not. A file that can't be read, or whose drum track is unclear, is counted with why. Timing
-is measured only on a groove with at least `MIN_NOTES` notes, and not on one held to the grid (ADR
-0060): more than `ON_GRID` of its notes at one offset from the grid, exactly on it or all shifted
-alike, more than a performance recorded at 480 PPQ or finer puts at one tick by chance. Such a
-groove was quantized, in whole or in part, and would pass for a tight drummer.
+counted, as are notes on the pitches its folder's assignment leaves out (ADR 0057), ambiguous
+beats keep the quantizer's best guess, and a file without a tempo has its velocities measured and
+its timing not. A file that can't be read, or whose drum track is unclear, is counted with why.
+
+Timing is measured only on a groove with at least `MIN_NOTES` notes, graces left out, and not on
+one held to the grid (ADR 0060): one whose notes pile up at one offset from the grid, more than
+`ON_GRID` of them there and more than `SPIKE` times as many as one step either side, as
+quantizing all or some of its drums leaves them; or whose notes spread by under `MIN_STEPS`
+steps, as quantized notes with a tick or so of jitter do. A step is the smallest gap between the
+groove's offsets, a tick unless the file was saved at a finer resolution than it was played at.
+
+Grooves the grid doesn't fit are left out of the timing fits (ADR 0064). `--misfit SHARE` leaves
+out a groove with more than that share of its notes over 20 ms from their grid point; it is off
+until its threshold is set. A pack, a folder's first-level subfolder, is a source (ADR 0063), so a
+band is flagged when one pack supplies most of it. Velocities are fitted once for every style
+(ADR 0065), on every groove whose velocities aren't flat.
 
 `measure` prints, for every folder pooled and then for each one, how many files and grooves were
 measured and why any weren't, the distribution of timing spread of the grooves with performed
-timing, and the bands that cuts at its thirds, at whole milliseconds near them, and at thirds that
-count each folder, or each pack, the same would make, with how many folders and packs feed each
-band. With
-`--excluded` it also measures the timing of the folders the assignments leave out, apart from the
-rest, through a kit in which every pitch is a drum of its own, since an offset from the grid needs
-no name. Nothing is written: the numbers name folders, so they stay on the screen (ADR 0007).
+timing, the grooves the shared velocity fit would draw on, the bands that cuts at the thirds, at
+whole milliseconds near them, and at thirds that count each pack the same would make, and each
+pack's counts. With `--excluded` it also measures the timing of the folders the assignments leave
+out, apart from the rest, through a kit in which every pitch is a drum of its own, since an
+offset from the grid needs no name. Nothing is written: the numbers name folders, so they stay on
+the screen (ADR 0007).
 
 Run from the repository root:
     uv run python tools/calibrate.py measure
-    uv run python tools/calibrate.py measure --excluded --cuts 4,7
+    uv run python tools/calibrate.py measure --misfit 0.05 --excluded --cuts 4,8
 """
 
 import argparse
@@ -54,6 +63,7 @@ from human_o_matic.maps.schema import Library
 from human_o_matic.midi.io import MidiFileError, read_midi
 from human_o_matic.midi.tempo import tempo_map
 from human_o_matic.midi.tracks import choose_drum_track
+from human_o_matic.normalize.grid import FAR_MS
 from human_o_matic.normalize.pipeline import normalize
 from human_o_matic.normalize.score import Score, ScoreNote
 from human_o_matic.render.parts import Part
@@ -65,14 +75,22 @@ WINDOW_BARS = 16
 MIN_NOTES = 32
 """The fewest notes, graces left out, whose offsets give a groove a timing spread."""
 ON_GRID = 0.2
-"""A groove with more than this share of its notes at one offset from the grid, in ticks, is held
-to it, and its timing is left out. A performance at 480 PPQ puts this many at one tick only when
-its notes spread by under about 2 ticks."""
+"""More than this share of a groove's notes at one offset from the grid, with a spike there, holds
+it to the grid."""
+SPIKE = 2.0
+"""A pile at one offset is a spike when it holds more than this many times as many notes as the
+offsets one step either side, on average. A smooth spread, however narrow, holds about as many
+there."""
+MIN_STEPS = 1.5
+"""A groove whose offsets spread by less than this many steps is held to the grid: quantized
+notes with a tick or so of jitter, tighter than any drummer at 480 PPQ."""
 NO_TEMPO_BPM = 120.0
 """The tempo a file without one is normalized at, for its velocities only. Its timing is left
 out, since its milliseconds would be made up."""
-NEAR_ONE_FOLDER = 0.9
-"""A band is flagged when one folder supplies at least this much of its grooves (ADR 0044)."""
+FLAT_NOTES = 4
+"""A drum needs this many normal-typed notes in a groove to tell flat velocities from varied."""
+NEAR_ONE_PACK = 0.9
+"""A band is flagged when one pack supplies at least this much of its grooves (ADR 0063)."""
 PERCENTILES = (5, 10, 25, 33, 50, 67, 75, 90, 95)
 HISTOGRAM_MS = 15
 """The histogram has a bin per millisecond up to this, and one for everything above."""
@@ -89,23 +107,35 @@ class Groove:
     folder: str
     pack: str
     """The folder and the subfolder the file is in, or the folder alone for a file directly in
-    it. Packs tell apart sources inside one folder."""
+    it. A pack is a source (ADR 0063)."""
     file: str
     """Its path under the folder of folders."""
     bars: tuple[int, int]
     """Its first bar and the bar after its last, counted from 0."""
     notes: int
     """Its notes, graces left out."""
-    on_grid: float
-    """The share of those notes at the groove's most common offset from the grid, in ticks: on
-    it, or all shifted alike."""
+    at_one_offset: float
+    """The share of those notes at the groove's most common offset from the grid, in ticks."""
+    spike: float
+    """How many times as many notes are at that offset as one step either side, on average."""
+    steps: float
+    """The spread of the notes' offsets, in steps."""
     timing: Timing
+    far: float
+    """The share of its notes more than 20 ms from their grid point."""
+    ambiguous: float
+    """The share of its beats whose grid is a guess."""
     spread_ms: float | None
     feel_ms: float | None
     energy: float | None
     dynamic_range: float | None
-    flat: bool
-    """Every drum's normal-typed notes have at most two velocities, as programmed parts do."""
+    flat: bool | None
+    """Every drum with `FLAT_NOTES` normal-typed notes or more has at most two velocities, as a
+    programmed part does; None when no drum has that many."""
+
+    def misfit(self, share: float | None) -> bool:
+        """Whether the grid doesn't fit it: more than `share` of its notes far from the grid."""
+        return share is not None and self.far > share
 
 
 @dataclass(slots=True)
@@ -159,11 +189,8 @@ def every_pitch_kit() -> DrumKit:
     return DrumKit(library, library.kits[0], built_in_vocabulary())
 
 
-def measure_file(
-    path: Path, relative: PurePosixPath, source: Source, on_grid: float = ON_GRID
-) -> FileResult:
-    """A file's grooves, or why it couldn't be measured. `on_grid` is the share of notes exactly
-    on the grid above which a groove's timing is left out."""
+def measure_file(path: Path, relative: PurePosixPath, source: Source) -> FileResult:
+    """A file's grooves, or why it couldn't be measured."""
     folder = relative.parts[0]
     result = FileResult(path=str(relative), folder=folder)
     try:
@@ -206,7 +233,9 @@ def measure_file(
             for note, part in zip(score.notes, parts, strict=True)
             if first <= score.signatures.bar_at(note.tick) < end
         ]
-        result.grooves.append(_groove(chosen, result, pack, (first, end), on_grid))
+        beats = [beat for beat in score.beats if first <= beat.bar < end]
+        ambiguous = sum(beat.ambiguous for beat in beats) / max(len(beats), 1)
+        result.grooves.append(_groove(chosen, result, pack, (first, end), ambiguous))
     return result
 
 
@@ -223,46 +252,78 @@ def windows(score: Score) -> list[tuple[int, int]]:
     return list(pairwise(edges))
 
 
+@dataclass(frozen=True, slots=True)
+class GridTest:
+    """How a groove's offsets from the grid sit, in ticks (ADR 0060)."""
+
+    at_one_offset: float
+    spike: float
+    steps: float
+
+    @property
+    def held(self) -> bool:
+        piled = self.at_one_offset > ON_GRID and self.spike > SPIKE
+        return piled or self.steps < MIN_STEPS
+
+
+def grid_test(offsets: Sequence[int]) -> GridTest:
+    """The test of ADR 0060 on a groove's offsets from their grid points, in ticks."""
+    if not offsets:
+        return GridTest(at_one_offset=0.0, spike=0.0, steps=0.0)
+    counts = Counter(offsets)
+    mode, top = counts.most_common(1)[0]
+    step = 0
+    for offset in counts:
+        step = math.gcd(step, offset - mode)
+    if step == 0:
+        return GridTest(at_one_offset=1.0, spike=math.inf, steps=0.0)
+    side = (counts[mode - step] + counts[mode + step]) / 2
+    return GridTest(
+        at_one_offset=top / len(offsets),
+        spike=top / side if side else math.inf,
+        steps=float(np.std(np.array(offsets, dtype=np.float64))) / step,
+    )
+
+
 def _groove(
     chosen: Sequence[tuple[ScoreNote, Part]],
     result: FileResult,
     pack: str,
     bars: tuple[int, int],
-    threshold: float,
+    ambiguous: float,
 ) -> Groove:
     mains = [(note, part) for note, part in chosen if note.grace_of is None]
     offsets = np.array([note.offset_ms for note, _ in mains], dtype=np.float64)
-    on_grid = _held(note.source.start - note.tick for note, _ in mains) / max(len(mains), 1)
+    test = grid_test([note.source.start - note.tick for note, _ in mains])
     timing: Timing
     if len(mains) < MIN_NOTES:
         timing = "too_few"
     elif not result.tempo:
         timing = "no_tempo"
-    elif on_grid > threshold:
+    elif test.held:
         timing = "on_grid"
     else:
         timing = "performed"
     performed = timing == "performed"
+    notes = [note for note, _ in chosen]
     return Groove(
         folder=result.folder,
         pack=pack,
         file=result.path,
         bars=bars,
         notes=len(mains),
-        on_grid=on_grid,
+        at_one_offset=test.at_one_offset,
+        spike=test.spike,
+        steps=test.steps,
         timing=timing,
+        far=float(np.mean(np.abs(offsets) > FAR_MS)) if len(offsets) else 0.0,
+        ambiguous=ambiguous,
         spread_ms=float(np.std(offsets)) if performed else None,
         feel_ms=_feel(mains) if performed else None,
-        energy=_energy([note for note, _ in chosen]),
-        dynamic_range=_dynamic_range([note for note, _ in chosen]),
-        flat=_flat([note for note, _ in chosen]),
+        energy=_energy(notes),
+        dynamic_range=_dynamic_range(notes),
+        flat=_flat(notes),
     )
-
-
-def _held(offsets: Iterable[int]) -> int:
-    """How many notes share the most common offset from the grid, in ticks."""
-    counts = Counter(offsets)
-    return counts.most_common(1)[0][1] if counts else 0
 
 
 def _feel(mains: Sequence[tuple[ScoreNote, Part]]) -> float | None:
@@ -293,16 +354,15 @@ def _dynamic_range(notes: Sequence[ScoreNote]) -> float | None:
     return float(np.mean(spreads)) if spreads else None
 
 
-def _flat(notes: Sequence[ScoreNote]) -> bool:
-    drums = _by_drum(notes)
-    return bool(drums) and all(len(set(velocities)) <= 2 for velocities in drums)
+def _flat(notes: Sequence[ScoreNote]) -> bool | None:
+    drums = [velocities for velocities in _by_drum(notes) if len(velocities) >= FLAT_NOTES]
+    if not drums:
+        return None
+    return all(len(set(velocities)) <= 2 for velocities in drums)
 
 
 def measure(
-    root: Path,
-    names: Iterable[str],
-    source_of: Callable[[PurePosixPath], Source | None],
-    on_grid: float = ON_GRID,
+    root: Path, names: Iterable[str], source_of: Callable[[PurePosixPath], Source | None]
 ) -> list[FileResult]:
     """Every file of the named folders, each read as `source_of` says for its path, or left out
     when it gives nothing."""
@@ -312,8 +372,19 @@ def measure(
             relative = PurePosixPath(path.relative_to(root).as_posix())
             source = source_of(relative)
             if source is not None:
-                results.append(measure_file(path, relative, source, on_grid))
+                results.append(measure_file(path, relative, source))
     return results
+
+
+def timed(grooves: Iterable[Groove], misfit: float | None = None) -> list[Groove]:
+    """The grooves the timing fits draw on: those with performed timing that the grid fits."""
+    return [g for g in grooves if g.timing == "performed" and not g.misfit(misfit)]
+
+
+def velocity_grooves(grooves: Iterable[Groove]) -> list[Groove]:
+    """The grooves the shared velocity fit draws on: every one whose velocities aren't flat,
+    whatever its timing (ADR 0065)."""
+    return [groove for groove in grooves if groove.flat is False]
 
 
 @dataclass(frozen=True, slots=True)
@@ -326,9 +397,6 @@ class Band:
     def holds(self, spread: float) -> bool:
         above = self.low is None or spread >= self.low
         return above and (self.high is None or spread < self.high)
-
-
-BAND_NAMES = ("tight", "medium", "loose")
 
 
 def bands(cuts: Sequence[float]) -> list[Band]:
@@ -346,8 +414,8 @@ def thirds(grooves: Sequence[Groove]) -> tuple[float, float]:
 def balanced_thirds(
     grooves: Sequence[Groove], source: Callable[[Groove], str]
 ) -> tuple[float, float]:
-    """The thirds with each source, such as a folder or a pack, counted the same, however many
-    grooves it has."""
+    """The thirds with each source, such as a pack, counted the same, however many grooves it
+    has."""
     by_source = Counter(source(groove) for groove in grooves)
     spreads = np.array([_spread(groove) for groove in grooves], dtype=np.float64)
     weights = np.array([1 / by_source[source(groove)] for groove in grooves], dtype=np.float64)
@@ -355,10 +423,6 @@ def balanced_thirds(
     cumulative = np.cumsum(weights[order]) / weights.sum()
     picks = [float(spreads[order][np.searchsorted(cumulative, share)]) for share in (1 / 3, 2 / 3)]
     return picks[0], picks[1]
-
-
-def _folder(groove: Groove) -> str:
-    return groove.folder
 
 
 def _pack(groove: Groove) -> str:
@@ -374,29 +438,43 @@ def alternatives(
     grooves: Sequence[Groove], extra: Sequence[tuple[float, float]] = ()
 ) -> list[tuple[str, tuple[float, float]]]:
     """The cuts to show: the thirds, whole milliseconds near them, the thirds that count each
-    folder the same, and each pack, and any given."""
+    pack the same, and any given."""
+    given = [(f"given {a:g} and {b:g} ms", (a, b)) for a, b in extra]
     if len(grooves) < 3:
-        return [(f"given {a:g} and {b:g} ms", (a, b)) for a, b in extra]
+        return given
     low, high = thirds(grooves)
     whole = max(round(low), 1)
-    found = [
+    return [
         ("equal thirds", (low, high)),
         ("whole milliseconds near the thirds", (float(whole), float(max(round(high), whole + 1)))),
-        ("thirds counting each folder the same", balanced_thirds(grooves, _folder)),
         ("thirds counting each pack the same", balanced_thirds(grooves, _pack)),
+        *given,
     ]
-    return found + [(f"given {a:g} and {b:g} ms", (a, b)) for a, b in extra]
 
 
-def report(results: Sequence[FileResult], cuts: Sequence[tuple[float, float]] = ()) -> str:
-    """What `measure` prints for some files: counts, the timing spread, the bands."""
+def report(
+    results: Sequence[FileResult],
+    cuts: Sequence[tuple[float, float]] = (),
+    misfit: float | None = None,
+) -> str:
+    """What `measure` prints for some files: counts, the timing spread, the shared velocity fit,
+    the bands, and each pack."""
     grooves = [groove for result in results for groove in result.grooves]
     performed = [groove for groove in grooves if groove.timing == "performed"]
+    fitted = timed(grooves, misfit)
     lines = _counts(results, grooves)
-    lines += _spreads(performed)
+    if misfit is not None:
+        lines += _misfits(performed, misfit)
+    lines += _spreads(fitted)
     lines += _velocities(grooves)
-    for title, pair in alternatives(performed, cuts):
-        lines += _bands(title, pair, performed)
+    title = "" if misfit is None else ", the grooves the grid doesn't fit left out"
+    for name, pair in alternatives(fitted, cuts):
+        lines += _bands(f"{name}{title}", pair, fitted)
+    if misfit is not None:
+        lines.append("beside, with the grooves the grid doesn't fit kept in:")
+        for name, pair in alternatives(performed, cuts):
+            lines += _bands(name, pair, performed)
+    lines += _packs(grooves, misfit)
     return "\n".join(lines)
 
 
@@ -414,18 +492,20 @@ def _counts(results: Sequence[FileResult], grooves: Sequence[Groove]) -> list[st
         f" {sum(result.unmapped > 0 for result in measured)} files, "
         f"{sum(result.unmapped for result in measured)} notes left out; notes on pitches the "
         f"assignments leave out: {sum(result.left_out for result in measured)}; with ambiguous "
-        "beats: "
-        f"{sum(result.ambiguous_beats > 0 for result in measured)} files",
+        f"beats: {sum(result.ambiguous_beats > 0 for result in measured)} files",
     ]
     kinds = Counter(groove.timing for groove in grooves)
+    held = [groove for groove in grooves if groove.timing == "on_grid"]
+    piled = sum(groove.at_one_offset > ON_GRID and groove.spike > SPIKE for groove in held)
     lines.append(
         f"grooves: {len(grooves)} (windows of up to {WINDOW_BARS} bars); performed timing "
-        f"{kinds['performed']}, on the grid {kinds['on_grid']}, no tempo {kinds['no_tempo']}, "
-        f"fewer than {MIN_NOTES} notes {kinds['too_few']}"
+        f"{kinds['performed']}, held to the grid {kinds['on_grid']} ({piled} piled at one "
+        f"offset, {len(held) - piled} only spread under {MIN_STEPS:g} steps), no tempo "
+        f"{kinds['no_tempo']}, fewer than {MIN_NOTES} notes {kinds['too_few']}"
     )
     tested = [groove for groove in grooves if groove.timing in ("performed", "on_grid")]
     if tested:
-        shares = np.array([groove.on_grid for groove in tested], dtype=np.float64)
+        shares = np.array([groove.at_one_offset for groove in tested], dtype=np.float64)
         counts, _ = np.histogram(shares, bins=10, range=(0.0, 1.0))
         lines.append(
             "  share of notes at one offset from the grid, grooves with a tempo, by tenths: "
@@ -434,13 +514,23 @@ def _counts(results: Sequence[FileResult], grooves: Sequence[Groove]) -> list[st
     return lines
 
 
-def _spreads(performed: Sequence[Groove]) -> list[str]:
-    if not performed:
-        return ["timing spread: no groove with performed timing"]
-    spreads = np.array([_spread(groove) for groove in performed], dtype=np.float64)
+def _misfits(performed: Sequence[Groove], misfit: float) -> list[str]:
+    left = [groove for groove in performed if groove.misfit(misfit)]
+    packs = Counter(groove.pack for groove in left)
+    return [
+        f"the grid doesn't fit {len(left)} of {len(performed)} performed grooves (more than "
+        f"{misfit:g} of their notes over {FAR_MS:g} ms from their grid point), from {len(packs)} "
+        "packs: " + ", ".join(f"{pack} {count}" for pack, count in packs.most_common())
+    ]
+
+
+def _spreads(grooves: Sequence[Groove]) -> list[str]:
+    if not grooves:
+        return ["timing spread: no groove for the timing fits"]
+    spreads = np.array([_spread(groove) for groove in grooves], dtype=np.float64)
     values = np.percentile(spreads, PERCENTILES).tolist()
     lines = [
-        f"timing spread, ms, of {len(performed)} grooves with performed timing "
+        f"timing spread, ms, of the {len(grooves)} grooves for the timing fits "
         "(Appendix A's tight style: 3 to 4 ms; ADR 0051: 3.1 ms over 16 bars at the defaults):",
         "  " + "  ".join(f"p{p} {value:.2f}" for p, value in zip(PERCENTILES, values, strict=True)),
     ]
@@ -451,7 +541,7 @@ def _spreads(performed: Sequence[Groove]) -> list[str]:
     for start, count in enumerate(counts.tolist()):
         label = f"{start:>2}-{start + 1:<2}" if start < HISTOGRAM_MS else f"{HISTOGRAM_MS}+   "
         lines.append(f"  {label} {count:>6} {'#' * round(40 * count / top)}")
-    feel = [groove.feel_ms for groove in performed if groove.feel_ms is not None]
+    feel = [groove.feel_ms for groove in grooves if groove.feel_ms is not None]
     if feel:
         q1, median, q3 = np.percentile(feel, [25, 50, 75]).tolist()
         lines.append(
@@ -463,39 +553,72 @@ def _spreads(performed: Sequence[Groove]) -> list[str]:
 
 def _velocities(grooves: Sequence[Groove]) -> list[str]:
     lines: list[str] = []
-    for kind, label in (("performed", "performed timing"), ("on_grid", "on the grid")):
+    for kind, label in (("performed", "performed timing"), ("on_grid", "timing held to the grid")):
         chosen = [groove for groove in grooves if groove.timing == kind]
         energy = [groove.energy for groove in chosen if groove.energy is not None]
         spread = [groove.dynamic_range for groove in chosen if groove.dynamic_range is not None]
-        if not energy or not spread:
+        if energy and spread:
+            lines.append(
+                f"velocities, grooves with {label}: energy median {np.median(energy):.1f}, "
+                f"dynamic range median {np.median(spread):.1f}, flat "
+                f"{sum(groove.flat is True for groove in chosen)} of {len(chosen)}"
+            )
+    shared = velocity_grooves(grooves)
+    by_timing = Counter(groove.timing for groove in shared)
+    lines.append(
+        f"shared velocity fit: {len(shared)} grooves, from {len({g.folder for g in shared})} "
+        f"folders and {len({g.pack for g in shared})} packs ("
+        + ", ".join(f"{kind} {count}" for kind, count in sorted(by_timing.items()))
+        + f"); left out: {sum(g.flat is True for g in grooves)} flat (every drum with "
+        f"{FLAT_NOTES} or more normal notes at 2 velocities or fewer), "
+        f"{sum(g.flat is None for g in grooves)} with no drum that has {FLAT_NOTES} normal notes"
+    )
+    return lines
+
+
+def _bands(title: str, cuts: tuple[float, float], grooves: Sequence[Groove]) -> list[str]:
+    lines = [f"cuts, {title}: {cuts[0]:.2f} and {cuts[1]:.2f} ms"]
+    for band in bands(cuts):
+        mine = [groove for groove in grooves if band.holds(_spread(groove))]
+        folders_in = {groove.folder for groove in mine}
+        packs = Counter(groove.pack for groove in mine)
+        if not mine:
+            lines.append(f"  {band.name:<6}      0 grooves")
             continue
-        flat = sum(groove.flat for groove in chosen)
+        pack, count = packs.most_common(1)[0]
+        median = float(np.median([_spread(groove) for groove in mine]))
+        flag = ""
+        if count >= NEAR_ONE_PACK * len(mine):
+            flag = f"  <- {'one pack alone' if count == len(mine) else 'nearly one pack'}: {pack}"
         lines.append(
-            f"velocities, grooves with {label}: energy median {np.median(energy):.1f}, dynamic "
-            f"range median {np.median(spread):.1f}, flat (each drum at most 2 velocities) "
-            f"{flat} of {len(chosen)}"
+            f"  {band.name:<6} {len(mine):>6} grooves, {len(folders_in)} folders, {len(packs)} "
+            f"packs, largest pack {100 * count / len(mine):.0f}%, median spread {median:.2f} ms"
+            + flag
         )
     return lines
 
 
-def _bands(title: str, cuts: tuple[float, float], performed: Sequence[Groove]) -> list[str]:
-    lines = [f"cuts, {title}: {cuts[0]:.2f} and {cuts[1]:.2f} ms"]
-    for band in bands(cuts):
-        mine = [groove for groove in performed if band.holds(_spread(groove))]
-        by_folder = Counter(groove.folder for groove in mine)
-        packs = Counter(groove.pack for groove in mine)
-        median = f"{np.median([_spread(groove) for groove in mine]):.2f}" if mine else "-"
-        largest = (
-            f", largest pack {100 * packs.most_common(1)[0][1] / len(mine):.0f}%" if mine else ""
+def _packs(grooves: Sequence[Groove], misfit: float | None) -> list[str]:
+    lines = [
+        "packs: grooves, performed, held, no tempo, too few"
+        + (", misfit" if misfit is not None else "")
+        + "; timing spread p25, median, p75 of the timing fits' grooves"
+    ]
+    for pack in sorted({groove.pack for groove in grooves}):
+        mine = [groove for groove in grooves if groove.pack == pack]
+        kinds = Counter(groove.timing for groove in mine)
+        spreads = [_spread(groove) for groove in timed(mine, misfit)]
+        quartiles = (
+            " ".join(f"{value:.2f}" for value in np.percentile(spreads, [25, 50, 75]).tolist())
+            if spreads
+            else "-"
         )
-        flag = ""
-        if mine and by_folder.most_common(1)[0][1] >= NEAR_ONE_FOLDER * len(mine):
-            folder, count = by_folder.most_common(1)[0]
-            flag = f"  <- {'one folder alone' if count == len(mine) else 'nearly one folder'}: "
-            flag += f"{folder} {100 * count / len(mine):.0f}%"
+        misfits = sum(groove.timing == "performed" and groove.misfit(misfit) for groove in mine)
         lines.append(
-            f"  {band.name:<6} {len(mine):>6} grooves, {len(by_folder)} folders, {len(packs)} packs"
-            f"{largest}, median spread {median} ms{flag}"
+            f"  {pack}: {len(mine)}, {kinds['performed']}, {kinds['on_grid']}, "
+            f"{kinds['no_tempo']}, {kinds['too_few']}"
+            + (f", {misfits}" if misfit is not None else "")
+            + f"; {quartiles}"
         )
     return lines
 
@@ -508,6 +631,16 @@ def _cuts(text: str) -> tuple[float, float]:
     if not 0 < low < high:
         raise argparse.ArgumentTypeError(f"{text!r}: the cuts must rise from above 0")
     return low, high
+
+
+def _share(text: str) -> float:
+    try:
+        share = float(text)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(f"{text!r} is not a share from 0 to 1") from error
+    if not 0 <= share <= 1:
+        raise argparse.ArgumentTypeError(f"{text!r} is not a share from 0 to 1")
+    return share
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -529,12 +662,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="also show the bands these cuts in ms make; may be given more than once",
     )
     measuring.add_argument(
-        "--on-grid",
-        type=float,
-        default=ON_GRID,
+        "--misfit",
+        type=_share,
         metavar="SHARE",
-        help="leave out the timing of a groove with more than this share of its notes at one "
-        f"offset from the grid (default {ON_GRID})",
+        help=f"leave out of the timing fits a groove with more than this share of its notes over "
+        f"{FAR_MS:g} ms from their grid point, and show the bands without and with them "
+        "(off until its threshold is set)",
     )
     measuring.add_argument(
         "--excluded",
@@ -556,14 +689,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             return None
         return Source(found.kit, found.leave_out)
 
-    results = measure(args.root, names, assigned, args.on_grid)
+    results = measure(args.root, names, assigned)
     print("== every assigned folder")
-    print(report(results, args.cuts))
+    print(report(results, args.cuts, args.misfit))
     for name in names:
         mine = [result for result in results if result.folder == name]
         if mine:
             print(f"\n== {name}")
-            print(report(mine, args.cuts))
+            print(report(mine, args.cuts, args.misfit))
     if args.excluded:
         neutral = Source(every_pitch_kit())
 
@@ -571,14 +704,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             found = assignments.find(relative)
             return neutral if found is not None and found.kit is None else None
 
-        apart = measure(args.root, names, left_out, args.on_grid)
+        apart = measure(args.root, names, left_out)
         print("\n== the folders left out, timing only, every pitch a drum of its own")
-        print(report(apart, args.cuts))
+        print(report(apart, args.cuts, args.misfit))
         for name in names:
             mine = [result for result in apart if result.folder == name]
             if mine:
                 print(f"\n== {name}, left out")
-                print(report(mine, args.cuts))
+                print(report(mine, args.cuts, args.misfit))
     print(f"measured in {time.perf_counter() - started:.1f} s", file=sys.stderr)
     return 0
 

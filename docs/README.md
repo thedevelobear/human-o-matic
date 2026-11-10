@@ -79,7 +79,7 @@ What was decided, specifically enough to check the code against.
 | [0041](decisions/0041-m2-adds-no-runtime-dependency.md) | M2 adds no runtime dependency, and `scipy` waits for code that imports it | Accepted |
 | [0042](decisions/0042-a-partly-changed-adr-is-marked-amended.md) | An accepted ADR that a later one changes in part is marked amended | Accepted |
 | [0043](decisions/0043-m3-is-three-prs-and-its-gate-follows-the-third.md) | M3 is three PRs, the engine, calibration and preview, and its gate follows the third | Accepted |
-| [0044](decisions/0044-m3-ships-tight-medium-and-loose-styles-pooled-by-tightness.md) | M3 ships the styles `tight`, `medium` and `loose` only, pooled by tightness band, with no named or numbered drummers | Accepted |
+| [0044](decisions/0044-m3-ships-tight-medium-and-loose-styles-pooled-by-tightness.md) | M3 ships the styles `tight`, `medium` and `loose` only, pooled by tightness band, with no named or numbered drummers | Accepted. What counts as one source is amended by [ADR 0063](decisions/0063-a-pack-is-a-source.md), and the fitting of each style's velocities on its own band by [ADR 0065](decisions/0065-velocities-are-fitted-once-and-shared-by-the-three-styles.md) |
 | [0045](decisions/0045-the-engine-is-render-modules-behind-a-small-instrument-seam.md) | The engine is a set of render modules behind a small instrument seam | Accepted |
 | [0046](decisions/0046-controls-are-layered-pydantic-models-with-a-json-round-trip.md) | The controls are layered pydantic models with a JSON round trip | Accepted |
 | [0047](decisions/0047-roles-come-from-canonical-families-and-the-score.md) | Roles come from canonical families and the score, never from a pitch | Accepted |
@@ -98,3 +98,6 @@ What was decided, specifically enough to check the code against.
 | [0060](decisions/0060-a-groove-held-to-the-grid-is-left-out-of-timing.md) | A groove held to the grid is left out of the timing statistics | Proposed |
 | [0061](decisions/0061-calibration-measures-the-engine-s-statistics-with-feel-against-the-kick.md) | Calibration measures the engine's statistics, with feel taken against the kick | Proposed |
 | [0062](decisions/0062-the-vocabulary-adds-damped-strokes-wires-off-and-crash-tips.md) | The vocabulary adds damped strokes, a snare with its wires off, and a crash's tip stroke | Proposed |
+| [0063](decisions/0063-a-pack-is-a-source.md) | A pack, a folder's first-level subfolder, is a source | Proposed |
+| [0064](decisions/0064-grooves-the-grid-does-not-fit-are-left-out-of-the-timing-fits.md) | Grooves the grid doesn't fit are left out of the timing fits | Proposed |
+| [0065](decisions/0065-velocities-are-fitted-once-and-shared-by-the-three-styles.md) | Velocities are fitted once and shared by the three styles, which differ in timing only | Proposed |

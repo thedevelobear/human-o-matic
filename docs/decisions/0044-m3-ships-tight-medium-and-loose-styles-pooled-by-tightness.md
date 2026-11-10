@@ -1,6 +1,6 @@
 # 0044. M3 ships the styles `tight`, `medium` and `loose` only, pooled by tightness band, with no named or numbered drummers
 
-- **Status:** Accepted
+- **Status:** Accepted. What counts as one source is amended by [ADR 0063](0063-a-pack-is-a-source.md), and the fitting of each style's velocities on its own band by [ADR 0065](0065-velocities-are-fitted-once-and-shared-by-the-three-styles.md)
 - **Date:** 2026-11-09
 
 - `data/styles/` holds three styles: `tight`, the default, `medium` and `loose`. There is no style for one drummer, by name or by number.

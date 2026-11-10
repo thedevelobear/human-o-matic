@@ -3,10 +3,11 @@
 - **Status:** Proposed
 - **Date:** 2026-11-10
 
-- A groove is held to the grid when more than a fifth of its notes, graces left out, sit at one offset from their grid point, counted in ticks: exactly on it, or all shifted alike. Its timing spread and feel aren't measured, and it is counted apart.
-- Its velocities are still measured, so a later decision can use them for the velocity fits.
-- `measure --on-grid SHARE` measures with another share, to see how much the choice moves.
+- A groove's offsets from their grid points are counted in steps, a step being the smallest gap between them: a tick, or more for a file saved at a finer resolution than it was played at. The groove is held to the grid when either:
+  - its notes pile up at one offset: more than a fifth of them there, and more than twice as many as one step either side, on average, as quantizing all or some of its drums leaves them, on the grid or all shifted alike;
+  - or its offsets spread by less than 1.5 steps, as quantized notes with a tick or so of jitter do.
+- A held groove's timing spread and feel aren't measured, and it is counted apart, split by which of the two held it. Its velocities are still measured ([ADR 0065](0065-velocities-are-fitted-once-and-shared-by-the-three-styles.md)).
 
-**Why:** Quantized notes, or quantized notes shifted together, would pass for a very tight drummer. A performance recorded at 480 PPQ or finer puts a fifth of its notes on one tick only when they spread by under about 2 ticks, under 2 ms at most tempos, so a groove past that was quantized in whole or in part. Over the assigned folders, timing spread falls steadily as that share rises, as partial quantization would make it, while a folder of plainly played grooves has almost all of its grooves below a fifth. Counting the most common offset, rather than only notes on the grid, also catches a quantized part moved as a whole.
+**Why:** Quantized notes, whole or in part, would pass for a very tight drummer. A share at one offset alone also catches a tight but smooth spread, which puts a fifth of its notes on one tick by chance when it spreads by under about 2 steps; quantized notes show instead as a spike over the offsets beside them, which a smooth spread doesn't make however narrow it is. A spread under 1.5 steps, about 1 to 2 ms at 480 PPQ, is tighter than any drummer, and is what a tick of random jitter on quantized notes looks like. Counting in the offsets' own steps keeps a file saved at twice its resolution from looking twice as loose to the test.
 
-**Consequences:** Files coarser than 480 PPQ land on one tick more often by chance, so the test would leave out a performance among them. None with a tempo is measured now. Editing that leaves notes off the grid, such as quantizing at partial strength or adding small random offsets, can't be told from playing, so the tightest grooves that remain may still be edited.
+**Consequences:** Editing that leaves notes off the grid with a wider spread, such as quantizing at partial strength or adding random offsets of a few ticks, can't be told from playing, so the tightest grooves that remain may still be edited. A file coarser than 480 PPQ has wide steps in milliseconds, so the 1.5-step floor holds more of its grooves; none with a tempo is measured now.
