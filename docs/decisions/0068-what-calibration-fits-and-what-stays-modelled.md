@@ -1,6 +1,6 @@
 # 0068. What calibration fits, by energy, metric level and tempo, and what stays modelled or placeholder
 
-- **Status:** Proposed
+- **Status:** Proposed. Its fitting of the rider gap, accent and fill crescendo, and three premises of its check, are amended by [ADR 0071](0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md)
 - **Date:** 2026-11-10
 
 `tools/fit_styles.py` fits the styles on the grooves `tools/calibrate.py` measures, with the engine's own roles (`render/parts.py`, [ADR 0047](0047-roles-come-from-canonical-families-and-the-score.md)) and statistics (`render/measure.py`), so a fitted number means what the render means by it.
