@@ -309,8 +309,8 @@ def groove(spread: float, folder: str = "a", pack: str = "a", far: float = 0.0) 
 def test_grooves_the_grid_does_not_fit_are_left_out_only_when_asked() -> None:
     grooves = [groove(3.0, far=0.0), groove(12.0, far=0.25), groove(5.0, far=0.05)]
 
-    assert timed(grooves) == grooves
-    assert timed(grooves, 0.1) == [grooves[0], grooves[2]]
+    assert timed(grooves, None) == grooves
+    assert timed(grooves) == timed(grooves, 0.1) == [grooves[0], grooves[2]]
     text = report([], [], 0.1)
     assert "the grid doesn't fit 0 of 0 performed grooves" in text
 

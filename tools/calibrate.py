@@ -22,11 +22,12 @@ quantizing all or some of its drums leaves them; or whose notes spread by under 
 steps, as quantized notes with a tick or so of jitter do. A step is the smallest gap between the
 groove's offsets, a tick unless the file was saved at a finer resolution than it was played at.
 
-Grooves the grid doesn't fit are left out of the timing fits (ADR 0064). `--misfit SHARE` leaves
-out a groove with more than that share of its notes over 20 ms from their grid point; it is off
-until its threshold is set. A pack, a folder's first-level subfolder, is a source (ADR 0063), so a
-band is flagged when one pack supplies most of it. Velocities are fitted once for every style
-(ADR 0065), on every groove whose velocities aren't flat.
+Grooves the grid doesn't fit are left out of the timing fits (ADR 0064): a groove with more than
+`MISFIT` of its notes over 20 ms from their grid point. `--misfit SHARE` measures with another
+share, and the report shows the bands with those grooves left out and, beside, kept in. A pack, a
+folder's first-level subfolder, is a source (ADR 0063), so a band is flagged when one pack supplies
+most of it. Velocities are fitted once for every style (ADR 0065), on every groove whose velocities
+aren't flat.
 
 `measure` prints, for every folder pooled and then for each one, how many files and grooves were
 measured and why any weren't, the distribution of timing spread of the grooves with performed
@@ -39,7 +40,7 @@ the screen (ADR 0007).
 
 Run from the repository root:
     uv run python tools/calibrate.py measure
-    uv run python tools/calibrate.py measure --misfit 0.05 --excluded --cuts 4,8
+    uv run python tools/calibrate.py measure --excluded --cuts 4,8
 """
 
 import argparse
@@ -84,6 +85,10 @@ there."""
 MIN_STEPS = 1.5
 """A groove whose offsets spread by less than this many steps is held to the grid: quantized
 notes with a tick or so of jitter, tighter than any drummer at 480 PPQ."""
+MISFIT = 0.1
+"""A groove with more than this share of its notes over 20 ms from their grid point is one the
+grid doesn't fit, left out of the timing fits (ADR 0064). A drummer at the plan's loosest, 12 ms,
+puts about this share there by chance."""
 NO_TEMPO_BPM = 120.0
 """The tempo a file without one is normalized at, for its velocities only. Its timing is left
 out, since its milliseconds would be made up."""
@@ -376,7 +381,7 @@ def measure(
     return results
 
 
-def timed(grooves: Iterable[Groove], misfit: float | None = None) -> list[Groove]:
+def timed(grooves: Iterable[Groove], misfit: float | None = MISFIT) -> list[Groove]:
     """The grooves the timing fits draw on: those with performed timing that the grid fits."""
     return [g for g in grooves if g.timing == "performed" and not g.misfit(misfit)]
 
@@ -455,7 +460,7 @@ def alternatives(
 def report(
     results: Sequence[FileResult],
     cuts: Sequence[tuple[float, float]] = (),
-    misfit: float | None = None,
+    misfit: float | None = MISFIT,
     *,
     velocities: bool = True,
 ) -> str:
@@ -672,10 +677,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     measuring.add_argument(
         "--misfit",
         type=_share,
+        default=MISFIT,
         metavar="SHARE",
         help=f"leave out of the timing fits a groove with more than this share of its notes over "
-        f"{FAR_MS:g} ms from their grid point, and show the bands without and with them "
-        "(off until its threshold is set)",
+        f"{FAR_MS:g} ms from their grid point (default {MISFIT:g}), and show the bands without "
+        "and with them",
     )
     measuring.add_argument(
         "--excluded",
