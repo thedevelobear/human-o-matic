@@ -1,11 +1,11 @@
-# Krimh Drums, from the library's own note mapping (ADR 0055): 52 notes, of which 49 are named
-# here as 43 articulations. The mapping draws its notes on a keyboard without note numbers, so
+# Krimh Drums, from the library's own note mapping (ADR 0055): 52 notes, of which 50 are named
+# here as 44 articulations. The mapping draws its notes on a keyboard without note numbers, so
 # each number rests on reading the keyboard's kick at note 36, and every entry is low confidence
 # until one note is checked in the instrument. Where an articulation has several notes, the first
 # is the one written and the others are only read. A hat with more open degrees than the
-# vocabulary's quarter, half, three quarters and fully open takes each at the nearest of them.
-# Three notes are left out, 29, 41 and 49, because the vocabulary has no name for what they
-# play, so a note on them is asked about.
+# vocabulary's quarter, half, three quarters and fully open takes each at the nearest of them. Two
+# notes are left out, 29 and 49, until what they play is understood, so a note on them is asked
+# about.
 schema = 1
 id = "krimh-drums"
 name = "Krimh Drums"
@@ -47,6 +47,12 @@ name = "Default map"
   [[kits.articulations]]
   name = "snare.sidestick"
   notes = [42]
+  source = "mapping"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "snare.center.wires_off"
+  notes = [41]
   source = "mapping"
   confidence = "low"
 

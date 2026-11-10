@@ -54,7 +54,7 @@ What was decided, specifically enough to check the code against.
 | [0016](decisions/0016-tempo-and-time-signatures.md) | Tempo and time signatures come from every track, and a missing tempo is asked for | Accepted |
 | [0017](decisions/0017-the-drums-are-one-whole-track.md) | The drums are one whole track, chosen by rules in turn | Accepted |
 | [0018](decisions/0018-mido-is-typed-by-a-local-stub.md) | mido is typed by a local stub in `typings/` | Accepted |
-| [0019](decisions/0019-canonical-names-follow-one-grammar.md) | Canonical articulation names follow one grammar, kept in a vocabulary file | Accepted |
+| [0019](decisions/0019-canonical-names-follow-one-grammar.md) | Canonical articulation names follow one grammar, kept in a vocabulary file | Accepted. Its list of variant kinds is amended by [ADR 0062](decisions/0062-the-vocabulary-adds-damped-strokes-wires-off-and-crash-tips.md) |
 | [0020](decisions/0020-map-files-are-toml-checked-when-they-load.md) | A map file is one library in TOML, and an ambiguous map fails to load | Accepted |
 | [0021](decisions/0021-conversion-falls-back-within-a-family.md) | Conversion falls back within a family, and asks instead of changing family | Accepted. Its wait for controllers in M3 is amended by [ADR 0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) |
 | [0022](decisions/0022-the-general-midi-map-follows-the-standard.md) | The General MIDI map follows the GM Level 1 percussion key map | Accepted |
@@ -97,3 +97,4 @@ What was decided, specifically enough to check the code against.
 | [0059](decisions/0059-calibration-measures-files-in-windows-of-at-most-16-bars.md) | Calibration measures each file in windows of at most 16 bars, around what the file leaves open | Proposed |
 | [0060](decisions/0060-a-groove-held-to-the-grid-is-left-out-of-timing.md) | A groove held to the grid is left out of the timing statistics | Proposed |
 | [0061](decisions/0061-calibration-measures-the-engine-s-statistics-with-feel-against-the-kick.md) | Calibration measures the engine's statistics, with feel taken against the kick | Proposed |
+| [0062](decisions/0062-the-vocabulary-adds-damped-strokes-wires-off-and-crash-tips.md) | The vocabulary adds damped strokes, a snare with its wires off, and a crash's tip stroke | Proposed |

@@ -1,6 +1,6 @@
 # 0019. Canonical articulation names follow one grammar, kept in a vocabulary file
 
-- **Status:** Accepted
+- **Status:** Accepted. Its list of variant kinds is amended by [ADR 0062](0062-the-vocabulary-adds-damped-strokes-wires-off-and-crash-tips.md)
 - **Date:** 2026-11-08
 
 - The vocabulary is data, in `data/vocabulary.toml`, validated with pydantic when it loads: every family has a default articulation, every variant's parent is listed, and nothing is listed twice. A new family or articulation is added there, with a test, and needs no code.

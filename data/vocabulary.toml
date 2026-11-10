@@ -9,7 +9,8 @@
 #   for a second drum (snare.center, snare.2.center), and "single" families never (clap.hit).
 # - articulation: what is played, such as center, rimshot, closed, bow or choke.
 # - variant: a refinement that can be dropped: a stroke (tip), an openness (quarter, half,
-#   three_quarter), a foot (left, right) or an unnamed alternate (alt, alt2, ...).
+#   three_quarter), a foot (left, right), a damped stroke (dampened), the snare with its wires off
+#   (wires_off) or an unnamed alternate (alt, alt2, ...).
 # A bare name is the library's ordinary stroke, and a variant is written only to tell two
 # strokes apart. hat.open is a fully open hat, and hat.variable one whose openness a controller
 # sets. Each family's articulations list every articulation and variant it allows, after the
@@ -33,14 +34,18 @@ sticks = ["snare.sidestick"]
 [families.kick]
 pieces = "second"
 default = "hit"
-articulations = ["hit", "hit.left", "hit.right"]
+# dampened is the stroke with the head damped, as by a pillow or a hand.
+articulations = ["hit", "hit.left", "hit.right", "hit.dampened"]
 
 [families.snare]
 pieces = "second"
 default = "center"
-# offcenter and edge are positional articulations. rim is the rim alone, with no head.
+# offcenter and edge are positional articulations. rim is the rim alone, with no head. A center
+# stroke can be dampened, the head damped by a hand, or played with the snare's wires off.
 articulations = [
   "center",
+  "center.dampened",
+  "center.wires_off",
   "offcenter",
   "edge",
   "rimshot",
@@ -98,7 +103,7 @@ articulations = [
 [families.crash]
 pieces = "numbered"
 default = "hit"
-articulations = ["hit", "mute", "choke"]
+articulations = ["hit", "hit.tip", "mute", "choke"]
 
 [families.china]
 pieces = "numbered"

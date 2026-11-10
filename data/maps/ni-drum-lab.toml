@@ -1,10 +1,9 @@
-# NI Drum Lab, from the library's own default note mapping (ADR 0055): 39 notes, of which 31 are
-# named here as 28 articulations. Its note names count C3 as note 60. Where an articulation has
+# NI Drum Lab, from the library's own default note mapping (ADR 0055): 39 notes, of which 37 are
+# named here as 32 articulations. Its note names count C3 as note 60. Where an articulation has
 # several notes, the first is the one written and the others are only read. Confidence is high
 # where the mapping's name gives the canonical name directly, and medium where it had to be
-# interpreted. Eight notes are left out, because the vocabulary has no name for what they play: a
-# second kick sound on 37, 59 and 60, three more snare strokes on 62 to 64, and the tip strokes of
-# both crashes on 49 and 51. A note on them is asked about.
+# interpreted. Two snare strokes on 62 and 63 are left out until their names are understood, so a
+# note on them is asked about.
 schema = 1
 id = "ni-drum-lab"
 name = "NI Drum Lab"
@@ -20,10 +19,22 @@ name = "Default map"
   confidence = "medium"       # its main kick sound, one of two, read as the ordinary kick
 
   [[kits.articulations]]
+  name = "kick.hit.dampened"
+  notes = [37, 59, 60]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
   name = "snare.center"
   notes = [38]
   source = "mapping"
   confidence = "high"
+
+  [[kits.articulations]]
+  name = "snare.center.dampened"
+  notes = [64]
+  source = "mapping"
+  confidence = "medium"       # muted, read as the head damped by a hand
 
   [[kits.articulations]]
   name = "snare.sidestick"
@@ -112,10 +123,22 @@ name = "Default map"
   confidence = "medium"       # its edge stroke, read as the ordinary crash
 
   [[kits.articulations]]
+  name = "crash.1.hit.tip"
+  notes = [49]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
   name = "crash.2.hit"
   notes = [50]
   source = "mapping"
   confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.2.hit.tip"
+  notes = [51]
+  source = "mapping"
+  confidence = "high"
 
   [[kits.articulations]]
   name = "ride.1.bow"

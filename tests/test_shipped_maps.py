@@ -40,8 +40,8 @@ SHIPPED = {
 NEW_IN_M3 = {
     # library: (articulations, pitches, the notes of its mapping it leaves out) (ADR 0055)
     "counterkit": (20, 20, (64, 65)),
-    "ni-drum-lab": (28, 31, (37, 49, 51, 59, 60, 62, 63, 64)),
-    "krimh-drums": (43, 49, (29, 41, 49)),
+    "ni-drum-lab": (32, 37, (62, 63)),
+    "krimh-drums": (44, 50, (29, 49)),
     "ggd-matt-halpern": (22, 22, ()),
 }
 
