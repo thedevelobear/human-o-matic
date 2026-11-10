@@ -102,3 +102,6 @@ What was decided, specifically enough to check the code against.
 | [0064](decisions/0064-grooves-the-grid-does-not-fit-are-left-out-of-the-timing-fits.md) | Grooves the grid doesn't fit are left out of the timing fits | Proposed |
 | [0065](decisions/0065-velocities-are-fitted-once-and-shared-by-the-three-styles.md) | Velocities are fitted once and shared by the three styles, which differ in timing only | Proposed |
 | [0066](decisions/0066-sleep-token-ii-gets-an-inferred-groove-pack-kit.md) | Sleep Token II gets a second kit, `groove-pack`, inferred, for the layout its groove files play | Proposed |
+| [0067](decisions/0067-the-bands-are-cut-at-3-and-6-ms.md) | The bands are cut at 3 and 6 ms of timing spread | Proposed |
+| [0068](decisions/0068-what-calibration-fits-and-what-stays-modelled.md) | What calibration fits, by energy, metric level and tempo, and what stays modelled or placeholder | Proposed |
+| [0069](decisions/0069-a-style-is-one-complete-toml-file-written-by-the-fit.md) | A style is one complete TOML file in `data/styles/`, written by the fit | Proposed |

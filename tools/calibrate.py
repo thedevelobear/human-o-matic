@@ -38,9 +38,14 @@ out, apart from the rest, through a kit in which every pitch is a drum of its ow
 offset from the grid needs no name. Nothing is written: the numbers name folders, so they stay on
 the screen (ADR 0007).
 
+`fit` fits the styles on the same grooves (`fit_styles.py`), prints what each fit drew on, every
+value beside the placeholder's, and anything that runs against Appendix A's directions or the
+plan's limits, and writes `data/styles/`, or with `--check` compares with it and writes nothing.
+
 Run from the repository root:
     uv run python tools/calibrate.py measure
     uv run python tools/calibrate.py measure --excluded --cuts 4,8
+    uv run python tools/calibrate.py fit [--check]
 """
 
 import argparse
@@ -67,7 +72,8 @@ from human_o_matic.midi.tracks import choose_drum_track
 from human_o_matic.normalize.grid import FAR_MS
 from human_o_matic.normalize.pipeline import normalize
 from human_o_matic.normalize.score import Score, ScoreNote
-from human_o_matic.render.parts import Part
+from human_o_matic.render.parts import METRIC_LEVELS, Limb, Part, Role
+from human_o_matic.resources import data_dir
 from midi_folders import ASSIGNMENTS, MIDI, AssignmentError, Assignments, folders, midi_files
 
 WINDOW_BARS = 16
@@ -106,6 +112,41 @@ type Timing = Literal["performed", "on_grid", "no_tempo", "too_few"]
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
+class Detail:
+    """What the style fits read from one groove: its aggregates, never its notes."""
+
+    roles: dict[Role, tuple[float, int]] = field(default_factory=dict[Role, tuple[float, int]])
+    """Each role's mean velocity over its normal-typed notes, and how many there are."""
+    metric: dict[tuple[Role, int], tuple[float, int]] = field(
+        default_factory=dict[tuple[Role, int], tuple[float, int]]
+    )
+    """The same by role and metric level."""
+    noise: float | None = None
+    """The mean spread of the normal-typed notes' velocities on one drum in one role, riders left
+    out, since their strong and weak hits differ by design."""
+    rider_gap: float | None = None
+    """How much louder the strong alternating rider hits are than the weak ones."""
+    accent: float | None = None
+    """How much louder accent-typed notes are than normal ones, over the drums with both."""
+    soft: float | None = None
+    """The soft-typed notes' mean velocity."""
+    soft_sd: float | None = None
+    """The mean spread of the soft-typed notes' velocities on one drum."""
+    fill_metric: dict[int, float] = field(default_factory=dict[int, float])
+    """How much louder a fill's notes on each metric level are than its notes on average."""
+    fill_rise: float | None = None
+    """How much louder the fill notes in the second half of their crescendo are than the rest."""
+    shared_var: float | None = None
+    """The variance of the offset an onset's hits share, in ms², with what limbs add left out."""
+    jitter_var: float | None = None
+    """The variance of each hit's own offset about its onset's, in ms²."""
+    limbs: dict[Limb, float] = field(default_factory=dict[Limb, float])
+    """Each limb's mean offset less the `other` limb's, in ms."""
+    bpm: float = 0.0
+    """The tempo at its first note."""
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
 class Groove:
     """One groove's statistics."""
 
@@ -137,6 +178,7 @@ class Groove:
     flat: bool | None
     """Every drum with `FLAT_NOTES` normal-typed notes or more has at most two velocities, as a
     programmed part does; None when no drum has that many."""
+    detail: Detail = field(default_factory=Detail)
 
     def misfit(self, share: float | None) -> bool:
         """Whether the grid doesn't fit it: more than `share` of its notes far from the grid."""
@@ -240,7 +282,9 @@ def measure_file(path: Path, relative: PurePosixPath, source: Source) -> FileRes
         ]
         beats = [beat for beat in score.beats if first <= beat.bar < end]
         ambiguous = sum(beat.ambiguous for beat in beats) / max(len(beats), 1)
-        result.grooves.append(_groove(chosen, result, pack, (first, end), ambiguous))
+        groove = _groove(chosen, result, pack, (first, end), ambiguous)
+        bpm = score.tempos.bpm(min(note.tick for note, _ in chosen)) if result.tempo else 0.0
+        result.grooves.append(replace(groove, detail=detail(chosen, groove, bpm)))
     return result
 
 
@@ -329,6 +373,106 @@ def _groove(
         dynamic_range=_dynamic_range(notes),
         flat=_flat(notes),
     )
+
+
+def detail(chosen: Sequence[tuple[ScoreNote, Part]], groove: Groove, bpm: float) -> Detail:
+    """The aggregates the style fits read from a groove's notes and their parts. Its timing
+    aggregates are only for a groove with performed timing."""
+    mains = [(note, part) for note, part in chosen if note.grace_of is None]
+    normal = [(note, part) for note, part in mains if note.hit_type == "normal"]
+    roles: dict[Role, list[int]] = {}
+    metric: dict[tuple[Role, int], list[int]] = {}
+    groups: dict[tuple[Role, str, int], list[int]] = {}
+    for note, part in normal:
+        roles.setdefault(part.role, []).append(note.source.velocity)
+        metric.setdefault((part.role, part.metric), []).append(note.source.velocity)
+        if part.role != "rider":
+            key = (part.role, note.family, note.piece)
+            groups.setdefault(key, []).append(note.source.velocity)
+    spreads = [float(np.std(values)) for values in groups.values() if len(values) >= FLAT_NOTES]
+    alternating = [(note, part) for note, part in normal if part.rider == "alternate"]
+    strong = [note.source.velocity for note, part in alternating if part.strong]
+    weak = [note.source.velocity for note, part in alternating if not part.strong]
+    soft = [note for note, _ in mains if note.hit_type == "soft"]
+    soft_drums: dict[tuple[str, int], list[int]] = {}
+    for note in soft:
+        soft_drums.setdefault((note.family, note.piece), []).append(note.source.velocity)
+    soft_spreads = [float(np.std(v)) for v in soft_drums.values() if len(v) >= FLAT_NOTES]
+    fills = [(note, part) for note, part in normal if part.role == "fill"]
+    fill_mean = float(np.mean([note.source.velocity for note, _ in fills])) if fills else 0.0
+    fill_levels: dict[int, list[int]] = {}
+    for note, part in fills:
+        fill_levels.setdefault(part.metric, []).append(note.source.velocity)
+    late = [note.source.velocity for note, part in fills if part.crescendo > 0.5]
+    early = [note.source.velocity for note, part in fills if part.crescendo <= 0.5]
+    timing = _timing(mains) if groove.timing == "performed" else None
+    return Detail(
+        roles={role: (float(np.mean(v)), len(v)) for role, v in roles.items()},
+        metric={key: (float(np.mean(v)), len(v)) for key, v in metric.items()},
+        noise=float(np.mean(spreads)) if spreads else None,
+        rider_gap=float(np.mean(strong) - np.mean(weak))
+        if len(strong) >= 2 and len(weak) >= 2
+        else None,
+        accent=_accent([note for note, _ in mains]),
+        soft=float(np.mean([note.source.velocity for note in soft])) if soft else None,
+        soft_sd=float(np.mean(soft_spreads)) if soft_spreads else None,
+        fill_metric={
+            level: float(np.mean(v)) - fill_mean
+            for level, v in fill_levels.items()
+            if level < METRIC_LEVELS
+        },
+        fill_rise=float(np.mean(late) - np.mean(early)) if late and early else None,
+        shared_var=timing[0] if timing else None,
+        jitter_var=timing[1] if timing else None,
+        limbs=timing[2] if timing else {},
+        bpm=bpm,
+    )
+
+
+def _accent(notes: Sequence[ScoreNote]) -> float | None:
+    """How much louder accent-typed notes are than normal ones, on average over the drums that
+    have both, as `render/measure.py` measures a render."""
+    gaps: list[float] = []
+    for drum in {(note.family, note.piece) for note in notes}:
+        mine = [note for note in notes if (note.family, note.piece) == drum]
+        accents = [note.source.velocity for note in mine if note.hit_type == "accent"]
+        normals = [note.source.velocity for note in mine if note.hit_type == "normal"]
+        if accents and normals:
+            gaps.append(float(np.mean(accents) - np.mean(normals)))
+    return float(np.mean(gaps)) if gaps else None
+
+
+def _timing(
+    mains: Sequence[tuple[ScoreNote, Part]],
+) -> tuple[float, float, dict[Limb, float]] | None:
+    """A groove's offsets taken apart as the engine draws them: each limb's mean less the
+    `other` limb's, the variance of what an onset's hits share, and of each hit's own part."""
+    by_limb: dict[Limb, list[float]] = {}
+    for note, part in mains:
+        by_limb.setdefault(part.limb, []).append(note.offset_ms)
+    if "other" not in by_limb:
+        return None
+    base = float(np.mean(by_limb["other"]))
+    limb_mean = {limb: float(np.mean(values)) for limb, values in by_limb.items()}
+    onsets: dict[int, list[float]] = {}
+    for note, part in mains:
+        onsets.setdefault(note.tick, []).append(note.offset_ms - limb_mean[part.limb])
+    within = [
+        (value - float(np.mean(values))) ** 2
+        for values in onsets.values()
+        if len(values) > 1
+        for value in values
+    ]
+    freedom = sum(len(values) - 1 for values in onsets.values() if len(values) > 1)
+    if freedom < 2:
+        return None
+    jitter = sum(within) / freedom
+    means = [float(np.mean(values)) for values in onsets.values()]
+    shared = float(np.var(means)) - jitter * float(np.mean([1 / len(v) for v in onsets.values()]))
+    limbs: dict[Limb, float] = {
+        limb: limb_mean[limb] - base for limb in ("snare", "rider") if limb in limb_mean
+    }
+    return max(shared, 0.0), jitter, limbs
 
 
 def _feel(mains: Sequence[tuple[ScoreNote, Part]]) -> float | None:
@@ -636,6 +780,42 @@ def _packs(grooves: Sequence[Groove], misfit: float | None) -> list[str]:
     return lines
 
 
+def _fit(results: Sequence[FileResult], *, check: bool) -> int:
+    """Fit the styles, print the fit, and write the files or compare with them."""
+    from fit_styles import contradictions, fit, style_toml, table
+
+    found = fit(results)
+    print(
+        f"shared velocity fit: {found.velocity_grooves} grooves, {found.velocity_folders} "
+        f"folders, {found.velocity_packs} packs"
+    )
+    for name, (grooves, folders_in, packs) in found.timing.items():
+        tempo = ", ".join(str(count) for count in found.tempo[name])
+        print(
+            f"{name} timing: {grooves} grooves, {folders_in} folders, {packs} packs; by tempo band"
+            f" {tempo} (0: the style's pooled timing)"
+        )
+    for fallback in found.fallbacks:
+        print(f"fallback: {fallback}")
+    print(table(found))
+    for problem in contradictions(found):
+        print(f"contradicts: {problem}")
+    directory = data_dir() / "styles"
+    drift = 0
+    for name, style in found.styles.items():
+        path = directory / f"{name}.toml"
+        text = style_toml(style)
+        if check:
+            if not path.is_file() or path.read_text() != text:
+                drift += 1
+                print(f"{path} differs from the fit")
+        else:
+            directory.mkdir(exist_ok=True)
+            path.write_text(text)
+            print(f"wrote {path.relative_to(data_dir().parent)}")
+    return 1 if drift else 0
+
+
 def _cuts(text: str) -> tuple[float, float]:
     try:
         low, high = (float(part) for part in text.split(","))
@@ -688,6 +868,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="also measure the timing of the folders left out, apart, without their names",
     )
+    fitting = commands.add_parser("fit", help="fit the three styles and write data/styles/")
+    fitting.add_argument("--root", type=Path, default=MIDI, help="the folder of folders")
+    fitting.add_argument(
+        "--assignments", type=Path, default=ASSIGNMENTS, help="which kit reads which folder"
+    )
+    fitting.add_argument(
+        "--check", action="store_true", help="compare with data/styles/ and write nothing"
+    )
     args = parser.parse_args(argv)
     try:
         assignments = Assignments.read(args.assignments)
@@ -704,6 +892,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return Source(found.kit, found.leave_out)
 
     results = measure(args.root, names, assigned)
+    if args.command == "fit":
+        code = _fit(results, check=args.check)
+        print(f"fitted in {time.perf_counter() - started:.1f} s", file=sys.stderr)
+        return code
     print("== every assigned folder")
     print(report(results, args.cuts, args.misfit))
     for name in names:

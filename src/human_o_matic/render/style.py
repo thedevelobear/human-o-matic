@@ -151,7 +151,7 @@ class Style(BaseModel):
 _SNARE = Anchors(full=106, half=88, low=68)
 """The plan's other normal snare, which fills and the roles without a row of their own take."""
 
-TIGHT = Style(
+PLACEHOLDER = Style(
     name="tight",
     placeholder=True,
     defaults=Controls(
@@ -206,7 +206,10 @@ TIGHT = Style(
     ),
     feel_ms=(6, 3),
 )
-"""The `tight` style's placeholders (ADR 0051)."""
+"""Appendix A's placeholders, with the values it leaves out filled in (ADR 0051)."""
+
+TIGHT = PLACEHOLDER
+"""The `tight` style, the placeholders until calibration."""
 
 STYLES: dict[StyleName, Style] = {"tight": TIGHT}
 """The built-in styles by name."""

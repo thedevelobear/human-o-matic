@@ -125,6 +125,8 @@ def render(
     bars = drum_bars(song, score)
     if plan.bars != bars:
         raise ValueError(f"the plan's sections cover {plan.bars} bars, and the drums {bars}")
+    if plan.style not in STYLES:
+        raise ValueError(f"the style {plan.style} isn't built in")
     style = STYLES[plan.style]
     parts = instrument.parts(score)
     starts = [section.start for section in plan.sections]
