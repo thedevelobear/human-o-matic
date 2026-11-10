@@ -22,7 +22,7 @@ DRUMMER = MAPS.kit("iof-drummer", "default")
 FOUR_FOUR = TimeSignatureMap(960, [])
 SHIPPED = {
     "gm": ("default",),
-    "sleep-token-ii": ("default",),
+    "sleep-token-ii": ("default", "groove-pack"),
     "iof-drummer": ("default", "old"),
     "ezdrummer-3": ("default",),
     "superior-drummer-3": ("default",),
@@ -141,6 +141,16 @@ def test_the_maps_added_in_m3_have_their_counts_and_leave_out_what_they_say(libr
     assert len(set(notes)) == pitches
     assert not set(notes) & set(left_out)
     assert all(kit.read(pitch, 100, 9) == () for pitch in left_out)
+
+
+def test_sleep_token_ii_s_groove_pack_kit_is_inferred_throughout() -> None:
+    kit = MAPS.kit("sleep-token-ii", "groove-pack")
+    notes = [binding.note for entry in kit.articulations for binding in entry.bindings]
+
+    assert (len(kit.articulations), len(set(notes))) == (15, 15)
+    assert {(entry.source, entry.confidence) for entry in kit.articulations} == {
+        ("inferred", "low")
+    }
 
 
 def test_krimh_drums_is_low_confidence_throughout_and_the_inferred_map_is_inferred() -> None:

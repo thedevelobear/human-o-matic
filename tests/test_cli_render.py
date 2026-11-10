@@ -128,7 +128,7 @@ def test_a_conversion_request_is_open_until_a_substitution_answers_it(tmp_path: 
     song = write(tmp_path, [*rock(2), (0, COWBELL)])
     typed = {"hit_types": {**ANSWERS["hit_types"], "cowbell": TYPED}}
     dropped = {**typed, "substitutions": {"cowbell.hit": "drop"}}
-    args = [song, "--from-map", "gm", "--to-map", "sleep-token-ii", "--seed", "1"]
+    args = [song, "--from-map", "gm", "--to-map", "sleep-token-ii/default", "--seed", "1"]
 
     asked = render(*args, "--answers", json_file(tmp_path, "a.json", typed), "-o", tmp_path / "a")
     settled = render(

@@ -1,7 +1,9 @@
 # Sleep Token II, from the library's own note mapping (ADR 0011): 68 pitches on channel 10 as 58
 # articulations. Where an articulation has two notes, the first is the one written and the
 # second is only read. Confidence is high where the mapping's name gives the canonical name
-# directly, and medium where it had to be interpreted.
+# directly, and medium where it had to be interpreted. Its second kit, `groove-pack`, is the
+# layout its own groove files play, which no mapping at hand names, so each of its names is
+# inferred from where the library puts its notes, at low confidence (ADR 0066).
 schema = 1
 id = "sleep-token-ii"
 name = "Sleep Token II"
@@ -361,3 +363,99 @@ channel = 10
   notes = [108]
   source = "mapping"
   confidence = "medium"
+
+# The layout of the library's own groove files. Its other notes, each played too little or too
+# unlike any drum to name, are left out, so a note on them is asked about.
+[[kits]]
+id = "groove-pack"
+name = "Groove Pack layout"
+
+  [[kits.articulations]]
+  name = "kick.hit"
+  notes = [1]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "snare.center"
+  notes = [2]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "snare.rimshot"
+  notes = [3]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.1.hit"
+  notes = [11]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.2.hit"
+  notes = [9]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.3.hit"
+  notes = [7]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "tom.4.hit"
+  notes = [41]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.closed"
+  notes = [14]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.closed.tip"
+  notes = [13]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "hat.open"
+  notes = [19]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "ride.1.bow"
+  notes = [29]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "ride.1.bell"
+  notes = [53]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.1.hit"
+  notes = [23]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.2.hit"
+  notes = [54]
+  source = "inferred"
+  confidence = "low"
+
+  [[kits.articulations]]
+  name = "crash.3.hit"
+  notes = [32]
+  source = "inferred"
+  confidence = "low"
