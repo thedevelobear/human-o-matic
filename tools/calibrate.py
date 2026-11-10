@@ -456,9 +456,11 @@ def report(
     results: Sequence[FileResult],
     cuts: Sequence[tuple[float, float]] = (),
     misfit: float | None = None,
+    *,
+    velocities: bool = True,
 ) -> str:
-    """What `measure` prints for some files: counts, the timing spread, the shared velocity fit,
-    the bands, and each pack."""
+    """What `measure` prints for some files: counts, the timing spread, the shared velocity fit
+    unless `velocities` is off, the bands, and each pack."""
     grooves = [groove for result in results for groove in result.grooves]
     performed = [groove for groove in grooves if groove.timing == "performed"]
     fitted = timed(grooves, misfit)
@@ -466,7 +468,8 @@ def report(
     if misfit is not None:
         lines += _misfits(performed, misfit)
     lines += _spreads(fitted)
-    lines += _velocities(grooves)
+    if velocities:
+        lines += _velocities(grooves)
     title = "" if misfit is None else ", the grooves the grid doesn't fit left out"
     for name, pair in alternatives(fitted, cuts):
         lines += _bands(f"{name}{title}", pair, fitted)
@@ -520,7 +523,12 @@ def _misfits(performed: Sequence[Groove], misfit: float) -> list[str]:
     return [
         f"the grid doesn't fit {len(left)} of {len(performed)} performed grooves (more than "
         f"{misfit:g} of their notes over {FAR_MS:g} ms from their grid point), from {len(packs)} "
-        "packs: " + ", ".join(f"{pack} {count}" for pack, count in packs.most_common())
+        "packs"
+        + (
+            ": " + ", ".join(f"{pack} {count}" for pack, count in packs.most_common())
+            if packs
+            else ""
+        )
     ]
 
 
@@ -706,12 +714,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         apart = measure(args.root, names, left_out)
         print("\n== the folders left out, timing only, every pitch a drum of its own")
-        print(report(apart, args.cuts, args.misfit))
+        print(report(apart, args.cuts, args.misfit, velocities=False))
         for name in names:
             mine = [result for result in apart if result.folder == name]
             if mine:
                 print(f"\n== {name}, left out")
-                print(report(mine, args.cuts, args.misfit))
+                print(report(mine, args.cuts, args.misfit, velocities=False))
     print(f"measured in {time.perf_counter() - started:.1f} s", file=sys.stderr)
     return 0
 
