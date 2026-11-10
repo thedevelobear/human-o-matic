@@ -360,7 +360,8 @@ def test_the_report_counts_grooves_spreads_and_bands(tmp_path: Path, kit: DrumKi
     write(root / "a" / "grid.mid", notes)
 
     results = measure(root, ["a"], lambda _: Source(kit))
-    text = report(results)
+    # The loosest of the three puts notes past 20 ms, so the misfit rule is off here.
+    text = report(results, misfit=None)
 
     assert "files: 4, 4 measured" in text
     assert "grooves: 4 (windows of up to 16 bars); performed timing 3, held to the grid 1" in text
