@@ -86,7 +86,7 @@ What was decided, specifically enough to check the code against.
 | [0048](decisions/0048-a-render-writes-the-score-through-the-target-kit-into-the-drum-track.md) | A render writes the score through the target kit into the drum track, and nothing else changes | Accepted |
 | [0049](decisions/0049-each-section-draws-from-its-own-seeded-stream.md) | Each section draws from its own seeded stream, and the song's drifts from streams of their own | Accepted |
 | [0050](decisions/0050-guards-hold-every-backend-and-keep-each-section-independent.md) | The guards hold every backend's draws, and never make a section depend on another's | Accepted |
-| [0051](decisions/0051-the-tight-style-s-placeholders-fill-in-what-appendix-a-leaves-out.md) | The `tight` style's placeholders are Appendix A with the values it leaves out filled in | Accepted |
+| [0051](decisions/0051-the-tight-style-s-placeholders-fill-in-what-appendix-a-leaves-out.md) | The `tight` style's placeholders are Appendix A with the values it leaves out filled in | Accepted. Its rendering from the placeholders is amended by [ADR 0070](decisions/0070-the-engine-reads-the-styles-from-data-styles.md), and its values, where fitted, by [ADR 0068](decisions/0068-what-calibration-fits-and-what-stays-modelled.md) |
 | [0052](decisions/0052-each-control-is-tested-against-the-statistic-it-mainly-drives.md) | Each control is tested against the statistic it mainly drives, and the plan's properties have exact definitions | Accepted |
 | [0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) | A controller-bound note keeps its controller value, and following and writing controllers wait for a map that gives them | Accepted |
 | [0054](decisions/0054-human-o-matic-render-writes-a-new-midi-file-by-a-plan-and-prints-json.md) | `human-o-matic render` writes a new MIDI file by a plan, and prints its summary and each section's statistics as JSON | Accepted |
@@ -105,3 +105,4 @@ What was decided, specifically enough to check the code against.
 | [0067](decisions/0067-the-bands-are-cut-at-3-and-6-ms.md) | The bands are cut at 3 and 6 ms of timing spread | Proposed |
 | [0068](decisions/0068-what-calibration-fits-and-what-stays-modelled.md) | What calibration fits, by energy, metric level and tempo, and what stays modelled or placeholder | Proposed |
 | [0069](decisions/0069-a-style-is-one-complete-toml-file-written-by-the-fit.md) | A style is one complete TOML file in `data/styles/`, written by the fit | Proposed |
+| [0070](decisions/0070-the-engine-reads-the-styles-from-data-styles.md) | The engine reads the three styles from `data/styles/`, and the placeholder stays as the fit's source | Proposed |
