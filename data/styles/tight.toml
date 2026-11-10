@@ -1,0 +1,115 @@
+# The `tight` style, written by `tools/calibrate.py fit` from performed MIDI: aggregate statistics
+# only (ADRs 0007, 0044). The velocities are fitted once and shared by the three styles (ADR
+# 0065), and the timing is this style's band's, by tempo band. Values a performance can't give
+# keep the placeholder's, and so do the rider gap, accent and fill crescendo, whose fits run
+# against Appendix A or ADR 0052's tests (ADR 0068). Don't edit it: change the fit and run it
+# again.
+name = "tight"
+placeholder = false
+noise_sd = 5.12
+feet = 3.0
+rider_gap = [4.0, 14.0]
+rider_groove = [0.6, 0.8]
+rider_flip = 0.775
+accent = [2.0, 6.0]
+soft = [28.0, 38.29]
+soft_mix = [0.6, 0.2, 0.2]
+soft_sd = 7.99
+fill_metric = [2.29, 0.0, -0.83, -1.68]
+fill_hand = 2.0
+fill_shift = 6.0
+fill_crescendo = 11.0
+snare_loudness = 4.0
+arc_span = 0.15
+energy_drift_sd = 2.0
+energy_drift_quarters = 64.0
+drift_sd = 2.5
+drift_quarters = [16.0, 64.0, 256.0]
+tempo_cuts = [150.0]
+feel_ms = [1.0, 0.8]
+
+[defaults]
+energy = 0.5
+groove = 0.5
+dynamic_range = 0.5
+tightness = 0.75
+feel = 0.0
+arc = "steady"
+fill_intensity = 0.5
+ghost_level = 0.5
+skip = false
+
+[velocity]
+
+[velocity.kick]
+full = 126.93
+half = 111.88
+low = 100.29
+band = 6.0
+
+[velocity.double_kick]
+full = 126.76
+half = 107.5
+low = 99.62
+
+[velocity.backbeat]
+full = 127.0
+half = 123.24
+low = 117.0
+band = 6.0
+
+[velocity.snare]
+full = 127.0
+half = 121.54
+low = 109.0
+
+[velocity.rider]
+full = 126.78
+half = 113.24
+low = 92.52
+
+[velocity.accent_cymbal]
+full = 127.0
+half = 121.0
+low = 119.42
+band = 8.0
+
+[velocity.fill]
+full = 123.6
+half = 110.8
+low = 102.43
+
+[velocity.other]
+full = 127.0
+half = 112.08
+low = 101.33
+
+[metric_velocity]
+kick = [0.83, 0.0, -0.94, -0.33]
+double_kick = [0.9, 0.08, -0.29, -1.06]
+backbeat = [0.0, 0.0, 0.0, 0.0]
+snare = [0.0, 0.0, 0.0, -0.22]
+rider = [0.0, 0.0, 0.0, 0.0]
+accent_cymbal = [0.0, 0.0, -0.88, 0.0]
+fill = [0.0, 0.0, 0.0, 0.0]
+other = [0.0, 0.0, 0.0, 0.0]
+
+[[timing]]
+shared_sd = 0.73
+jitter_sd = [1.99, 1.19]
+jitter_clip = 2.65
+
+[timing.limb_ms]
+other = 0.0
+snare = 0.18
+rider = 0.46
+
+[[timing]]
+shared_sd = 0.0
+jitter_sd = [1.28, 0.77]
+jitter_clip = 1.71
+
+[timing.limb_ms]
+other = 0.0
+snare = 0.51
+rider = 0.55
