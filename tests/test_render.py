@@ -252,15 +252,50 @@ def test_offsets_stay_within_the_cap_at_every_tempo(
     midi = song(hits, bpm=bpm, tempos=changes)
     result = normalized(midi)
 
-    out = rendered(midi, at_corners(data, midi, result, cuts, loose=True))
+    offsets_within_the_cap(result, rendered(midi, at_corners(data, midi, result, cuts, loose=True)))
 
-    # A note played as it came in keeps its timing, however far off the grid it was played.
+
+def offsets_within_the_cap(result: Normalized, out: Rendered) -> None:
+    """Each rendered note's offset is within the cap plus two ticks for going to a tick, ticks of
+    the tempo where the note lands, which a tempo change can set apart from its grid point's. A
+    note going up to a tempo change is rounded in the tick before it. A note played as it came in
+    keeps its timing, however far off the grid it was played."""
+    tempos = result.score.tempos
     for note in out.notes:
-        if note.kept:
-            continue
-        tick = result.score.notes[note.position].tick
-        slack = 2 * result.score.tempos.ms_per_tick(tick)
-        assert abs(note.offset_ms) <= CAP_MS + slack
+        if not note.kept:
+            start = note.note.start
+            tick = max(tempos.ms_per_tick(max(start - 1, 0)), tempos.ms_per_tick(start))
+            assert abs(note.offset_ms) <= CAP_MS + 2 * tick
+
+
+def test_a_note_cut_to_the_cap_before_a_tempo_change_goes_to_a_tick_of_that_tempo() -> None:
+    # 60 BPM up to tick 180 and 600 after it, so a tick is 1.04 ms, then 0.10 ms. The snare on
+    # tick 240, pushed early, is cut to -12 ms, which is before the change, at tick 174.48: its
+    # nearest tick is half a 60 BPM tick past the cap, more than two ticks of its grid point's.
+    hits: list[Hit] = [
+        (0, SNARE, SOFT),
+        (SIXTEENTH, KICK, SOFT),
+        (SIXTEENTH, SNARE, SOFT),
+        (2 * SIXTEENTH, KICK, SOFT),
+        (0, KICK, SOFT),
+        (10, KICK, NORMAL),
+    ]
+    midi = song(hits, bpm=60, tempos=[(180, 600.0)])
+    result = normalized(midi)
+    pushed = ControlVector(tightness=0.0, feel=-1.0)
+
+    grid_ticks = 2 * result.score.tempos.ms_per_tick(SIXTEENTH)
+    past = 0
+    for seed in range(4):
+        plan = plan_for(midi, result, controls=pushed, seed=seed, style="loose")
+        out = rendered(midi, plan, result=result)
+        offsets_within_the_cap(result, out)
+        past += sum(
+            note.offset_ms < -CAP_MS - grid_ticks
+            for note in out.notes
+            if note.note.pitch == SNARE and result.score.notes[note.position].tick == SIXTEENTH
+        )
+    assert past > 0
 
 
 SHARED = (HAT, PEDAL, OPEN_HAT, SNARE, SIDESTICK, RIDE, BELL, KICK)
@@ -670,9 +705,7 @@ def test_a_song_in_3_4_then_7_8_with_tempo_changes_renders_on_its_own_beats() ->
         if note.part.role == "backbeat"
     }
     assert backbeats == {1.0, 2.0, 4.0}
-    for note in out.notes:
-        tick = result.score.notes[note.position].tick
-        assert abs(note.offset_ms) <= CAP_MS + 2 * result.score.tempos.ms_per_tick(tick)
+    offsets_within_the_cap(result, out)
     for notes in by_key(out.notes, "pitch").values():
         assert all(earlier.note.start < later.note.start for earlier, later in pairwise(notes))
 
