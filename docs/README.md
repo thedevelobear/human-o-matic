@@ -3,10 +3,11 @@
 What happened in this repo and why, for people and coding agents. Start here, then read the active plan.
 
 ## Layout and rules
-The layout and its rules are set in [ADR 0002](decisions/0002-docs-as-decision-record.md).
+The layout and its rules are set in [ADR 0002](decisions/0002-docs-as-decision-record.md), and `research/` in [ADR 0072](decisions/0072-docs-research-holds-published-measurements-compared-with-the-project-s-values.md).
 
 - `plans/` holds plans for multi-PR work, named `YYYY-MM-DD-topic.md`. A plan is a living document: each PR updates its progress table and any section the PR changes. A plan that is replaced wholesale stays unchanged, apart from a status line pointing at its successor.
 - `decisions/` holds architecture decision records (ADRs), one decision per file, named `NNNN-topic.md`. An ADR is never edited after merge, except its status line. A changed decision gets a new ADR, and the old one is marked `Superseded by NNNN`, or `Accepted. Its <part> is amended by NNNN` when the new ADR changes only part of it ([ADR 0042](decisions/0042-a-partly-changed-adr-is-marked-amended.md)).
+- `research/` holds pages that compare the project's values with published measurements, named `YYYY-MM-DD-topic.md`. A page cites each source in full, with what it gives, how sure it is and what it can't say, lists the sources it couldn't open, with no figures from them, and holds published figures and aggregate values only ([ADR 0007](decisions/0007-local-only-files-live-in-private.md)). A page is as of its date: a wrong figure is corrected, and a later look is a new page.
 
 A PR that makes or changes a decision adds the ADR and updates the active plan in the same PR.
 
@@ -33,11 +34,16 @@ What was decided, specifically enough to check the code against.
 |---|---|
 | [2026-11-08-human-o-matic](plans/2026-11-08-human-o-matic.md) | Active. The app, milestone by milestone. |
 
+### Research
+| Page | Compares |
+|---|---|
+| [2026-11-10-styles-against-published-measurements](research/2026-11-10-styles-against-published-measurements.md) | Six values of the styles, where the fit and Appendix A's placeholder differ, with published measurements of drummers |
+
 ### Decisions
 | # | Decision | Status |
 |---|---|---|
 | [0001](decisions/0001-python-312-with-uv-ruff-pyright-and-pytest.md) | Python 3.12 with uv, ruff, pyright and pytest | Accepted. Its line that pyright is strict on `src/` is amended by [ADR 0058](decisions/0058-tools-are-scripts-checked-like-src.md) |
-| [0002](decisions/0002-docs-as-decision-record.md) | docs/ is the decision record | Accepted. Its rule for a changed decision is amended by [ADR 0042](decisions/0042-a-partly-changed-adr-is-marked-amended.md) |
+| [0002](decisions/0002-docs-as-decision-record.md) | docs/ is the decision record | Accepted. Its rule for a changed decision is amended by [ADR 0042](decisions/0042-a-partly-changed-adr-is-marked-amended.md), and its layout by [ADR 0072](decisions/0072-docs-research-holds-published-measurements-compared-with-the-project-s-values.md) |
 | [0003](decisions/0003-branches-off-main-merged-without-squashing.md) | Work branches off `main` and merges without squashing | Accepted |
 | [0004](decisions/0004-exact-dependency-versions.md) | Dependencies use exact versions | Accepted |
 | [0005](decisions/0005-orchestrated-agents.md) | Claude Code works through an orchestrator, a developer and QA | Accepted |
@@ -106,3 +112,4 @@ What was decided, specifically enough to check the code against.
 | [0068](decisions/0068-what-calibration-fits-and-what-stays-modelled.md) | What calibration fits, by energy, metric level and tempo, and what stays modelled or placeholder | Proposed |
 | [0069](decisions/0069-a-style-is-one-complete-toml-file-written-by-the-fit.md) | A style is one complete TOML file in `data/styles/`, written by the fit | Proposed |
 | [0070](decisions/0070-the-engine-reads-the-styles-from-data-styles.md) | The engine reads the three styles from `data/styles/`, and the placeholder stays as the fit's source | Proposed |
+| [0072](decisions/0072-docs-research-holds-published-measurements-compared-with-the-project-s-values.md) | `docs/research/` holds published measurements compared with the project's values | Proposed |
