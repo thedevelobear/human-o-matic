@@ -1,6 +1,6 @@
 # 0052. Each control is tested against the statistic it mainly drives, and the plan's properties have exact definitions
 
-- **Status:** Accepted. Its `feel` row's smaller pushed side is amended by [ADR 0071](0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md)
+- **Status:** Accepted. Its `feel` row's smaller pushed side is amended by [ADR 0071](0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md), and its same-pitch and cap properties by [ADR 0073](0073-the-gap-is-counted-in-milliseconds-through-the-tempo-map.md)
 - **Date:** 2026-11-09
 
 - `render/measure.py` measures a render's notes, leaving out notes played as they came in. Each control is tested against what the plan's control table says it mainly drives:
