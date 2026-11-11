@@ -20,10 +20,12 @@ Timing, in turn:
    one past its side: each side is carried back through the section's notes before it. The gap
    is counted in milliseconds through the tempo map, as the cap is, and a main note and its
    graces move by one shift in milliseconds, so they keep one offset. So between two notes of a
-   section the gap never takes a note past the cap (ADR 0073). When a note can't keep both
-   gaps, the one from the note before wins, and `unmet` counts it. Next to a note played as it
-   came in, the cap wins over the gap, so the note stops at the cap with less of its gap, a tick
-   or more from the kept note, and `unmet` counts it, not `gap`.
+   section the gap never takes a note past the cap (ADR 0073). A grace the score puts on its
+   main's tick takes its main with it as far as the cap: past it, the grace goes on alone, its
+   gap to its main is shortened, and `unmet` counts it. When a note can't keep both gaps, the
+   one from the note before wins, and `unmet` counts it. Next to a note played as it came in,
+   the cap wins over the gap, so the note stops at the cap with less of its gap, a tick or more
+   from the kept note, and `unmet` counts it, not `gap`.
 6. A note a controller value decides or shapes stays within its window, between the controller
    events around its source note (ADR 0053), which wins over the gap.
 7. Each note keeps its source length, at least a tick, and ends by the time the next note of its
@@ -135,9 +137,9 @@ class GuardCounts(BaseModel):
     """Velocities moved off a repeat, or onto their class at a boundary."""
     unmet: int = 0
     """Notes a guard couldn't hold, as when a range is too narrow for it, both gaps can't be
-    kept, the cap keeps a note short of a kept note's gap, or a main note on tick 0 short of
-    its grace's gap. Each is also counted under the guard that moved it, if one did, but for
-    the cap."""
+    kept, the cap keeps a note short of a kept note's gap, or a main note short of its grace's
+    gap, on tick 0 or behind a note on its grace's grid point. Each is also counted under the
+    guard that moved it, if one did, but for the cap."""
 
 
 @dataclass(slots=True)
@@ -237,6 +239,14 @@ def hold_timing(
     cap_low = np.ceil(tempos.ms_to_ticks(grid_ms - MAX_OFFSET_MS)).astype(np.int64)
     cap_high = np.floor(tempos.ms_to_ticks(grid_ms + MAX_OFFSET_MS)).astype(np.int64)
     """The earliest and latest ticks within the cap, for the gap to a kept note."""
+    at_cap = np.rint(tempos.ms_to_ticks(grid_ms + MAX_OFFSET_MS)).astype(np.int64)
+    """The tick a note drawn at the cap late goes to."""
+    on_main = {
+        position
+        for position, slot in enumerate(slots)
+        if slot.main is not None and slot.tick >= slots[slot.main].tick
+    }
+    """The graces the score puts on their main's tick, placed before it by their source gap."""
 
     # Each note moves by one shift with its main note and graces, in milliseconds, so they keep
     # their offset across a tempo change (ADR 0073). The shift is counted in the ticks of the note
@@ -245,7 +255,9 @@ def hold_timing(
     # notes never reorder; then the cap, over the gap to a kept note; then the gap from the note
     # before, and the note's side of a boundary from the note before, over the gap to a kept note
     # after and its side of a boundary to the note after. Each unit is taken after the notes before
-    # its own on their pitches, so a gap is counted from where that note ends up.
+    # its own on their pitches, so a gap is counted from where that note ends up. A grace the score
+    # puts on its main's tick takes its main later with it to keep its gap from the note before,
+    # up to the cap: past it, the grace goes on alone, and its gap to its main is shortened.
     for unit in _unit_order(slots, members, unit_of, previous):
         held = members[unit]
         if not slots[unit].kept:
@@ -264,6 +276,12 @@ def hold_timing(
             """The shifts that keep the notes within the cap."""
             held_low, held_high = -_FAR, _FAR
             """The shifts that keep the notes within their controller windows."""
+            lifted_low = -_FAR
+            """The shift that keeps the gap from the note before for a grace on its main's
+            tick, which its main goes with as far as the cap and the bounds after allow."""
+            alone: dict[int, int] = {}
+            """For each grace on its main's tick, the tick that keeps its gap from the note
+            before."""
             for member in held:
                 slot = slots[member]
                 here = int(starts[member])
@@ -285,14 +303,16 @@ def hold_timing(
                     slots[before].kept or slots[before].section == slot.section
                 ):
                     gap = MIN_GAP_SHARE * float(grid_ms[member] - grid_ms[before])
-                    least = _shift_to(
-                        tempos, _first_after(tempos, int(starts[before]), gap), here, base
-                    )
+                    first = _first_after(tempos, int(starts[before]), gap)
+                    least = _shift_to(tempos, first, here, base)
                     if slots[before].kept:
                         kept_low = max(kept_low, least)
                         order_low = max(
                             order_low, _shift_to(tempos, int(starts[before]) + 1, here, base)
                         )
+                    elif member in on_main:
+                        alone[member] = first
+                        lifted_low = max(lifted_low, least)
                     else:
                         before_low = max(before_low, least)
                 after = kept_after.get(member)
@@ -313,6 +333,9 @@ def hold_timing(
             kept_low = max(min(kept_low, capped_high), order_low)
             kept_high = min(max(kept_high, capped_low), order_high)
             gap_low, gap_high = max(before_low, kept_low), min(kept_high, side_high_shift)
+            if lifted_low > -_FAR:
+                ceiling = _shift_to(tempos, int(at_cap[unit]), int(starts[unit]), base, upper=True)
+                gap_low = max(gap_low, min(lifted_low, ceiling, gap_high))
             unmet = short
             if gap_low > gap_high:
                 unmet = True
@@ -326,8 +349,6 @@ def hold_timing(
                     unmet = True
             elif shift and not short:
                 tally.add("gap")
-            if unmet:
-                tally.add("unmet")
             if shift:
                 moved = tempos.tick_to_ms(base + shift) - tempos.tick_to_ms(base)
                 for member in held:
@@ -339,6 +360,16 @@ def hold_timing(
                     )
                 if len(held) > 1:
                     _keep_order(starts, held, places)
+            short_of = [member for member, first in alone.items() if starts[member] < first]
+            if short_of:
+                for member in short_of:
+                    starts[member] = alone[member]
+                _keep_order(starts, held, places)
+                unmet = True
+                if not shift:
+                    tally.add("gap")
+            if unmet:
+                tally.add("unmet")
 
     ends = np.zeros(count, dtype=np.int64)
     off_orders = [slot.off_order for slot in slots]
