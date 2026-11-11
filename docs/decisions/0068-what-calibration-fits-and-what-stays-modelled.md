@@ -1,6 +1,6 @@
 # 0068. What calibration fits, by energy, metric level and tempo, and what stays modelled or placeholder
 
-- **Status:** Accepted. Its fitting of the rider gap, accent and fill crescendo, and three premises of its check, are amended by [ADR 0071](0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md)
+- **Status:** Accepted. Its fitting of the rider gap, accent and fill crescendo, and three premises of its check, are amended by [ADR 0071](0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md), and its noise for every role and its kept values by [ADR 0076](0076-riders-draw-their-velocities-with-a-noise-of-their-own.md)
 - **Date:** 2026-11-10
 
 `tools/fit_styles.py` fits the styles on the grooves `tools/calibrate.py` measures, with the engine's own roles (`render/parts.py`, [ADR 0047](0047-roles-come-from-canonical-families-and-the-score.md)) and statistics (`render/measure.py`).

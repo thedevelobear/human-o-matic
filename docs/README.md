@@ -38,6 +38,7 @@ What was decided, specifically enough to check the code against.
 | Page | Compares |
 |---|---|
 | [2026-11-10-styles-against-published-measurements](research/2026-11-10-styles-against-published-measurements.md) | Six values of the styles, where the fit and Appendix A's placeholder differ, with published measurements of drummers |
+| [2026-11-11-rider-noise-against-published-measurements](research/2026-11-11-rider-noise-against-published-measurements.md) | The riders' velocity noise and their alternation, where the fit and Appendix A differ, with published measurements of a hi-hat and of ride cymbals |
 
 ### Decisions
 | # | Decision | Status |
@@ -109,11 +110,12 @@ What was decided, specifically enough to check the code against.
 | [0065](decisions/0065-velocities-are-fitted-once-and-shared-by-the-three-styles.md) | Velocities are fitted once and shared by the three styles, which differ in timing only | Accepted |
 | [0066](decisions/0066-sleep-token-ii-gets-an-inferred-groove-pack-kit.md) | Sleep Token II gets a second kit, `groove-pack`, inferred, for the layout its groove files play | Accepted |
 | [0067](decisions/0067-the-bands-are-cut-at-3-and-6-ms.md) | The bands are cut at 3 and 6 ms of timing spread | Accepted |
-| [0068](decisions/0068-what-calibration-fits-and-what-stays-modelled.md) | What calibration fits, by energy, metric level and tempo, and what stays modelled or placeholder | Accepted. Its fitting of the rider gap, accent and fill crescendo, and three premises of its check, are amended by [ADR 0071](decisions/0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md) |
+| [0068](decisions/0068-what-calibration-fits-and-what-stays-modelled.md) | What calibration fits, by energy, metric level and tempo, and what stays modelled or placeholder | Accepted. Its fitting of the rider gap, accent and fill crescendo, and three premises of its check, are amended by [ADR 0071](decisions/0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md), and its noise for every role and its kept values by [ADR 0076](decisions/0076-riders-draw-their-velocities-with-a-noise-of-their-own.md) |
 | [0069](decisions/0069-a-style-is-one-complete-toml-file-written-by-the-fit.md) | A style is one complete TOML file in `data/styles/`, written by the fit | Accepted |
 | [0070](decisions/0070-the-engine-reads-the-styles-from-data-styles.md) | The engine reads the three styles from `data/styles/`, and the placeholder stays as the fit's source | Accepted |
-| [0071](decisions/0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md) | The fit is the default, research fills what a performance can't give, and a value they disagree on waits for both numbers | Accepted |
+| [0071](decisions/0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md) | The fit is the default, research fills what a performance can't give, and a value they disagree on waits for both numbers | Accepted. Its list of the values the fit keeps from the placeholder is amended by [ADR 0076](decisions/0076-riders-draw-their-velocities-with-a-noise-of-their-own.md) |
 | [0072](decisions/0072-docs-research-holds-published-measurements-compared-with-the-project-s-values.md) | `docs/research/` holds published measurements compared with the project's values | Accepted |
 | [0073](decisions/0073-the-gap-is-counted-in-milliseconds-through-the-tempo-map.md) | The gap is counted in milliseconds through the tempo map, so it never takes a note past the cap | Accepted |
 | [0074](decisions/0074-a-render-is-heard-from-its-midi-file-in-the-daw-and-there-is-no-live-preview.md) | A render is heard from its MIDI file in the DAW, and there is no live preview | Proposed |
 | [0075](decisions/0075-render-s-summary-counts-how-the-notes-were-placed-in-the-target-kit.md) | `human-o-matic render`'s summary counts how the notes were placed in the target kit | Proposed |
+| [0076](decisions/0076-riders-draw-their-velocities-with-a-noise-of-their-own.md) | Riders draw their velocities with a noise of their own, Appendix A's 2.5 | Proposed |
