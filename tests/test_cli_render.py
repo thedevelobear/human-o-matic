@@ -245,6 +245,15 @@ def test_a_substitution_the_target_can_t_play_is_a_usage_error(tmp_path: Path) -
     assert "substitutions." in usage_error(render(*args))
 
 
+def test_the_help_names_every_control_a_plan_takes() -> None:
+    result = runner.invoke(app, ["render", "--help"])
+
+    assert result.exit_code == 0, result.output
+    text = " ".join(result.stdout.split())
+    assert all(control in text for control in ControlVector.model_fields)
+    assert '{"controls": {"energy": 0.8}, "sections": {"8": {"skip": true}}}' in text
+
+
 def test_a_plan_file_reads_into_controls_by_bar() -> None:
     plan = read_plan('{"controls": {"feel": 0.2}, "sections": {"8": {"arc": "build"}}}')
 
