@@ -324,3 +324,22 @@ def test_a_main_note_across_a_tempo_change_moves_with_its_grace_in_milliseconds(
     assert abs(grace - main) <= tempos.ms_per_tick(1680)
     counts = tally.frozen()
     assert (counts.gap, counts.unmet) == (1, 0)
+
+
+def test_a_unit_s_shift_is_counted_in_the_shortest_tick_of_its_notes() -> None:
+    # 600 BPM up to tick 1600 and 60 after it. The grace shares its grid point with the snare
+    # before it, 12 ms late, so it keeps a tick after it, 0.10 ms, and its main hardly moves.
+    # Counted in its main's ticks, past the change, the shift would be 1.04 ms, and take the
+    # grace and its main 1 ms and 1.5 ms past the cap.
+    tempos = TempoMap(PPQ, [0, 1600], [FAST, SLOW])
+    slots = [slot(1440, order=1), replace(slot(1440, order=2), main=2), slot(1680, order=3)]
+    tally = Tally()
+
+    timed = hold_timing(slots, np.array([12.0, 12.0, 12.0]), tempos, tally)
+
+    assert list(timed.starts) == [1555, 1556, 1692]
+    _, grace, main = tempos.ticks_to_ms(timed.starts) - tempos.ticks_to_ms([1440, 1440, 1680])
+    assert grace <= CAP_MS + tempos.ms_per_tick(1556)
+    assert main <= CAP_MS + tempos.ms_per_tick(1692) / 2
+    counts = tally.frozen()
+    assert (counts.gap, counts.unmet) == (1, 0)

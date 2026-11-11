@@ -233,16 +233,18 @@ def hold_timing(
     """The earliest and latest ticks within the cap, for the gap to a kept note."""
 
     # Each note moves by one shift with its main note and graces, in milliseconds, so they keep
-    # their offset across a tempo change (ADR 0073). The shift is counted in the main note's ticks,
-    # and what bounds it wins in this order: the controller window; then a tick after a kept note
-    # before it and a tick before a kept note after it, so notes never reorder; then the cap, over
-    # the gap to a kept note; then the gap from the note before over the gap to a kept note after.
+    # their offset across a tempo change (ADR 0073). The shift is counted in the ticks of the note
+    # of theirs with the shortest tick, and what bounds it wins in this order: the controller
+    # window; then a tick after a kept note before it and a tick before a kept note after it, so
+    # notes never reorder; then the cap, over the gap to a kept note; then the gap from the note
+    # before over the gap to a kept note after.
     last: dict[Key, int] = {}
     order = sorted(members, key=lambda unit: (min(slots[m].tick for m in members[unit]), unit))
     for unit in order:
         held = members[unit]
         if not slots[unit].kept:
-            main = int(starts[unit])
+            counted = _counted_in(tempos, starts, held, unit)
+            base = int(starts[counted])
             before_low = -_FAR
             """The shift that keeps the gap from the note before in the note's section."""
             kept_low, kept_high = -_FAR, _FAR
@@ -256,9 +258,9 @@ def hold_timing(
             for member in held:
                 slot = slots[member]
                 here = int(starts[member])
-                capped_low = max(capped_low, _shift_to(tempos, int(cap_low[member]), here, main))
+                capped_low = max(capped_low, _shift_to(tempos, int(cap_low[member]), here, base))
                 capped_high = min(
-                    capped_high, _shift_to(tempos, int(cap_high[member]), here, main, upper=True)
+                    capped_high, _shift_to(tempos, int(cap_high[member]), here, base, upper=True)
                 )
                 previous = last.get(slot.key)
                 if previous is not None and (
@@ -266,12 +268,12 @@ def hold_timing(
                 ):
                     gap = MIN_GAP_SHARE * float(grid_ms[member] - grid_ms[previous])
                     least = _shift_to(
-                        tempos, _first_after(tempos, int(starts[previous]), gap), here, main
+                        tempos, _first_after(tempos, int(starts[previous]), gap), here, base
                     )
                     if slots[previous].kept:
                         kept_low = max(kept_low, least)
                         order_low = max(
-                            order_low, _shift_to(tempos, int(starts[previous]) + 1, here, main)
+                            order_low, _shift_to(tempos, int(starts[previous]) + 1, here, base)
                         )
                     else:
                         before_low = max(before_low, least)
@@ -279,15 +281,15 @@ def hold_timing(
                 if after is not None:
                     gap = MIN_GAP_SHARE * float(grid_ms[after] - grid_ms[member])
                     most = _last_before(tempos, int(starts[after]), gap)
-                    kept_high = min(kept_high, _shift_to(tempos, most, here, main, upper=True))
+                    kept_high = min(kept_high, _shift_to(tempos, most, here, base, upper=True))
                     order_high = min(
                         order_high,
-                        _shift_to(tempos, int(starts[after]) - 1, here, main, upper=True),
+                        _shift_to(tempos, int(starts[after]) - 1, here, base, upper=True),
                     )
                 if slot.window is not None:
-                    held_low = max(held_low, _shift_to(tempos, slot.window[0], here, main))
+                    held_low = max(held_low, _shift_to(tempos, slot.window[0], here, base))
                     held_high = min(
-                        held_high, _shift_to(tempos, slot.window[1], here, main, upper=True)
+                        held_high, _shift_to(tempos, slot.window[1], here, base, upper=True)
                     )
             short = kept_low > capped_high or kept_high < capped_low
             kept_low = max(min(kept_low, capped_high), order_low)
@@ -309,12 +311,12 @@ def hold_timing(
             if unmet:
                 tally.add("unmet")
             if shift:
-                moved = tempos.tick_to_ms(main + shift) - tempos.tick_to_ms(main)
+                moved = tempos.tick_to_ms(base + shift) - tempos.tick_to_ms(base)
                 for member in held:
                     here = int(starts[member])
                     starts[member] = (
-                        main + shift
-                        if member == unit
+                        base + shift
+                        if member == counted
                         else round(tempos.ms_to_tick(tempos.tick_to_ms(here) + moved))
                     )
                 if len(held) > 1:
@@ -367,15 +369,25 @@ def _keep_order(starts: IntArray, held: Sequence[int], places: FloatArray) -> No
         least = int(starts[member]) + 1
 
 
-def _shift_to(tempos: TempoMap, tick: int, here: int, main: int, *, upper: bool = False) -> int:
-    """The shift of a main note on `main` that takes a note of its unit from `here` to `tick`,
-    when the unit moves by one shift in milliseconds: the least that reaches it, or with `upper`
-    the most that stays at or before it. At one tempo, it is `tick - here`."""
-    if here == main:
+def _counted_in(tempos: TempoMap, starts: IntArray, held: Sequence[int], main: int) -> int:
+    """The note of a unit its shift is counted in: the one whose tick is shortest where it is, so
+    no note of the unit moves further than it must, and the main note on a tie."""
+    counted = main
+    for member in held:
+        if tempos.ms_per_tick(int(starts[member])) < tempos.ms_per_tick(int(starts[counted])):
+            counted = member
+    return counted
+
+
+def _shift_to(tempos: TempoMap, tick: int, here: int, base: int, *, upper: bool = False) -> int:
+    """The shift, in the ticks of the unit's note on `base`, that takes a note of the unit from
+    `here` to `tick` when the unit moves by one shift in milliseconds: the least that reaches it,
+    or with `upper` the most that stays at or before it. At one tempo, it is `tick - here`."""
+    if here == base:
         return tick - here
     distance = tempos.tick_to_ms(tick) - tempos.tick_to_ms(here)
-    at = tempos.ms_to_tick(tempos.tick_to_ms(main) + distance)
-    return (floor(at + _ROUNDING) if upper else ceil(at - _ROUNDING)) - main
+    at = tempos.ms_to_tick(tempos.tick_to_ms(base) + distance)
+    return (floor(at + _ROUNDING) if upper else ceil(at - _ROUNDING)) - base
 
 
 def _first_after(tempos: TempoMap, tick: int, gap_ms: float) -> int:
