@@ -1,8 +1,8 @@
 # human-o-matic: guided MIDI drum performance
 
-> **Status:** Active. M0 to M2 are merged, M3's engine, the first of its three PRs, is merged, and calibration, the second, has its styles in `data/styles/` and waits for qa's review.
+> **Status:** Active. M0 to M2 are merged, M3's engine, the first of its three PRs, is merged, and calibration, the second, is ready for review, with the preview, the third, to follow.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-11 (M3's engine merged and ADRs 0043 to 0054 accepted; on `feat/calibration`, `tools/infer_map.py`, maps for four more libraries, `tools/calibrate.py` measuring the grooves and fitting the styles, the three styles in `data/styles/`, which the engine now reads, the research cross-check, and the guards' gap counted in milliseconds and held for notes sharing a grid point, with ADRs 0055 to 0073 proposed and ADRs 0001, 0002, 0011, 0012, 0019, 0023, 0044, 0050, 0051 and 0052 amended by them).
+> Last updated: 2026-11-11 (M3's engine merged and ADRs 0043 to 0054 accepted; `feat/calibration` ready for review, with `tools/infer_map.py`, maps for four more libraries, `tools/calibrate.py` measuring the grooves and fitting the styles, the three styles in `data/styles/`, which the engine now reads, the research cross-check, and the guards' gap counted in milliseconds and held for notes sharing a grid point, with ADRs 0055 to 0073 proposed and ADRs 0001, 0002, 0011, 0012, 0019, 0023, 0044, 0050, 0051 and 0052 amended by them).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 
@@ -15,7 +15,7 @@ Milestones are done in order, and work stops at each gate ([`AGENTS.md`](../../A
 | M0 | Setup | The checks pass on the scaffolding | Merged ([#1](https://github.com/thedevelobear/human-o-matic/pull/1)) |
 | M1 | Normalize | The M1 exit tests | Merged ([#2](https://github.com/thedevelobear/human-o-matic/pull/2)) |
 | M2 | Sections | Boundary F1 of at least 0.70 on at least 10 tracks the owner has hand-labelled | Merged ([#3](https://github.com/thedevelobear/human-o-matic/pull/3)) |
-| M3 | Parametric engine and calibration | Each control moves its statistic the right way, and the property tests pass | In progress: the engine merged ([#4](https://github.com/thedevelobear/human-o-matic/pull/4)); calibration, the second of three PRs, has its styles in `data/styles/`, the engine reading them, the research cross-check, the gap counted in milliseconds and the guards held for notes sharing a grid point, and qa's review remains |
+| M3 | Parametric engine and calibration | Each control moves its statistic the right way, and the property tests pass | In progress: the engine merged ([#4](https://github.com/thedevelobear/human-o-matic/pull/4)); calibration, the second of three PRs, is ready for review, with the three styles in `data/styles/`, which the engine reads, the research cross-check, and the guards' gap counted in milliseconds and held for notes sharing a grid point; the preview, the third, remains |
 | M4 | MCP, skill and the main gate | The blind listening test, judged by the owner | Not started |
 | M5 | Trained model experiment | Follows the controls and wins a blind test, judged by the owner | Not started. Not before M4 |
 | M6 | Added notes | The owner confirms the priority first | Not started |
