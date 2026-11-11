@@ -12,14 +12,31 @@ answers are `substitutions`, from a source articulation to an articulation of th
 A note a controller value decides or shapes keeps the controllers it depends on, for the guard
 that holds its controller value (ADR 0053). Writing a controller value to another kit waits for
 a map that gives the controller and its values, so such a note is always a request there.
+
+The placement reports what conversion reports, as counts and names (ADR 0075): the source
+articulations written as another, the grid points where notes from different source pitches
+land on one pitch and channel, which the guards then keep a tick or more apart, and the notes
+read or written through a `low` confidence name.
 """
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from human_o_matic.decisions import DecisionRequest
-from human_o_matic.maps.convert import DROP, Reason, Resolution, checked, conversion_request, place
+from human_o_matic.maps.convert import (
+    DROP,
+    Collision,
+    Reason,
+    Resolution,
+    Step,
+    checked,
+    collisions,
+    conversion_request,
+    place,
+)
 from human_o_matic.maps.kit import DrumKit
 from human_o_matic.maps.schema import Binding
 from human_o_matic.normalize.answers import AnswerError
@@ -47,6 +64,45 @@ class Placed:
     """What a controller-bound note depends on, and None for any other."""
 
 
+class Changed(BaseModel):
+    """The notes of one source articulation written as another of the target kit, or left out
+    by a substitution."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    source: str
+    """The source articulation, or several joined by `|` when a controller value decides."""
+    target: str
+    """The target articulation, or `drop`."""
+    notes: int
+    steps: tuple[Step, ...]
+    """Each inexact step, in order, as conversion reports them (ADR 0021)."""
+
+
+class LowConfidenceNotes(BaseModel):
+    """The notes read or written through `low` confidence articulations (ADR 0025)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    read: dict[str, int] = Field(default_factory=dict[str, int])
+    """Per articulation of the source kit, in the order they first appear."""
+    written: dict[str, int] = Field(default_factory=dict[str, int])
+    """Per articulation of the target kit, in the order they first appear."""
+
+
+class ConversionReport(BaseModel):
+    """How the score's notes are placed in the target kit, as counts and names (ADR 0075)."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    changed: tuple[Changed, ...] = ()
+    """In the order their source articulations first appear."""
+    collisions: tuple[Collision, ...] = ()
+    """Per target pitch and channel, the score's ticks where notes from different source
+    pitches land on it, by pitch and channel."""
+    low_confidence: LowConfidenceNotes = LowConfidenceNotes()
+
+
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Placement:
     """Where the score's notes are written, and what is asked about the rest."""
@@ -59,6 +115,7 @@ class Placement:
     dropped: tuple[int, ...]
     """The positions in `Score.notes` that a substitution leaves out."""
     decisions: tuple[DecisionRequest, ...]
+    report: ConversionReport
 
     @property
     def complete(self) -> bool:
@@ -100,6 +157,7 @@ def place_score(
     waiting: dict[tuple[Reason, str], list[ScoreNote]] = {}
     placed: list[Placed | None] = []
     dropped: list[int] = []
+    changed: dict[tuple[str, str], Changed] = {}
     for position, note in enumerate(score.notes):
         key = note.articulation
         if same_kit and key not in picks:
@@ -108,6 +166,14 @@ def place_score(
         first = source.articulation(key.split("|")[0])
         controlled = "|" in key or controllers(first.bindings) is not None
         resolution = place(key, controlled, source, target, picks, resolutions)
+        if resolution.target is not None and resolution.steps:
+            row = changed.get((key, resolution.target))
+            changed[key, resolution.target] = Changed(
+                source=key,
+                target=resolution.target,
+                notes=(row.notes if row else 0) + 1,
+                steps=resolution.steps,
+            )
         if resolution.target is None:
             waiting.setdefault((resolution.reason or "family", key), []).append(note)
             placed.append(None)
@@ -129,8 +195,47 @@ def place_score(
         for (reason, key), held in waiting.items()
     )
     return Placement(
-        kit=target.ref, notes=tuple(placed), dropped=tuple(dropped), decisions=decisions
+        kit=target.ref,
+        notes=tuple(placed),
+        dropped=tuple(dropped),
+        decisions=decisions,
+        report=_report(score, source, target, placed, tuple(changed.values())),
     )
+
+
+def _report(
+    score: Score,
+    source: DrumKit,
+    target: DrumKit,
+    placed: Sequence[Placed | None],
+    changed: tuple[Changed, ...],
+) -> ConversionReport:
+    """What the placement reports: the source articulations written as another, the collisions
+    conversion finds, at the score's ticks, and the notes read and written through `low`
+    confidence names."""
+    read: dict[str, int] = {}
+    written: dict[str, int] = {}
+    places: list[tuple[int, int, int]] = []
+    origins: list[tuple[str, int, int]] = []
+    for note, at in zip(score.notes, placed, strict=True):
+        if _low(source, note.articulation):
+            read[note.articulation] = read.get(note.articulation, 0) + 1
+        if at is None:
+            continue
+        if _low(target, at.articulation):
+            written[at.articulation] = written.get(at.articulation, 0) + 1
+        places.append((at.pitch, at.channel, note.tick))
+        origins.append((note.articulation, note.source.channel, note.source.pitch))
+    return ConversionReport(
+        changed=changed,
+        collisions=collisions(places, origins, score.signatures),
+        low_confidence=LowConfidenceNotes(read=read, written=written),
+    )
+
+
+def _low(kit: DrumKit, key: str) -> bool:
+    """Whether the kit names any of a key's articulations at `low` confidence."""
+    return any(kit.articulation(name).confidence == "low" for name in key.split("|"))
 
 
 def _kept(note: ScoreNote, kit: DrumKit) -> Placed:

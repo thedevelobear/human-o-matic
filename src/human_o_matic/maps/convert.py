@@ -342,19 +342,27 @@ def convert(
         notes=tuple(converted),
         pending=tuple(pending),
         rows=rows,
-        collisions=_collisions(converted, origins, signatures),
+        collisions=collisions(
+            [(note.pitch, note.channel, note.start) for note in converted], origins, signatures
+        ),
         decisions=tuple(decisions),
     )
 
 
-def _collisions(
-    notes: Sequence[Note], origins: Sequence[tuple[str, int, int]], signatures: TimeSignatureMap
+def collisions(
+    notes: Sequence[tuple[int, int, int]],
+    origins: Sequence[tuple[str, int, int]],
+    signatures: TimeSignatureMap,
 ) -> tuple[Collision, ...]:
     """Ticks where converted notes from different source notes start on one pitch and channel.
-    Notes that already shared a pitch and channel in the source are not a collision."""
+
+    Each note is its `(pitch, channel, start)` in the target, and its origin is its source
+    articulation, channel and pitch. Notes that already shared a pitch and channel in the source
+    are not a collision. The renderer reports its own with this, at the score's ticks.
+    """
     places: dict[tuple[int, int, int], list[int]] = {}
-    for index, note in enumerate(notes):
-        places.setdefault((note.pitch, note.channel, note.start), []).append(index)
+    for index, place in enumerate(notes):
+        places.setdefault(place, []).append(index)
     met: dict[tuple[int, int], tuple[list[int], list[int]]] = {}
     for (pitch, channel, start), indexes in places.items():
         if len({origins[index][1:] for index in indexes}) > 1:

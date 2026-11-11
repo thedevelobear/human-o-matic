@@ -12,8 +12,9 @@ request's `answer_with` names (ADR 0033).
 
 `render` does the same, then renders the drums by a plan and writes them to a new MIDI file,
 through `--to-map` when given, and prints its summary and each section's statistics instead
-(ADR 0054). Its answers file also takes `substitutions`, and `--plan` names a JSON file of the
-song's controls and each section's. It writes nothing while a request is open.
+(ADR 0054), the summary saying how the notes were placed in the target kit (ADR 0075). Its
+answers file also takes `substitutions`, and `--plan` names a JSON file of the song's controls
+and each section's. It writes nothing while a request is open.
 
 The exit code is 0 when no request is open and 3 when one is, with the JSON printed either way.
 A usage error, such as a map that doesn't exist, a `--bpm` outside `MIN_BPM` to `MAX_BPM`, or an
@@ -57,7 +58,7 @@ from human_o_matic.render.engine import render
 from human_o_matic.render.guards import GuardCounts
 from human_o_matic.render.measure import SectionStats, section_stats
 from human_o_matic.render.style import STYLE_NAMES, built_in_styles
-from human_o_matic.render.target import place_score
+from human_o_matic.render.target import ConversionReport, place_score
 
 EXIT_OPEN = 3
 """The exit code when a decision request is open."""
@@ -521,6 +522,9 @@ class RenderSummary(BaseModel):
     seed: int
     notes: RenderedNotes
     guards: GuardCounts
+    conversion: ConversionReport
+    """How the notes were placed in `to_kit`: the articulations written as another, the drums
+    that land on one pitch, and the names read or written at `low` confidence (ADR 0075)."""
 
 
 class RenderedSection(BaseModel):
@@ -609,7 +613,9 @@ def render_song(
             "--to-map",
             metavar="LIBRARY[/KIT]",
             help="The built-in map to write to, from those listed below: the kit of the drum "
-            "instrument that will play the file. Left out, the file's own.",
+            "instrument that will play the file. Left out, the file's own. The summary's "
+            "conversion counts the notes written as another articulation, the drums that land "
+            "on one pitch, and the names read or written at low confidence.",
         ),
     ] = None,
     track: Annotated[
@@ -771,6 +777,7 @@ def render_song(
             dropped=len(normalized.dropped) + len(placement.dropped),
         ),
         guards=rendered.guards,
+        conversion=placement.report,
     )
     sections = [
         RenderedSection(
