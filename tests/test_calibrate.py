@@ -120,6 +120,34 @@ def test_a_performed_groove_has_the_spread_and_feel_of_its_offsets(
     assert groove.at_one_offset <= 0.2
 
 
+def test_the_rider_noise_is_the_spread_about_each_class_s_mean(
+    tmp_path: Path, kit: DrumKit
+) -> None:
+    # 8th hats: the strong quarters, with the snare, about 104, the weak ones about 100 and the
+    # offbeats about 96, each class swinging by its own step either side of its mean, too close
+    # together to cluster into hit types.
+    notes = beat_notes(4)
+    seen: dict[str, int] = {}
+    velocities: list[int] = []
+    for tick, pitch in notes:
+        place = tick % BAR
+        kind = "off" if place % PPQ else "strong" if place // PPQ % 2 else "weak"
+        if pitch != HAT:
+            velocities.append(100)
+            continue
+        center, step = {"strong": (104, 3), "weak": (100, 2), "off": (96, 1)}[kind]
+        turn = seen.get(kind, 0)
+        seen[kind] = turn + 1
+        velocities.append(center + (step if turn % 2 else -step))
+
+    (groove,) = measured(write(tmp_path / "riders.mid", notes, velocities=velocities), kit)
+
+    # 8 strong and 8 weak quarters and 16 offbeats: three classes' means taken out.
+    assert groove.detail.rider_noise == pytest.approx(np.sqrt((8 * 9 + 8 * 4 + 16 * 1) / 29))
+    assert groove.detail.alternating_noise == pytest.approx(np.sqrt((8 * 9 + 8 * 4) / 14))
+    assert groove.detail.rider_gap == pytest.approx(4.0)
+
+
 def test_a_quantized_groove_is_on_the_grid_and_keeps_its_velocities(
     tmp_path: Path, kit: DrumKit
 ) -> None:
