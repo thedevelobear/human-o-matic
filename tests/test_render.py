@@ -508,14 +508,15 @@ def test_a_quarter_note_ride_turns_up_and_down_clearly(style: StyleName) -> None
     assert share >= TURNS, share
 
 
-TOP_GAP = 5.5
-TOP_TURNS = 0.79
+TOP_GAP = 7.8
+TOP_TURNS = 0.815
 """The least rider gap and share of turns of `ride_takes` from energy 0.8 up. With the strong hits
-held at 127 (ADR 0077), simulated over 30 seeds, one 256-bar take at energy 0.9 and 1.0 has a gap
-of 6.6, spread 0.62, and turns 0.82 of the time, spread 0.017, where letting them pass 127, to be
-reflected below it, gave 4.8 and 0.5, and 0.79 and 0.73. At 0.8 both give 7.6 and 0.83, and at
-0.5, 9.1 and 0.84. The mean of four takes spreads about half as far as one, so each floor is
-about 3.5 of its spreads under the held gap and turns."""
+held a spread of their noise under 127 (ADR 0077), simulated over 30 seeds, one 256-bar take at
+energy 0.8 to 1.0 has a gap of 8.3, spread 0.29, and turns 0.84 of the time, spread 0.014, where
+letting them pass 127, to be reflected below it, gave gaps of 7.6, 4.8 and 0.5 at 0.8, 0.9 and
+1.0, and turns 0.83, 0.79 and 0.73. At 0.5 both give 9.1 and 0.84. The mean of four takes
+spreads about half as far as one, so each floor is about 3.6 of its spreads under the held gap
+and turns."""
 
 
 @pytest.mark.parametrize("energy", [0.8, 0.9, 1.0])
