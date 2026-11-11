@@ -12,15 +12,15 @@ Timing, in turn:
    would start before tick 0, its main note goes later with it, so the grace starts at tick 0
    and keeps its gap, up to the cap: past it, the gap is shortened, and `unmet` counts it. A
    main note and its graces keep their order, a tick or more apart.
-5. In time order, a note after another of its pitch in its own section, or after a note played as
-   it came in, keeps `MIN_GAP_SHARE` of their grid gap and at least a tick, by moving later with
-   its main note and graces. A note before one played as it came in keeps it by moving earlier.
-   The gap is counted in milliseconds through the tempo map, as the cap is, and a main note and
-   its graces move by one shift in milliseconds, so they keep one offset. So between two notes
-   of a section the gap never takes a note past the cap (ADR 0073). When a note can't keep both
-   gaps, the one from the note before wins, and `unmet` counts it. Next to a note played as it
-   came in, the cap wins over the gap, so the note stops at the cap with less of its gap, a tick
-   or more from the kept note, and `unmet` counts it, not `gap`.
+5. In each pitch's play order, a note after another of its pitch in its own section, or after a
+   note played as it came in, keeps `MIN_GAP_SHARE` of their grid gap and at least a tick, by
+   moving later with its main note and graces. A note before one played as it came in keeps it
+   by moving earlier. The gap is counted in milliseconds through the tempo map, as the cap is,
+   and a main note and its graces move by one shift in milliseconds, so they keep one offset. So
+   between two notes of a section the gap never takes a note past the cap (ADR 0073). When a
+   note can't keep both gaps, the one from the note before wins, and `unmet` counts it. Next to
+   a note played as it came in, the cap wins over the gap, so the note stops at the cap with
+   less of its gap, a tick or more from the kept note, and `unmet` counts it, not `gap`.
 6. A note a controller value decides or shapes stays within its window, between the controller
    events around its source note (ADR 0053), which wins over the gap.
 7. Each note keeps its source length, at least a tick, and ends by the time the next note of its
@@ -46,6 +46,7 @@ moved into the target's range, and the guards work around them.
 
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
+from heapq import heapify, heappop, heappush
 from itertools import pairwise
 from math import ceil, floor
 
@@ -192,6 +193,7 @@ def hold_timing(
     members: dict[int, list[int]] = {}
     for position, unit in enumerate(unit_of):
         members.setdefault(unit, []).append(position)
+    previous = _previous(slots, unit_of)
     lowest = np.full(count, -MAX_OFFSET_MS)
     for unit, held in members.items():
         if slots[unit].kept:
@@ -237,10 +239,9 @@ def hold_timing(
     # of theirs with the shortest tick, and what bounds it wins in this order: the controller
     # window; then a tick after a kept note before it and a tick before a kept note after it, so
     # notes never reorder; then the cap, over the gap to a kept note; then the gap from the note
-    # before over the gap to a kept note after.
-    last: dict[Key, int] = {}
-    order = sorted(members, key=lambda unit: (min(slots[m].tick for m in members[unit]), unit))
-    for unit in order:
+    # before over the gap to a kept note after. Each unit is taken after the notes before its own
+    # on their pitches, so a gap is counted from where that note ends up.
+    for unit in _unit_order(slots, members, unit_of, previous):
         held = members[unit]
         if not slots[unit].kept:
             counted = _counted_in(tempos, starts, held, unit)
@@ -262,18 +263,18 @@ def hold_timing(
                 capped_high = min(
                     capped_high, _shift_to(tempos, int(cap_high[member]), here, base, upper=True)
                 )
-                previous = last.get(slot.key)
-                if previous is not None and (
-                    slots[previous].kept or slots[previous].section == slot.section
+                before = previous[member]
+                if before is not None and (
+                    slots[before].kept or slots[before].section == slot.section
                 ):
-                    gap = MIN_GAP_SHARE * float(grid_ms[member] - grid_ms[previous])
+                    gap = MIN_GAP_SHARE * float(grid_ms[member] - grid_ms[before])
                     least = _shift_to(
-                        tempos, _first_after(tempos, int(starts[previous]), gap), here, base
+                        tempos, _first_after(tempos, int(starts[before]), gap), here, base
                     )
-                    if slots[previous].kept:
+                    if slots[before].kept:
                         kept_low = max(kept_low, least)
                         order_low = max(
-                            order_low, _shift_to(tempos, int(starts[previous]) + 1, here, base)
+                            order_low, _shift_to(tempos, int(starts[before]) + 1, here, base)
                         )
                     else:
                         before_low = max(before_low, least)
@@ -321,8 +322,6 @@ def hold_timing(
                     )
                 if len(held) > 1:
                     _keep_order(starts, held, places)
-        for member in held:
-            last[slots[member].key] = member
 
     ends = np.zeros(count, dtype=np.int64)
     off_orders = [slot.off_order for slot in slots]
@@ -358,6 +357,58 @@ def _places(slots: Sequence[Slot], grid_ms: FloatArray, tempos: TempoMap) -> Flo
             gap = tempos.tick_to_ms(main.source.start) - tempos.tick_to_ms(slot.source.start)
             places[position] = grid_ms[slot.main] - gap
     return places
+
+
+def _previous(slots: Sequence[Slot], unit_of: Sequence[int]) -> list[int | None]:
+    """For each note, the note before it in play order on its pitch, passing over its own main
+    note and graces, which keep their order apart."""
+    previous: list[int | None] = [None] * len(slots)
+    for sequence in _sequences([slot.key for slot in slots]):
+        for prior, position in pairwise(sequence):
+            previous[position] = previous[prior] if unit_of[prior] == unit_of[position] else prior
+    return previous
+
+
+def _unit_order(
+    slots: Sequence[Slot],
+    members: dict[int, list[int]],
+    unit_of: Sequence[int],
+    previous: Sequence[int | None],
+) -> list[int]:
+    """The units in the order the gap is held in: each after the units of the notes before its
+    own on their pitches, and otherwise by its first tick. Two notes of one pitch on one grid
+    point, the later with a grace, so keep their play order. Should the notes before ever loop
+    back, the first unit by tick left goes next."""
+
+    def key(unit: int) -> tuple[int, int]:
+        return min(slots[member].tick for member in members[unit]), unit
+
+    waiting: dict[int, int] = {}
+    unblocks: dict[int, list[int]] = {unit: [] for unit in members}
+    for unit, held in members.items():
+        needs = {unit_of[before] for member in held if (before := previous[member]) is not None}
+        needs.discard(unit)
+        waiting[unit] = len(needs)
+        for need in needs:
+            unblocks[need].append(unit)
+    ready = [key(unit) for unit, count in waiting.items() if not count]
+    heapify(ready)
+    order: list[int] = []
+    done: set[int] = set()
+    while len(order) < len(members):
+        if ready:
+            _, unit = heappop(ready)
+            if unit in done:
+                continue
+        else:
+            unit = min((left for left in members if left not in done), key=key)
+        order.append(unit)
+        done.add(unit)
+        for after in unblocks[unit]:
+            waiting[after] -= 1
+            if not waiting[after] and after not in done:
+                heappush(ready, key(after))
+    return order
 
 
 def _keep_order(starts: IntArray, held: Sequence[int], places: FloatArray) -> None:
