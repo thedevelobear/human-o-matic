@@ -20,7 +20,9 @@ A quarter-note ride's gap, strong less weak, before and with the rule, as the me
 | 1, before | 13.9 | 9.1 | 5.1 | 2.7 | 0.3 |
 | 1, held | 13.9 | 13.2 | 13.2 | 13.2 | 13.2 |
 
-At the defaults the ride changes direction on 0.85, 0.83, 0.79, 0.76 and 0.74 of its moves before, and on 0.85 and then 0.84 from 0.8 up with the rule, its strong hits about 123.9 and its weak 115.6 at full energy. The gap falls short of its nominal value by what the song's energy drift, SD 2, and the noise still reflect, most at `dynamic_range` 0, whose margin is 1.25.
+At the defaults the ride changes direction on 0.85, 0.83, 0.79, 0.76 and 0.74 of its moves before, and on 0.85 and then 0.84 from 0.8 up with the rule, its strong hits about 123.9 and its weak 115.6 at full energy. The gap falls short of its nominal value by what the song's energy drift, SD 2, and the noise still reflect, most at `dynamic_range` 0, whose margin is 1.25. There the margin is below the drift's spread, so the full-energy gap averages 3.2 of 4, but a few of the 8-bar sections still invert: over 640 of them, 3.6% had their weak hits louder and 7.5% a gap under 1, with a mean of 3.13, where at `dynamic_range` 0.5 none had a gap under 2. Folding the drift into the margin, about 2.4 there, would hold them, at about 1.1 off the full-energy ride's level, and is left for a later decision.
+
+An accent-typed strong rider hit still adds its accent, 2 to 8 by energy at the default `groove`, to `top`, and is reflected at 127 as before.
 
 **Why:** The fitted rider center at energy 1.0, 126.78, is far above Appendix A's 114, so half the gap above it took the strong hits past 127, and reflecting them put them under the weak ones: the alternation vanished at full power, the setting a breakdown asks for. Holding the strong center at 127 alone left a gap of 6.5 of 9, since half the strong hits' noise was reflected. A spread of their noise below it keeps most of the gap, and moving the weak hits down with it changes no other note or value.
 
