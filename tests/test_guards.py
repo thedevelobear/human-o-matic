@@ -1,17 +1,24 @@
-"""The guards on slots built by hand: each rule, and what each counts (ADR 0050)."""
+"""The guards on slots built by hand: each rule, and what each counts (ADRs 0050 and 0073)."""
 
 from dataclasses import replace
+from itertools import pairwise
 from math import ceil
 
 import numpy as np
+import pytest
 
 from human_o_matic.midi.io import Note
-from human_o_matic.midi.tempo import TempoMap
+from human_o_matic.midi.tempo import IntArray, TempoMap
 from human_o_matic.render.guards import Slot, Tally, hold_timing, hold_velocity
 
 PPQ = 960
 TEMPO = TempoMap.constant(PPQ, 120)
 """A tick is 0.52 ms."""
+FAST, SLOW = 100_000, 1_000_000
+"""600 and 60 BPM in microseconds per quarter note, where a tick is 0.10 ms and 1.04 ms."""
+CAP_MS = 12.0
+ROUNDING_MS = 1e-6
+"""Float rounding in the conversions between ticks and milliseconds."""
 
 
 def slot(
@@ -236,3 +243,64 @@ def test_the_cap_wins_over_the_gap_before_a_kept_note_played_early() -> None:
     assert timed.starts[0] < 1106
     counts = tally.frozen()
     assert (counts.unmet, counts.gap) == (1, 0)
+
+
+def held_to_the_cap_and_the_gap(slots: list[Slot], starts: IntArray, tempos: TempoMap) -> None:
+    """Each note is within the cap, plus half a tick of the tempo where it lands for going to
+    a tick, and keeps 0.6 of its grid gap from the note before it, both in milliseconds."""
+    played = tempos.ticks_to_ms(starts)
+    grid = tempos.ticks_to_ms(np.array([slot.tick for slot in slots], dtype=np.int64))
+    for start, offset in zip(starts, played - grid, strict=True):
+        tick = max(tempos.ms_per_tick(max(int(start) - 1, 0)), tempos.ms_per_tick(int(start)))
+        assert abs(offset) <= CAP_MS + tick / 2 + ROUNDING_MS
+    for earlier, later in pairwise(range(len(slots))):
+        kept = played[later] - played[earlier]
+        assert kept >= 0.6 * (grid[later] - grid[earlier]) - ROUNDING_MS
+
+
+def test_the_gap_across_a_tempo_change_leaves_the_later_note_within_the_cap() -> None:
+    # 600 BPM up to tick 180 and 60 after it. The first snare, 12 ms late, is on tick 115, and
+    # its grid gap to the second is 81.25 ms. Counted in ticks, 0.6 of the 240 took the second
+    # to tick 259, 19.8 ms late. Counted in milliseconds, 48.75, it stays where it was drawn,
+    # 12 ms early, on its nearest tick.
+    tempos = TempoMap(PPQ, [0, 180], [FAST, SLOW])
+    slots = [slot(0, order=1), slot(240, order=2)]
+    tally = Tally()
+
+    timed = hold_timing(slots, np.array([12.0, -12.0]), tempos, tally)
+
+    assert list(timed.starts) == [115, 228]
+    held_to_the_cap_and_the_gap(slots, timed.starts, tempos)
+    counts = tally.frozen()
+    assert (counts.gap, counts.unmet) == (0, 0)
+
+
+@pytest.mark.parametrize(
+    ("ticks", "tempos"),
+    [
+        pytest.param([0, 180], [FAST, SLOW], id="slower-between-the-notes"),
+        pytest.param([0, 180], [SLOW, FAST], id="faster-between-the-notes"),
+        pytest.param([0, 240], [FAST, SLOW], id="slower-on-a-grid-point"),
+        pytest.param([0, 240], [SLOW, FAST], id="faster-on-a-grid-point"),
+        pytest.param([0, 60], [FAST, SLOW], id="slower-before-the-first-is-played"),
+        pytest.param([0, 60], [SLOW, FAST], id="faster-before-the-first-is-played"),
+        pytest.param([0, 180, 230], [FAST, SLOW, FAST], id="slower-for-50-ticks"),
+        pytest.param([0, 180, 230], [SLOW, FAST, SLOW], id="faster-for-50-ticks"),
+    ],
+)
+def test_notes_keep_their_gap_in_milliseconds_and_the_cap_across_a_tempo_change(
+    ticks: list[int], tempos: list[int]
+) -> None:
+    # Snares a 16th or a 32nd apart, drawn at the cap either way, around changes of 10 to 1:
+    # the gap never takes a note past the cap, and no note is short of its gap.
+    tempo_map = TempoMap(PPQ, ticks, tempos)
+    drawn = [(12.0, -12.0), (12.0, 12.0), (-12.0, -12.0), (12.0, -12.0, -12.0), (12.0, 12.0, -12.0)]
+    for step in (240, 120):
+        for offsets in drawn:
+            slots = [slot(number * step, order=number + 1) for number in range(len(offsets))]
+            tally = Tally()
+
+            timed = hold_timing(slots, np.array(offsets), tempo_map, tally)
+
+            held_to_the_cap_and_the_gap(slots, timed.starts, tempo_map)
+            assert tally.frozen().unmet == 0

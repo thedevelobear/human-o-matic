@@ -15,9 +15,11 @@ Timing, in turn:
 5. In time order, a note after another of its pitch in its own section, or after a note played as
    it came in, keeps `MIN_GAP_SHARE` of their grid gap and at least a tick, by moving later with
    its main note and graces. A note before one played as it came in keeps it by moving earlier.
-   When it can't keep both, the gap from the note before wins, and `unmet` counts it. Next to a
-   note played as it came in, the cap wins over the gap, so the note stops at the cap with less
-   of its gap, a tick or more from the kept note, and `unmet` counts it, not `gap`.
+   The gap is counted in milliseconds through the tempo map, as the cap is, so between two notes
+   of a section it never takes the later past the cap (ADR 0073). When a note can't keep both
+   gaps, the one from the note before wins, and `unmet` counts it. Next to a note played as it
+   came in, the cap wins over the gap, so the note stops at the cap with less of its gap, a tick
+   or more from the kept note, and `unmet` counts it, not `gap`.
 6. A note a controller value decides or shapes stays within its window, between the controller
    events around its source note (ADR 0053), which wins over the gap.
 7. Each note keeps its source length, at least a tick, and ends by the time the next note of its
@@ -44,7 +46,7 @@ moved into the target's range, and the guards work around them.
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
 from itertools import pairwise
-from math import ceil
+from math import ceil, floor
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict
@@ -55,13 +57,18 @@ from human_o_matic.midi.tempo import FloatArray, IntArray, TempoMap
 MAX_OFFSET_MS = 12.0
 """The cap on an offset from the grid, either way (Appendix A)."""
 MIN_GAP_SHARE = 0.6
-"""The share of its grid gap a note keeps from the note before it on its pitch (Appendix A)."""
+"""The share of its grid gap a note keeps from the note before it on its pitch, in milliseconds
+(Appendix A)."""
 BOUNDARY_SHARE = (1 - MIN_GAP_SHARE) / 2
 """How far into their grid gap each of two notes on one pitch across a boundary may move."""
 MAX_NUDGE = 16
 """How far a velocity is searched either way for one that fits."""
 _FAR = 2**62
 """Further than any shift, for a side a note is free on."""
+_ROUNDING = 1e-6
+"""How far, in ticks, a tick worked out through milliseconds may be off a whole tick by float
+rounding and still be taken as it. At one tempo, ticks and milliseconds are in proportion, so
+the gap is the same whole number of ticks it would be counted in ticks."""
 
 type Drum = tuple[str, int]
 type Key = tuple[int, int]
@@ -255,8 +262,8 @@ def hold_timing(
                 if previous is not None and (
                     slots[previous].kept or slots[previous].section == slot.section
                 ):
-                    grid = slot.tick - slots[previous].tick
-                    least = int(starts[previous]) + max(1, ceil(MIN_GAP_SHARE * grid))
+                    gap = MIN_GAP_SHARE * float(grid_ms[member] - grid_ms[previous])
+                    least = _first_after(tempos, int(starts[previous]), gap)
                     if slots[previous].kept:
                         kept_low = max(kept_low, least - here)
                         order_low = max(order_low, int(starts[previous]) + 1 - here)
@@ -264,8 +271,8 @@ def hold_timing(
                         before_low = max(before_low, least - here)
                 after = kept_after.get(member)
                 if after is not None:
-                    grid = slots[after].tick - slot.tick
-                    most = int(starts[after]) - max(1, ceil(MIN_GAP_SHARE * grid))
+                    gap = MIN_GAP_SHARE * float(grid_ms[after] - grid_ms[member])
+                    most = _last_before(tempos, int(starts[after]), gap)
                     kept_high = min(kept_high, most - here)
                     order_high = min(order_high, int(starts[after]) - 1 - here)
                 if slot.window is not None:
@@ -328,6 +335,18 @@ def _places(slots: Sequence[Slot], grid_ms: FloatArray, tempos: TempoMap) -> Flo
             gap = tempos.tick_to_ms(main.source.start) - tempos.tick_to_ms(slot.source.start)
             places[position] = grid_ms[slot.main] - gap
     return places
+
+
+def _first_after(tempos: TempoMap, tick: int, gap_ms: float) -> int:
+    """The first tick `gap_ms` or more after `tick`, and a tick or more after it."""
+    at = tempos.ms_to_tick(tempos.tick_to_ms(tick) + gap_ms)
+    return max(tick + 1, ceil(at - _ROUNDING))
+
+
+def _last_before(tempos: TempoMap, tick: int, gap_ms: float) -> int:
+    """The last tick `gap_ms` or more before `tick`, and a tick or more before it."""
+    at = tempos.ms_to_tick(tempos.tick_to_ms(tick) - gap_ms)
+    return min(tick - 1, floor(at + _ROUNDING))
 
 
 def _earliest(slot: Slot, tick: int) -> int:
