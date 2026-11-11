@@ -19,6 +19,6 @@ class Instrument(Protocol):
         """Each note's part, in the order of `Score.notes`."""
         ...
 
-    def compile(self, controls: Controls, style: Style) -> Params:
-        """A section's parameters."""
+    def compile(self, controls: Controls, style: Style, bpm: float) -> Params:
+        """A section's parameters at its tempo, `bpm`."""
         ...

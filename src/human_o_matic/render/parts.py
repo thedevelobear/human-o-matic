@@ -33,7 +33,7 @@ ROLES: tuple[Role, ...] = (
 )
 LIMBS: tuple[Limb, ...] = ("snare", "rider", "other")
 METRIC_LEVELS = 4
-"""A fill note is on a quarter note (0), an 8th (1), a 16th (2) or none of them (3)."""
+"""A note is on a quarter note (0), an 8th (1), a 16th (2) or none of them (3)."""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -49,7 +49,9 @@ class Part:
     foot: int = 0
     """For double kick, +1 for the right foot and -1 for the left."""
     metric: int = 0
-    """For a fill note, its metric level, from 0 for a quarter note."""
+    """Its metric level, counted from the bar: 0 on a quarter note, 1 on an 8th, 2 on a 16th and
+    3 elsewhere. A fill's notes take the style's fill accents by it, and the others its metric
+    velocity."""
     hand: int = 0
     """For a fill note, +1 and -1 by turns."""
     crescendo: float = 0.0

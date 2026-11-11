@@ -1,6 +1,6 @@
 # 0050. The guards hold every backend's draws, and never make a section depend on another's
 
-- **Status:** Proposed
+- **Status:** Accepted. Its same-pitch gap is amended by [ADR 0073](0073-the-gap-is-counted-in-milliseconds-through-the-tempo-map.md)
 - **Date:** 2026-11-09
 
 - `render/guards.py` runs after the song's drifts, on every backend's draws. **Timing**, in turn:

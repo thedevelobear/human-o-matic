@@ -1,6 +1,6 @@
 # 0051. The `tight` style's placeholders are Appendix A with the values it leaves out filled in
 
-- **Status:** Proposed
+- **Status:** Accepted. Its rendering from the placeholders is amended by [ADR 0070](0070-the-engine-reads-the-styles-from-data-styles.md), and its values, where fitted, by [ADR 0068](0068-what-calibration-fits-and-what-stays-modelled.md)
 - **Date:** 2026-11-09
 
 - Until calibration replaces them, the engine renders with one style, `tight`, built in code in `render/style.py` and marked `placeholder`. No file in `data/styles/` exists yet, so nothing on disk looks calibrated, and `medium` and `loose` arrive with calibration ([ADR 0044](0044-m3-ships-tight-medium-and-loose-styles-pooled-by-tightness.md)). Calibration loads its TOML files into the same `Style` model, extending it where it fits by metric level and tempo band, and checks its values against this table.

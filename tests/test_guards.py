@@ -1,17 +1,24 @@
-"""The guards on slots built by hand: each rule, and what each counts (ADR 0050)."""
+"""The guards on slots built by hand: each rule, and what each counts (ADRs 0050 and 0073)."""
 
 from dataclasses import replace
+from itertools import pairwise
 from math import ceil
 
 import numpy as np
+import pytest
 
 from human_o_matic.midi.io import Note
-from human_o_matic.midi.tempo import TempoMap
+from human_o_matic.midi.tempo import IntArray, TempoMap
 from human_o_matic.render.guards import Slot, Tally, hold_timing, hold_velocity
 
 PPQ = 960
 TEMPO = TempoMap.constant(PPQ, 120)
 """A tick is 0.52 ms."""
+FAST, SLOW = 100_000, 1_000_000
+"""600 and 60 BPM in microseconds per quarter note, where a tick is 0.10 ms and 1.04 ms."""
+CAP_MS = 12.0
+ROUNDING_MS = 1e-6
+"""Float rounding in the conversions between ticks and milliseconds."""
 
 
 def slot(
@@ -236,3 +243,182 @@ def test_the_cap_wins_over_the_gap_before_a_kept_note_played_early() -> None:
     assert timed.starts[0] < 1106
     counts = tally.frozen()
     assert (counts.unmet, counts.gap) == (1, 0)
+
+
+def held_to_the_cap_and_the_gap(slots: list[Slot], starts: IntArray, tempos: TempoMap) -> None:
+    """Each note is within the cap, plus half a tick of the tempo where it lands for going to
+    a tick, and keeps 0.6 of its grid gap from the note before it, both in milliseconds."""
+    played = tempos.ticks_to_ms(starts)
+    grid = tempos.ticks_to_ms(np.array([slot.tick for slot in slots], dtype=np.int64))
+    for start, offset in zip(starts, played - grid, strict=True):
+        tick = max(tempos.ms_per_tick(max(int(start) - 1, 0)), tempos.ms_per_tick(int(start)))
+        assert abs(offset) <= CAP_MS + tick / 2 + ROUNDING_MS
+    for earlier, later in pairwise(range(len(slots))):
+        kept = played[later] - played[earlier]
+        assert kept >= 0.6 * (grid[later] - grid[earlier]) - ROUNDING_MS
+
+
+def test_the_gap_across_a_tempo_change_leaves_the_later_note_within_the_cap() -> None:
+    # 600 BPM up to tick 180 and 60 after it. The first snare, 12 ms late, is on tick 115, and
+    # its grid gap to the second is 81.25 ms. Counted in ticks, 0.6 of the 240 took the second
+    # to tick 259, 19.8 ms late. Counted in milliseconds, 48.75, it stays where it was drawn,
+    # 12 ms early, on its nearest tick.
+    tempos = TempoMap(PPQ, [0, 180], [FAST, SLOW])
+    slots = [slot(0, order=1), slot(240, order=2)]
+    tally = Tally()
+
+    timed = hold_timing(slots, np.array([12.0, -12.0]), tempos, tally)
+
+    assert list(timed.starts) == [115, 228]
+    held_to_the_cap_and_the_gap(slots, timed.starts, tempos)
+    counts = tally.frozen()
+    assert (counts.gap, counts.unmet) == (0, 0)
+
+
+@pytest.mark.parametrize(
+    ("ticks", "tempos"),
+    [
+        pytest.param([0, 180], [FAST, SLOW], id="slower-between-the-notes"),
+        pytest.param([0, 180], [SLOW, FAST], id="faster-between-the-notes"),
+        pytest.param([0, 240], [FAST, SLOW], id="slower-on-a-grid-point"),
+        pytest.param([0, 240], [SLOW, FAST], id="faster-on-a-grid-point"),
+        pytest.param([0, 60], [FAST, SLOW], id="slower-before-the-first-is-played"),
+        pytest.param([0, 60], [SLOW, FAST], id="faster-before-the-first-is-played"),
+        pytest.param([0, 180, 230], [FAST, SLOW, FAST], id="slower-for-50-ticks"),
+        pytest.param([0, 180, 230], [SLOW, FAST, SLOW], id="faster-for-50-ticks"),
+    ],
+)
+def test_notes_keep_their_gap_in_milliseconds_and_the_cap_across_a_tempo_change(
+    ticks: list[int], tempos: list[int]
+) -> None:
+    # Snares a 16th or a 32nd apart, drawn at the cap either way, around changes of 10 to 1:
+    # the gap never takes a note past the cap, and no note is short of its gap.
+    tempo_map = TempoMap(PPQ, ticks, tempos)
+    drawn = [(12.0, -12.0), (12.0, 12.0), (-12.0, -12.0), (12.0, -12.0, -12.0), (12.0, 12.0, -12.0)]
+    for step in (240, 120):
+        for offsets in drawn:
+            slots = [slot(number * step, order=number + 1) for number in range(len(offsets))]
+            tally = Tally()
+
+            timed = hold_timing(slots, np.array(offsets), tempo_map, tally)
+
+            held_to_the_cap_and_the_gap(slots, timed.starts, tempo_map)
+            assert tally.frozen().unmet == 0
+
+
+def test_a_main_note_across_a_tempo_change_moves_with_its_grace_in_milliseconds() -> None:
+    # 600 BPM up to tick 1600 and 60 after it. The grace on tick 1440 keeps its gap from the
+    # snare before it by moving about 14 ms later. Moved by the same 134 ticks, its main on tick
+    # 1680 would go 127 ms late. Moved by the same milliseconds, it keeps the grace's offset, to
+    # within the tick each went to.
+    tempos = TempoMap(PPQ, [0, 1600], [FAST, SLOW])
+    slots = [slot(1200, order=1), replace(slot(1440, order=2), main=2), slot(1680, order=3)]
+    tally = Tally()
+
+    timed = hold_timing(slots, np.array([12.0, -12.0, -12.0]), tempos, tally)
+
+    held_to_the_cap_and_the_gap(slots, timed.starts, tempos)
+    grid = tempos.ticks_to_ms(np.array([1440, 1680]))
+    grace, main = tempos.ticks_to_ms(timed.starts[1:]) - grid
+    assert grace > 0
+    assert abs(grace - main) <= tempos.ms_per_tick(1680)
+    counts = tally.frozen()
+    assert (counts.gap, counts.unmet) == (1, 0)
+
+
+def test_a_unit_s_shift_is_counted_in_the_shortest_tick_of_its_notes() -> None:
+    # 600 BPM up to tick 1600 and 60 after it. The grace shares its grid point with the snare
+    # before it, 12 ms late, so it keeps a tick after it, 0.10 ms, and its main hardly moves.
+    # Counted in its main's ticks, past the change, the shift would be 1.04 ms, and take the
+    # grace and its main 1 ms and 1.5 ms past the cap.
+    tempos = TempoMap(PPQ, [0, 1600], [FAST, SLOW])
+    slots = [slot(1440, order=1), replace(slot(1440, order=2), main=2), slot(1680, order=3)]
+    tally = Tally()
+
+    timed = hold_timing(slots, np.array([12.0, 12.0, 12.0]), tempos, tally)
+
+    assert list(timed.starts) == [1555, 1556, 1692]
+    _, grace, main = tempos.ticks_to_ms(timed.starts) - tempos.ticks_to_ms([1440, 1440, 1680])
+    assert grace <= CAP_MS + tempos.ms_per_tick(1556)
+    assert main <= CAP_MS + tempos.ms_per_tick(1692) / 2
+    counts = tally.frozen()
+    assert (counts.gap, counts.unmet) == (1, 0)
+
+
+def test_two_notes_on_one_grid_point_across_a_boundary_land_a_tick_apart() -> None:
+    # Each keeps to its side of a grid gap of 0, so both were held to the grid point, on one tick.
+    # The later keeps a tick after it, whatever either section draws.
+    slots = [slot(1000, order=1), slot(1000, section=1, order=2)]
+    tally = Tally()
+
+    timed = hold_timing(slots, np.array([12.0, -12.0]), TEMPO, tally)
+
+    assert list(timed.starts) == [1000, 1001]
+    assert timed.ends[0] <= timed.starts[1]
+    counts = tally.frozen()
+    assert (counts.gap, counts.unmet) == (1, 0)
+
+
+@pytest.mark.parametrize(
+    ("ticks", "starts"),
+    [
+        pytest.param([1000, 1000, 1240], [1047, 1048, 1192], id="on-one-grid-point"),
+        pytest.param([1000, 1120, 1240], [1072, 1144, 1216], id="a-32nd-apart"),
+    ],
+)
+def test_notes_before_a_boundary_leave_the_last_its_side_of_the_gap(
+    ticks: list[int], starts: list[int]
+) -> None:
+    # At 600 BPM, two snares at the end of a section, then one a 16th or a 32nd later in the next.
+    # The last of the section may go 0.2 of its gap to the next late, 5 ms or 2.5 ms. Pushed
+    # after the first, drawn 12 ms late, it went past that, and the next section's note, at its
+    # side early, kept under 0.6 of their gap. The first is held where the last keeps both.
+    tempos = TempoMap.constant(PPQ, 600)
+    slots = [slot(ticks[0], order=1), slot(ticks[1], order=2), slot(ticks[2], section=1, order=3)]
+    tally = Tally()
+
+    timed = hold_timing(slots, np.array([12.0, 12.0, -12.0]), tempos, tally)
+
+    assert list(timed.starts) == starts
+    assert timed.starts[2] - timed.starts[1] >= ceil(0.6 * (ticks[2] - ticks[1]))
+    held_to_the_cap_and_the_gap(slots, timed.starts, tempos)
+    counts = tally.frozen()
+    assert (counts.gap, counts.unmet) == (1, 0)
+
+
+def test_two_notes_on_one_grid_point_keep_their_play_order_when_the_later_has_a_grace() -> None:
+    # A sidestick grace before the second of two snares on one grid point. Taken by its first
+    # tick, the grace's, the second snare kept its place, and the first, drawn later, went after
+    # it. Taken after the first, the second keeps a tick after it, with its grace.
+    grace = replace(slot(230, order=1), pitch=37, main=2)
+    slots = [grace, slot(240, start=230, order=2), slot(240, order=3)]
+    tally = Tally()
+
+    timed = hold_timing(slots, np.array([0.0, 6.0, 0.0]), TEMPO, tally)
+
+    assert list(timed.starts) == [243, 252, 253]
+    assert timed.ends[1] <= timed.starts[2]
+    counts = tally.frozen()
+    assert (counts.gap, counts.unmet) == (1, 0)
+
+
+def test_a_grace_on_its_main_s_tick_behind_a_note_there_takes_its_main_only_as_far_as_the_cap() -> (
+    None
+):
+    # The score puts the grace on its main's tick, as when a note of its pitch played just before
+    # it is read there, and places it 20 ticks before its main. Following that note, 6 ms late,
+    # the grace took its main to 17 ms. Its main goes with it up to the cap, and the grace on
+    # alone, its gap shortened.
+    slots = [
+        slot(1000, start=975, order=1),
+        replace(slot(1000, start=980, order=2), main=2),
+        slot(1000, order=3),
+    ]
+    tally = Tally()
+
+    timed = hold_timing(slots, np.array([6.0, 0.0, 0.0]), TEMPO, tally)
+
+    assert list(timed.starts) == [1012, 1013, 1023]
+    held_to_the_cap_and_the_gap(slots, timed.starts, TEMPO)
+    counts = tally.frozen()
+    assert (counts.gap, counts.unmet) == (1, 1)

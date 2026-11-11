@@ -42,12 +42,13 @@ from grooves import (
     rock,
     song,
 )
-from human_o_matic.controls import ControlVector, SessionPlan
+from human_o_matic.controls import ControlVector, SessionPlan, StyleName
 from human_o_matic.maps.convert import DROP
 from human_o_matic.midi.io import MidiSong, Note, midi_bytes, parse_midi
 from human_o_matic.normalize.answers import AnswerError
 from human_o_matic.normalize.score import Normalized
 from human_o_matic.render.engine import Rendered, RenderedNote, drift, render
+from human_o_matic.render.style import STYLE_NAMES
 from human_o_matic.render.target import place_score
 from map_files import articulation, load_kit
 from midi_files import MidoMessage, build, cc, end, name, off, on, tempo, track
@@ -55,10 +56,14 @@ from midi_files import MidoMessage, build, cc, end, name, off, on, tempo, track
 FLAM = round(PPQ * 30 / 500)
 """30 ms at 120 BPM: a grace's gap before its main."""
 CUTS = st.lists(st.integers(1, 5), max_size=3)
+STYLES = st.sampled_from(STYLE_NAMES)
+"""Every property holds in every style."""
 CAP_MS = 12.0
 """The plan's cap on an offset from the grid."""
 GAP_SHARE = 0.6
 """The share of its grid gap the plan says a note keeps from the one before it on its pitch."""
+ROUNDING_MS = 1e-6
+"""Float rounding in the conversions between ticks and milliseconds."""
 
 
 def by_key(notes: Sequence[RenderedNote], key: str) -> dict[object, list[RenderedNote]]:
@@ -76,13 +81,13 @@ def drum_notes(midi: MidiSong) -> list[Note]:
     return [note for note in midi.notes if note.track == 0]
 
 
-@given(grooves(), CUTS, st.integers(0, 2**53 - 1))
+@given(grooves(), CUTS, st.integers(0, 2**53 - 1), STYLES)
 def test_the_same_song_plan_and_seed_give_the_same_bytes(
-    hits: list[Hit], cuts: list[int], seed: int
+    hits: list[Hit], cuts: list[int], seed: int, style: StyleName
 ) -> None:
     midi = song(hits)
     result = normalized(midi)
-    plan = plan_for(midi, result, cuts=cuts, seed=seed)
+    plan = plan_for(midi, result, cuts=cuts, seed=seed, style=style)
 
     assert midi_bytes(rendered(midi, plan).song) == midi_bytes(rendered(midi, plan).song)
 
@@ -105,10 +110,11 @@ def test_rendering_one_section_again_leaves_the_others_as_they_were(
 ) -> None:
     midi = song(hits)
     result = normalized(midi)
-    plan = plan_for(midi, result, cuts=cuts)
+    style = data.draw(STYLES, label="style")
+    plan = plan_for(midi, result, cuts=cuts, style=style)
     changed = data.draw(st.integers(0, len(plan.sections) - 1), label="section")
     controls = data.draw(control_vectors(skip=False), label="controls")
-    again = plan_for(midi, result, cuts=cuts, sections={changed: controls})
+    again = plan_for(midi, result, cuts=cuts, sections={changed: controls}, style=style)
 
     before = {note.position: note.note for note in rendered(midi, plan).notes}
     after = rendered(midi, again).notes
@@ -126,8 +132,9 @@ def test_every_note_comes_out_once_and_only_a_drop_leaves_one_out(
     result = normalized(midi)
     names = sorted({note.articulation for note in result.score.notes})
     drop = data.draw(st.sets(st.sampled_from(names)), label="dropped")
+    plan = plan_for(midi, result, cuts=cuts, style=data.draw(STYLES, label="style"))
 
-    out = rendered(midi, plan_for(midi, result, cuts=cuts), substitutions=dict.fromkeys(drop, DROP))
+    out = rendered(midi, plan, substitutions=dict.fromkeys(drop, DROP))
 
     expected = [note for note in result.score.notes if note.articulation not in drop]
     assert sorted(note.position for note in out.notes) == sorted(
@@ -154,9 +161,9 @@ def _played_twice(draw: st.DrawFn) -> tuple[list[Hit], list[Hit]]:
     return played[0], played[1]
 
 
-@given(_played_twice(), CUTS, st.integers(0, 2**53 - 1))
+@given(_played_twice(), CUTS, st.integers(0, 2**53 - 1), STYLES)
 def test_input_velocities_and_timing_change_nothing_but_the_hit_types(
-    takes: tuple[list[Hit], list[Hit]], cuts: list[int], seed: int
+    takes: tuple[list[Hit], list[Hit]], cuts: list[int], seed: int, style: StyleName
 ) -> None:
     first, second = (song(take) for take in takes)
     one, two = normalized(first), normalized(second)
@@ -166,7 +173,7 @@ def test_input_velocities_and_timing_change_nothing_but_the_hit_types(
         return sorted((note.tick, note.articulation, note.hit_type) for note in notes)
 
     assume(score(one) == score(two))
-    plan = plan_for(first, one, cuts=cuts, seed=seed)
+    plan = plan_for(first, one, cuts=cuts, seed=seed, style=style)
 
     assert midi_bytes(rendered(first, plan, result=one).song) == midi_bytes(
         rendered(second, plan, result=two).song
@@ -181,8 +188,10 @@ def at_corners(
     *,
     loose: bool = False,
 ) -> SessionPlan:
-    """A plan whose sections' controls are drawn at their ends often, where the guards bind.
-    `loose` sets the song's tightness to 0 and its feel to -1 or +1, under the sections'."""
+    """A plan in a drawn style whose sections' controls are drawn at their ends often, where
+    the guards bind. `loose` sets the song's tightness to 0 and its feel to -1 or +1, under the
+    sections'."""
+    style = data.draw(STYLES, label="style")
     count = len(plan_for(midi, result, cuts=cuts).sections)
     controls = {
         number: data.draw(control_vectors(corners=True), label=f"section {number}")
@@ -192,18 +201,34 @@ def at_corners(
     if loose:
         feel = data.draw(st.sampled_from((-1.0, 1.0)), label="feel")
         song_controls = ControlVector(tightness=0.0, feel=feel)
-    return plan_for(midi, result, cuts=cuts, sections=controls, controls=song_controls)
+    return plan_for(midi, result, cuts=cuts, sections=controls, controls=song_controls, style=style)
+
+
+EXTREMES = st.sampled_from((60.0, 600.0)) | TEMPOS
+"""Tempos at 60 or 600 BPM half the time, so a change is often 10 to 1 either way."""
+
+
+def tempo_changes(bars: int) -> st.SearchStrategy[list[tuple[int, float]]]:
+    """Up to 120 tempo changes as `(tick, bpm)`, each on a 64th of the first `bars` bars, so they
+    often fall between two hits a 16th apart."""
+    ticks = st.integers(1, 64 * bars - 1).map(lambda step: step * SIXTEENTH // 4)
+    return st.lists(st.tuples(ticks, EXTREMES), max_size=120)
 
 
 DENSE = grooves((KICK, SNARE, HAT), per_bar=36)
 """Grooves on three drums, so notes on one pitch are often a 16th apart."""
 
 
-@given(DENSE, CUTS, TEMPOS, LENGTHS, st.data())
+@given(DENSE, CUTS, TEMPOS, tempo_changes(6), LENGTHS, st.data())
 def test_notes_on_one_pitch_keep_their_order_and_most_of_their_grid_gap(
-    hits: list[Hit], cuts: list[int], bpm: float, length: int, data: st.DataObject
+    hits: list[Hit],
+    cuts: list[int],
+    bpm: float,
+    changes: list[tuple[int, float]],
+    length: int,
+    data: st.DataObject,
 ) -> None:
-    midi = song(hits, bpm=bpm, length=length)
+    midi = song(hits, bpm=bpm, tempos=changes, length=length)
     result = normalized(midi)
 
     one_pitch_keeps_its_order(
@@ -212,48 +237,101 @@ def test_notes_on_one_pitch_keep_their_order_and_most_of_their_grid_gap(
 
 
 def one_pitch_keeps_its_order(result: Normalized, out: Rendered) -> None:
-    """Notes on one pitch keep their order and 0.6 of their grid gap less a tick, and a rendered
-    note ends by the next one's start."""
+    """Notes on one pitch keep their order and 0.6 of their grid gap in milliseconds, less half a
+    tick where each lands for going to a tick, and a rendered note ends by the next one's start
+    (ADR 0073)."""
+    tempos = result.score.tempos
     for notes in by_key(out.notes, "pitch").values():
         for earlier, later in pairwise(notes):
             if earlier.kept and later.kept:
                 continue
-            grid = (
-                result.score.notes[later.position].tick - result.score.notes[earlier.position].tick
-            )
+            ticks = [result.score.notes[note.position].tick for note in (earlier, later)]
+            grid = tempos.tick_to_ms(ticks[1]) - tempos.tick_to_ms(ticks[0])
+            played = tempos.tick_to_ms(later.note.start) - tempos.tick_to_ms(earlier.note.start)
+            rounding = (landing_tick(result, earlier) + landing_tick(result, later)) / 2
             assert later.note.start > earlier.note.start
-            assert later.note.start - earlier.note.start >= GAP_SHARE * grid - 1
+            assert played >= GAP_SHARE * grid - rounding - ROUNDING_MS
             if not earlier.kept:
                 assert earlier.note.end <= later.note.start
 
 
+def landing_tick(result: Normalized, note: RenderedNote) -> float:
+    """The length of a tick where the note lands, in milliseconds: the longer of the ticks either
+    side of its start, since a note going up to a tempo change is rounded in the tick before it."""
+    tempos, start = result.score.tempos, note.note.start
+    return max(tempos.ms_per_tick(max(start - 1, 0)), tempos.ms_per_tick(start))
+
+
+@st.composite
+def hat_runs(draw: st.DrawFn, groove: st.SearchStrategy[list[Hit]], bars: int) -> list[Hit]:
+    """A groove with, half the time, a hat on every 16th of `bars` bars, so notes on one pitch are
+    a 16th apart and their gap binds."""
+    hits = draw(groove)
+    if not draw(st.booleans()):
+        return hits
+    run: list[Hit] = [(step * SIXTEENTH, HAT) for step in range(16 * bars)]
+    return [hit for hit in hits if hit[1] != HAT] + run
+
+
 @given(
-    flams(grooves((KICK, SNARE, HAT), max_bars=4)),
+    flams(hat_runs(grooves((KICK, SNARE, HAT), max_bars=4), 4)),
     TEMPOS,
-    st.lists(st.tuples(st.integers(1, 4 * 64 - 1), TEMPOS), max_size=120),
+    tempo_changes(4),
     CUTS,
     st.data(),
 )
 def test_offsets_stay_within_the_cap_at_every_tempo(
     hits: list[Hit],
     bpm: float,
-    tempos: list[tuple[int, float]],
+    changes: list[tuple[int, float]],
     cuts: list[int],
     data: st.DataObject,
 ) -> None:
-    changes = [(step * SIXTEENTH // 4, value) for step, value in tempos]
+    # Hats often run in 16ths, with changes of 10 to 1 between them, so the gap binds across a
+    # change, and with graces, whose main notes move with them.
     midi = song(hits, bpm=bpm, tempos=changes)
     result = normalized(midi)
 
-    out = rendered(midi, at_corners(data, midi, result, cuts, loose=True))
+    offsets_within_the_cap(result, rendered(midi, at_corners(data, midi, result, cuts, loose=True)))
 
-    # A note played as it came in keeps its timing, however far off the grid it was played.
+
+def offsets_within_the_cap(result: Normalized, out: Rendered) -> None:
+    """Each rendered note's offset is within the cap plus two ticks for going to a tick, ticks of
+    the tempo where the note lands, which a tempo change can set apart from its grid point's. A
+    note played as it came in keeps its timing, however far off the grid it was played."""
     for note in out.notes:
-        if note.kept:
-            continue
-        tick = result.score.notes[note.position].tick
-        slack = 2 * result.score.tempos.ms_per_tick(tick)
-        assert abs(note.offset_ms) <= CAP_MS + slack
+        if not note.kept:
+            assert abs(note.offset_ms) <= CAP_MS + 2 * landing_tick(result, note)
+
+
+def test_a_note_cut_to_the_cap_before_a_tempo_change_goes_to_a_tick_of_that_tempo() -> None:
+    # 60 BPM up to tick 180 and 600 after it, so a tick is 1.04 ms, then 0.10 ms. The snare on
+    # tick 240, pushed early, is cut to -12 ms, which is before the change, at tick 174.48: its
+    # nearest tick is half a 60 BPM tick past the cap, more than two ticks of its grid point's.
+    hits: list[Hit] = [
+        (0, SNARE, SOFT),
+        (SIXTEENTH, KICK, SOFT),
+        (SIXTEENTH, SNARE, SOFT),
+        (2 * SIXTEENTH, KICK, SOFT),
+        (0, KICK, SOFT),
+        (10, KICK, NORMAL),
+    ]
+    midi = song(hits, bpm=60, tempos=[(180, 600.0)])
+    result = normalized(midi)
+    pushed = ControlVector(tightness=0.0, feel=-1.0)
+
+    grid_ticks = 2 * result.score.tempos.ms_per_tick(SIXTEENTH)
+    past = 0
+    for seed in range(4):
+        plan = plan_for(midi, result, controls=pushed, seed=seed, style="loose")
+        out = rendered(midi, plan, result=result)
+        offsets_within_the_cap(result, out)
+        past += sum(
+            note.offset_ms < -CAP_MS - grid_ticks
+            for note in out.notes
+            if note.note.pitch == SNARE and result.score.notes[note.position].tick == SIXTEENTH
+        )
+    assert past > 0
 
 
 SHARED = (HAT, PEDAL, OPEN_HAT, SNARE, SIDESTICK, RIDE, BELL, KICK)
@@ -278,26 +356,30 @@ def test_velocities_are_1_to_127_and_never_repeat_on_a_pitch_or_a_drum(
                     assert earlier.note.velocity != later.note.velocity
 
 
+@pytest.mark.parametrize("style", STYLE_NAMES)
 @pytest.mark.parametrize("cuts", [(), tuple(range(1, 32))])
-def test_16ths_at_600_bpm_played_loose_keep_most_of_their_gap(cuts: tuple[int, ...]) -> None:
+def test_16ths_at_600_bpm_played_loose_keep_most_of_their_gap(
+    cuts: tuple[int, ...], style: StyleName
+) -> None:
     midi = song([(step * SIXTEENTH, HAT) for step in range(32 * 16)], bpm=600)
     result = normalized(midi)
     loose = ControlVector(tightness=0.0, feel=1.0)
 
     for seed in range(4):
-        plan = plan_for(midi, result, cuts=cuts, controls=loose, seed=seed)
+        plan = plan_for(midi, result, cuts=cuts, controls=loose, seed=seed, style=style)
         starts = [note.note.start for note in rendered(midi, plan, result=result).notes]
         gaps = [later - earlier for earlier, later in pairwise(starts)]
         assert min(gaps) >= GAP_SHARE * SIXTEENTH - 1
 
 
-def test_neighbours_across_a_boundary_never_share_a_velocity() -> None:
+@pytest.mark.parametrize("style", STYLE_NAMES)
+def test_neighbours_across_a_boundary_never_share_a_velocity(style: StyleName) -> None:
     midi = song([(beat * PPQ, KICK) for beat in range(4 * 32)])
     result = normalized(midi)
     flat = ControlVector(dynamic_range=0.0)
 
     for seed in range(4):
-        plan = plan_for(midi, result, cuts=range(1, 32), controls=flat, seed=seed)
+        plan = plan_for(midi, result, cuts=range(1, 32), controls=flat, seed=seed, style=style)
         kicks = [note.note.velocity for note in rendered(midi, plan, result=result).notes]
         assert all(earlier != later for earlier, later in pairwise(kicks))
 
@@ -325,11 +407,11 @@ def test_soft_notes_land_below_the_other_notes_of_their_drum_in_a_section(
 
 
 def test_soft_notes_are_held_below_where_their_center_meets_the_others() -> None:
+    # A rider's weak hits at energy 0 and full dynamic range reach down to the soft center.
     hits: list[Hit] = []
     for bar in range(8):
         hits.extend(
-            (bar * BAR + step * SIXTEENTH, SNARE, SOFT if step % 4 else NORMAL)
-            for step in range(16)
+            (bar * BAR + step * SIXTEENTH, HAT, SOFT if step % 4 else NORMAL) for step in range(16)
         )
     midi = song(hits)
     result = normalized(midi)
@@ -343,9 +425,11 @@ def test_soft_notes_are_held_below_where_their_center_meets_the_others() -> None
     assert held > 0
 
 
-def test_rider_hits_alternate_strong_and_weak_about_three_times_in_four() -> None:
+@pytest.mark.parametrize("style", STYLE_NAMES)
+def test_rider_hits_alternate_strong_and_weak_about_three_times_in_four(style: StyleName) -> None:
     midi = song(rock(256))
-    out = rendered(midi, plan_for(midi, normalized(midi), cuts=range(8, 256, 8)))
+    plan = plan_for(midi, normalized(midi), cuts=range(8, 256, 8), style=style)
+    out = rendered(midi, plan)
 
     alternating = [note for note in out.notes if note.part.rider == "alternate"]
     pairs = [
@@ -460,6 +544,50 @@ def test_graces_keep_their_gap_and_their_order_and_on_the_first_tick_up_to_the_c
     one_pitch_keeps_its_order(result, out)
 
 
+@pytest.mark.parametrize(
+    ("hits", "bpm", "cuts"),
+    [
+        pytest.param(
+            [(0, KICK), (2 * BAR - 48, HAT), (2 * BAR, HAT), (2 * BAR + PPQ, KICK)],
+            600.0,
+            (2,),
+            id="either-side-of-a-boundary",
+        ),
+        pytest.param(
+            [(step * SIXTEENTH, HAT) for step in range(41)] + [(2 * BAR - 250, HAT)],
+            600.0,
+            (2,),
+            id="before-a-boundary",
+        ),
+        pytest.param(
+            [(230, HAT, SOFT), (240, HAT, SOFT), (230, PEDAL, SOFT), (240, PEDAL, SOFT)],
+            120.0,
+            (),
+            id="the-later-with-a-grace",
+        ),
+    ],
+)
+@pytest.mark.parametrize("style", STYLE_NAMES)
+def test_two_hats_read_onto_one_grid_point_keep_their_order_and_gaps(
+    hits: list[Hit], bpm: float, cuts: tuple[int, ...], style: StyleName
+) -> None:
+    # Two hats played a few milliseconds apart and read onto one grid point. Either side of a
+    # boundary they landed on one tick. Before one, the second was pushed past its side of the
+    # gap, and the next section's hat kept under 0.6 of it. With a grace before each, the second
+    # kept its place and the first went after it.
+    midi = song(hits, bpm=bpm)
+    result = normalized(midi)
+
+    for seed in range(4):
+        for feel in (-1.0, 1.0):
+            loose = ControlVector(tightness=0.0, feel=feel)
+            plan = plan_for(midi, result, cuts=cuts, controls=loose, seed=seed, style=style)
+            out = rendered(midi, plan, result=result)
+            one_pitch_keeps_its_order(result, out)
+            graces_keep_their_gap(result, out)
+            offsets_within_the_cap(result, out)
+
+
 @given(grooves(), CUTS, st.data())
 def test_a_section_played_as_it_came_in_comes_out_unchanged(
     hits: list[Hit], cuts: list[int], data: st.DataObject
@@ -468,9 +596,11 @@ def test_a_section_played_as_it_came_in_comes_out_unchanged(
     result = normalized(midi)
     count = len(plan_for(midi, result, cuts=cuts).sections)
     kept = data.draw(st.integers(0, count - 1), label="kept")
+    style = data.draw(STYLES, label="style")
 
     out = rendered(
-        midi, plan_for(midi, result, cuts=cuts, sections={kept: ControlVector(skip=True)})
+        midi,
+        plan_for(midi, result, cuts=cuts, sections={kept: ControlVector(skip=True)}, style=style),
     )
 
     for note in out.notes:
@@ -655,9 +785,7 @@ def test_a_song_in_3_4_then_7_8_with_tempo_changes_renders_on_its_own_beats() ->
         if note.part.role == "backbeat"
     }
     assert backbeats == {1.0, 2.0, 4.0}
-    for note in out.notes:
-        tick = result.score.notes[note.position].tick
-        assert abs(note.offset_ms) <= CAP_MS + 2 * result.score.tempos.ms_per_tick(tick)
+    offsets_within_the_cap(result, out)
     for notes in by_key(out.notes, "pitch").values():
         assert all(earlier.note.start < later.note.start for earlier, later in pairwise(notes))
 

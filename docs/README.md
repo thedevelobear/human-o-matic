@@ -3,10 +3,11 @@
 What happened in this repo and why, for people and coding agents. Start here, then read the active plan.
 
 ## Layout and rules
-The layout and its rules are set in [ADR 0002](decisions/0002-docs-as-decision-record.md).
+The layout and its rules are set in [ADR 0002](decisions/0002-docs-as-decision-record.md), and `research/` in [ADR 0072](decisions/0072-docs-research-holds-published-measurements-compared-with-the-project-s-values.md).
 
 - `plans/` holds plans for multi-PR work, named `YYYY-MM-DD-topic.md`. A plan is a living document: each PR updates its progress table and any section the PR changes. A plan that is replaced wholesale stays unchanged, apart from a status line pointing at its successor.
 - `decisions/` holds architecture decision records (ADRs), one decision per file, named `NNNN-topic.md`. An ADR is never edited after merge, except its status line. A changed decision gets a new ADR, and the old one is marked `Superseded by NNNN`, or `Accepted. Its <part> is amended by NNNN` when the new ADR changes only part of it ([ADR 0042](decisions/0042-a-partly-changed-adr-is-marked-amended.md)).
+- `research/` holds pages that compare the project's values with published measurements, named `YYYY-MM-DD-topic.md`. A page cites each source in full, with what it gives, how sure it is and what it can't say, lists the sources it couldn't open, with no figures from them, and holds published figures and aggregate values only ([ADR 0007](decisions/0007-local-only-files-live-in-private.md)). A page is as of its date: a wrong figure is corrected, and a later look is a new page.
 
 A PR that makes or changes a decision adds the ADR and updates the active plan in the same PR.
 
@@ -33,11 +34,16 @@ What was decided, specifically enough to check the code against.
 |---|---|
 | [2026-11-08-human-o-matic](plans/2026-11-08-human-o-matic.md) | Active. The app, milestone by milestone. |
 
+### Research
+| Page | Compares |
+|---|---|
+| [2026-11-10-styles-against-published-measurements](research/2026-11-10-styles-against-published-measurements.md) | Six values of the styles, where the fit and Appendix A's placeholder differ, with published measurements of drummers |
+
 ### Decisions
 | # | Decision | Status |
 |---|---|---|
-| [0001](decisions/0001-python-312-with-uv-ruff-pyright-and-pytest.md) | Python 3.12 with uv, ruff, pyright and pytest | Accepted |
-| [0002](decisions/0002-docs-as-decision-record.md) | docs/ is the decision record | Accepted. Its rule for a changed decision is amended by [ADR 0042](decisions/0042-a-partly-changed-adr-is-marked-amended.md) |
+| [0001](decisions/0001-python-312-with-uv-ruff-pyright-and-pytest.md) | Python 3.12 with uv, ruff, pyright and pytest | Accepted. Its line that pyright is strict on `src/` is amended by [ADR 0058](decisions/0058-tools-are-scripts-checked-like-src.md) |
+| [0002](decisions/0002-docs-as-decision-record.md) | docs/ is the decision record | Accepted. Its rule for a changed decision is amended by [ADR 0042](decisions/0042-a-partly-changed-adr-is-marked-amended.md), and its layout by [ADR 0072](decisions/0072-docs-research-holds-published-measurements-compared-with-the-project-s-values.md) |
 | [0003](decisions/0003-branches-off-main-merged-without-squashing.md) | Work branches off `main` and merges without squashing | Accepted |
 | [0004](decisions/0004-exact-dependency-versions.md) | Dependencies use exact versions | Accepted |
 | [0005](decisions/0005-orchestrated-agents.md) | Claude Code works through an orchestrator, a developer and QA | Accepted |
@@ -46,19 +52,19 @@ What was decided, specifically enough to check the code against.
 | [0008](decisions/0008-library-neutral-drum-maps.md) | Drum maps are library-neutral: library, kit and articulation | Accepted |
 | [0009](decisions/0009-m1-resolves-notes-channels-and-velocity-ranges.md) | M1 resolves notes, channels and velocity ranges, and CC-driven articulations wait for M3 | Accepted. Its line that controllers are resolved in M3 is amended by [ADR 0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) |
 | [0010](decisions/0010-built-in-maps-only.md) | Maps are built in, and this version loads no user-supplied map file | Accepted |
-| [0011](decisions/0011-m1-maps-for-general-midi-and-drum-libraries.md) | M1 ships a General MIDI map and maps for ten drum libraries | Accepted |
-| [0012](decisions/0012-runtime-dependencies-arrive-with-their-milestone.md) | M1 adds mido, numpy, pydantic and typer, and other runtime dependencies wait for their milestone | Accepted. Its line on `scipy` is amended by [ADR 0041](decisions/0041-m2-adds-no-runtime-dependency.md) |
+| [0011](decisions/0011-m1-maps-for-general-midi-and-drum-libraries.md) | M1 ships a General MIDI map and maps for ten drum libraries | Accepted. Its list of libraries is amended by [ADR 0055](decisions/0055-m3-adds-maps-for-four-drum-libraries.md), and its line that every library but one has one kit by [ADR 0066](decisions/0066-sleep-token-ii-gets-an-inferred-groove-pack-kit.md) |
+| [0012](decisions/0012-runtime-dependencies-arrive-with-their-milestone.md) | M1 adds mido, numpy, pydantic and typer, and other runtime dependencies wait for their milestone | Accepted. Its line on `scipy` is amended by [ADR 0041](decisions/0041-m2-adds-no-runtime-dependency.md), and its line on `symusic` by [ADR 0056](decisions/0056-the-calibration-tools-add-no-dependency.md) |
 | [0013](decisions/0013-midi-is-read-into-notes-and-raw-events.md) | MIDI files are read into paired notes and raw events at absolute ticks | Accepted |
 | [0014](decisions/0014-work-at-a-whole-multiple-of-the-source-ppq.md) | Songs are worked on and written at the smallest multiple of their PPQ that is at least 960 | Accepted |
 | [0015](decisions/0015-unclear-input-is-a-decision-request.md) | Unclear input is a decision request, raised as `DecisionRequired` | Accepted |
 | [0016](decisions/0016-tempo-and-time-signatures.md) | Tempo and time signatures come from every track, and a missing tempo is asked for | Accepted |
 | [0017](decisions/0017-the-drums-are-one-whole-track.md) | The drums are one whole track, chosen by rules in turn | Accepted |
 | [0018](decisions/0018-mido-is-typed-by-a-local-stub.md) | mido is typed by a local stub in `typings/` | Accepted |
-| [0019](decisions/0019-canonical-names-follow-one-grammar.md) | Canonical articulation names follow one grammar, kept in a vocabulary file | Accepted |
+| [0019](decisions/0019-canonical-names-follow-one-grammar.md) | Canonical articulation names follow one grammar, kept in a vocabulary file | Accepted. Its list of variant kinds is amended by [ADR 0062](decisions/0062-the-vocabulary-adds-damped-strokes-wires-off-and-crash-tips.md) |
 | [0020](decisions/0020-map-files-are-toml-checked-when-they-load.md) | A map file is one library in TOML, and an ambiguous map fails to load | Accepted |
 | [0021](decisions/0021-conversion-falls-back-within-a-family.md) | Conversion falls back within a family, and asks instead of changing family | Accepted. Its wait for controllers in M3 is amended by [ADR 0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) |
 | [0022](decisions/0022-the-general-midi-map-follows-the-standard.md) | The General MIDI map follows the GM Level 1 percussion key map | Accepted |
-| [0023](decisions/0023-built-in-library-ids.md) | Built-in libraries have short kebab-case ids | Accepted |
+| [0023](decisions/0023-built-in-library-ids.md) | Built-in libraries have short kebab-case ids | Accepted. Its list of ids is amended by [ADR 0055](decisions/0055-m3-adds-maps-for-four-drum-libraries.md), and its library with several kits by [ADR 0066](decisions/0066-sleep-token-ii-gets-an-inferred-groove-pack-kit.md) |
 | [0024](decisions/0024-built-in-data-is-found-beside-the-source.md) | Built-in data is found in `data/` beside the source, by one function | Accepted |
 | [0025](decisions/0025-proposed-names-ship-at-low-confidence.md) | A proposed name ships at low confidence, and only a check raises it | Accepted |
 | [0026](decisions/0026-a-grid-per-beat-by-timing-error-and-complexity.md) | Each beat takes one of four grids, by its timing error in milliseconds plus a complexity penalty | Accepted |
@@ -78,15 +84,34 @@ What was decided, specifically enough to check the code against.
 | [0040](decisions/0040-analyze-prints-the-sections-and-its-exit-codes-stay.md) | `human-o-matic analyze` prints the sections beside the summary, and its exit codes stay | Accepted |
 | [0041](decisions/0041-m2-adds-no-runtime-dependency.md) | M2 adds no runtime dependency, and `scipy` waits for code that imports it | Accepted |
 | [0042](decisions/0042-a-partly-changed-adr-is-marked-amended.md) | An accepted ADR that a later one changes in part is marked amended | Accepted |
-| [0043](decisions/0043-m3-is-three-prs-and-its-gate-follows-the-third.md) | M3 is three PRs, the engine, calibration and preview, and its gate follows the third | Proposed |
-| [0044](decisions/0044-m3-ships-tight-medium-and-loose-styles-pooled-by-tightness.md) | M3 ships the styles `tight`, `medium` and `loose` only, pooled by tightness band, with no named or numbered drummers | Proposed |
-| [0045](decisions/0045-the-engine-is-render-modules-behind-a-small-instrument-seam.md) | The engine is a set of render modules behind a small instrument seam | Proposed |
-| [0046](decisions/0046-controls-are-layered-pydantic-models-with-a-json-round-trip.md) | The controls are layered pydantic models with a JSON round trip | Proposed |
-| [0047](decisions/0047-roles-come-from-canonical-families-and-the-score.md) | Roles come from canonical families and the score, never from a pitch | Proposed |
-| [0048](decisions/0048-a-render-writes-the-score-through-the-target-kit-into-the-drum-track.md) | A render writes the score through the target kit into the drum track, and nothing else changes | Proposed |
-| [0049](decisions/0049-each-section-draws-from-its-own-seeded-stream.md) | Each section draws from its own seeded stream, and the song's drifts from streams of their own | Proposed |
-| [0050](decisions/0050-guards-hold-every-backend-and-keep-each-section-independent.md) | The guards hold every backend's draws, and never make a section depend on another's | Proposed |
-| [0051](decisions/0051-the-tight-style-s-placeholders-fill-in-what-appendix-a-leaves-out.md) | The `tight` style's placeholders are Appendix A with the values it leaves out filled in | Proposed |
-| [0052](decisions/0052-each-control-is-tested-against-the-statistic-it-mainly-drives.md) | Each control is tested against the statistic it mainly drives, and the plan's properties have exact definitions | Proposed |
-| [0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) | A controller-bound note keeps its controller value, and following and writing controllers wait for a map that gives them | Proposed |
-| [0054](decisions/0054-human-o-matic-render-writes-a-new-midi-file-by-a-plan-and-prints-json.md) | `human-o-matic render` writes a new MIDI file by a plan, and prints its summary and each section's statistics as JSON | Proposed |
+| [0043](decisions/0043-m3-is-three-prs-and-its-gate-follows-the-third.md) | M3 is three PRs, the engine, calibration and preview, and its gate follows the third | Accepted |
+| [0044](decisions/0044-m3-ships-tight-medium-and-loose-styles-pooled-by-tightness.md) | M3 ships the styles `tight`, `medium` and `loose` only, pooled by tightness band, with no named or numbered drummers | Accepted. What counts as one source is amended by [ADR 0063](decisions/0063-a-pack-is-a-source.md), and the fitting of each style's velocities on its own band by [ADR 0065](decisions/0065-velocities-are-fitted-once-and-shared-by-the-three-styles.md) |
+| [0045](decisions/0045-the-engine-is-render-modules-behind-a-small-instrument-seam.md) | The engine is a set of render modules behind a small instrument seam | Accepted |
+| [0046](decisions/0046-controls-are-layered-pydantic-models-with-a-json-round-trip.md) | The controls are layered pydantic models with a JSON round trip | Accepted. Its `tight`-only style is amended by [ADR 0070](decisions/0070-the-engine-reads-the-styles-from-data-styles.md) |
+| [0047](decisions/0047-roles-come-from-canonical-families-and-the-score.md) | Roles come from canonical families and the score, never from a pitch | Accepted |
+| [0048](decisions/0048-a-render-writes-the-score-through-the-target-kit-into-the-drum-track.md) | A render writes the score through the target kit into the drum track, and nothing else changes | Accepted |
+| [0049](decisions/0049-each-section-draws-from-its-own-seeded-stream.md) | Each section draws from its own seeded stream, and the song's drifts from streams of their own | Accepted |
+| [0050](decisions/0050-guards-hold-every-backend-and-keep-each-section-independent.md) | The guards hold every backend's draws, and never make a section depend on another's | Accepted. Its same-pitch gap is amended by [ADR 0073](decisions/0073-the-gap-is-counted-in-milliseconds-through-the-tempo-map.md) |
+| [0051](decisions/0051-the-tight-style-s-placeholders-fill-in-what-appendix-a-leaves-out.md) | The `tight` style's placeholders are Appendix A with the values it leaves out filled in | Accepted. Its rendering from the placeholders is amended by [ADR 0070](decisions/0070-the-engine-reads-the-styles-from-data-styles.md), and its values, where fitted, by [ADR 0068](decisions/0068-what-calibration-fits-and-what-stays-modelled.md) |
+| [0052](decisions/0052-each-control-is-tested-against-the-statistic-it-mainly-drives.md) | Each control is tested against the statistic it mainly drives, and the plan's properties have exact definitions | Accepted. Its `feel` row's smaller pushed side is amended by [ADR 0071](decisions/0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md), and its same-pitch and cap properties by [ADR 0073](decisions/0073-the-gap-is-counted-in-milliseconds-through-the-tempo-map.md) |
+| [0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) | A controller-bound note keeps its controller value, and following and writing controllers wait for a map that gives them | Accepted |
+| [0054](decisions/0054-human-o-matic-render-writes-a-new-midi-file-by-a-plan-and-prints-json.md) | `human-o-matic render` writes a new MIDI file by a plan, and prints its summary and each section's statistics as JSON | Accepted. Its `--style` taking only `tight` is amended by [ADR 0070](decisions/0070-the-engine-reads-the-styles-from-data-styles.md) |
+| [0055](decisions/0055-m3-adds-maps-for-four-drum-libraries.md) | M3 adds maps for Counterkit, NI Drum Lab, Krimh Drums and GGD Matt Halpern Signature Pack | Proposed |
+| [0056](decisions/0056-the-calibration-tools-add-no-dependency.md) | The calibration tools add no dependency, and `symusic` is not used | Proposed |
+| [0057](decisions/0057-each-folder-s-kit-is-in-a-gitignored-file-under-private-data.md) | The kit that reads each folder of performed MIDI is in a gitignored file under `private/data/` | Proposed |
+| [0058](decisions/0058-tools-are-scripts-checked-like-src.md) | Tracked tools are scripts in `tools/`, checked as strictly as `src/`, and tested from `tests/` | Proposed |
+| [0059](decisions/0059-calibration-measures-files-in-windows-of-at-most-16-bars.md) | Calibration measures each file in windows of at most 16 bars, around what the file leaves open | Proposed |
+| [0060](decisions/0060-a-groove-held-to-the-grid-is-left-out-of-timing.md) | A groove held to the grid is left out of the timing statistics | Proposed |
+| [0061](decisions/0061-calibration-measures-the-engine-s-statistics-with-feel-against-the-kick.md) | Calibration measures the engine's statistics, with feel taken against the kick | Proposed |
+| [0062](decisions/0062-the-vocabulary-adds-damped-strokes-wires-off-and-crash-tips.md) | The vocabulary adds damped strokes, a snare with its wires off, and a crash's tip stroke | Proposed |
+| [0063](decisions/0063-a-pack-is-a-source.md) | A pack, a folder's first-level subfolder, is a source | Proposed |
+| [0064](decisions/0064-grooves-the-grid-does-not-fit-are-left-out-of-the-timing-fits.md) | Grooves the grid doesn't fit are left out of the timing fits | Proposed |
+| [0065](decisions/0065-velocities-are-fitted-once-and-shared-by-the-three-styles.md) | Velocities are fitted once and shared by the three styles, which differ in timing only | Proposed |
+| [0066](decisions/0066-sleep-token-ii-gets-an-inferred-groove-pack-kit.md) | Sleep Token II gets a second kit, `groove-pack`, inferred, for the layout its groove files play | Proposed |
+| [0067](decisions/0067-the-bands-are-cut-at-3-and-6-ms.md) | The bands are cut at 3 and 6 ms of timing spread | Proposed |
+| [0068](decisions/0068-what-calibration-fits-and-what-stays-modelled.md) | What calibration fits, by energy, metric level and tempo, and what stays modelled or placeholder | Proposed. Its fitting of the rider gap, accent and fill crescendo, and three premises of its check, are amended by [ADR 0071](decisions/0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md) |
+| [0069](decisions/0069-a-style-is-one-complete-toml-file-written-by-the-fit.md) | A style is one complete TOML file in `data/styles/`, written by the fit | Proposed |
+| [0070](decisions/0070-the-engine-reads-the-styles-from-data-styles.md) | The engine reads the three styles from `data/styles/`, and the placeholder stays as the fit's source | Proposed |
+| [0071](decisions/0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md) | The fit is the default, research fills what a performance can't give, and a value they disagree on waits for both numbers | Proposed |
+| [0072](decisions/0072-docs-research-holds-published-measurements-compared-with-the-project-s-values.md) | `docs/research/` holds published measurements compared with the project's values | Proposed |
+| [0073](decisions/0073-the-gap-is-counted-in-milliseconds-through-the-tempo-map.md) | The gap is counted in milliseconds through the tempo map, so it never takes a note past the cap | Proposed |

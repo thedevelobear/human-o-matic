@@ -37,7 +37,7 @@ from grooves import (
     rendered,
     song,
 )
-from human_o_matic.controls import ControlVector
+from human_o_matic.controls import ControlVector, StyleName
 from human_o_matic.midi.io import MidiSong
 from human_o_matic.normalize.score import Normalized
 from human_o_matic.render.engine import RenderedNote
@@ -51,6 +51,7 @@ from human_o_matic.render.measure import (
     velocity_spread,
     velocity_trend,
 )
+from human_o_matic.render.style import STYLE_NAMES, built_in_styles
 
 SEEDS = range(1, 7)
 MIN_RISE = 2.0
@@ -79,12 +80,19 @@ def groove() -> tuple[MidiSong, Normalized]:
     return midi, normalized(midi)
 
 
-def measured(controls: ControlVector, statistic: Statistic) -> float:
+@pytest.fixture(params=STYLE_NAMES)
+def style(request: pytest.FixtureRequest) -> StyleName:
+    """Every control moves its statistic in every style."""
+    return request.param
+
+
+def measured(controls: ControlVector, statistic: Statistic, style: StyleName) -> float:
     """The statistic over the whole song, averaged over the seeds."""
     midi, result = groove()
     values: list[float] = []
     for seed in SEEDS:
-        out = rendered(midi, plan_for(midi, result, controls=controls, seed=seed), result=result)
+        plan = plan_for(midi, result, controls=controls, seed=seed, style=style)
+        out = rendered(midi, plan, result=result)
         value = statistic(out.notes)
         assert value is not None
         values.append(value)
@@ -125,32 +133,41 @@ def rises(values: Sequence[float]) -> bool:
         ("ghost_level", soft),
     ],
 )
-def test_raising_a_control_raises_its_statistic(control: str, statistic: Statistic) -> None:
-    values = [measured(ControlVector.model_validate({control: value}), statistic) for value in UNIT]
+def test_raising_a_control_raises_its_statistic(
+    control: str, statistic: Statistic, style: StyleName
+) -> None:
+    values = [
+        measured(ControlVector.model_validate({control: value}), statistic, style) for value in UNIT
+    ]
 
     assert rises(values), values
     assert values[-1] - values[0] >= MIN_RISE, values
 
 
-def test_raising_tightness_narrows_the_timing_spread() -> None:
-    values = [measured(ControlVector(tightness=value), timing_spread) for value in UNIT]
+def test_raising_tightness_narrows_the_timing_spread(style: StyleName) -> None:
+    values = [measured(ControlVector(tightness=value), timing_spread, style) for value in UNIT]
 
     assert rises(values[::-1]), values
 
 
-def test_feel_moves_the_snare_and_riders_later_and_louder_when_laid_back() -> None:
+def test_feel_moves_the_snare_and_riders_later_and_louder_when_laid_back(
+    style: StyleName,
+) -> None:
     feels = (-1.0, -0.5, 0.0, 0.5, 1.0)
-    offsets = [measured(ControlVector(feel=value), feel_offset) for value in feels]
-    loudness = [measured(ControlVector(feel=value), snare) for value in feels[2:]]
+    offsets = [measured(ControlVector(feel=value), feel_offset, style) for value in feels]
+    loudness = [measured(ControlVector(feel=value), snare, style) for value in feels[2:]]
+    laid_back, pushed = built_in_styles()[style].feel_ms
 
     assert rises(offsets), offsets
     assert rises(loudness), loudness
-    assert offsets[-1] - offsets[2] > 2 * (offsets[2] - offsets[0]) - 1
+    # The laid-back side is to the pushed side as the style's are.
+    assert offsets[-1] - offsets[2] > laid_back / pushed * (offsets[2] - offsets[0]) - 1
 
 
-def test_an_arc_builds_or_drops_the_velocity_across_a_section() -> None:
+def test_an_arc_builds_or_drops_the_velocity_across_a_section(style: StyleName) -> None:
     trends = [
-        measured(ControlVector(arc=arc), velocity_trend) for arc in ("drop", "steady", "build")
+        measured(ControlVector(arc=arc), velocity_trend, style)
+        for arc in ("drop", "steady", "build")
     ]
 
     assert rises(trends), trends

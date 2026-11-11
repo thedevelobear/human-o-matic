@@ -22,7 +22,7 @@ DRUMMER = MAPS.kit("iof-drummer", "default")
 FOUR_FOUR = TimeSignatureMap(960, [])
 SHIPPED = {
     "gm": ("default",),
-    "sleep-token-ii": ("default",),
+    "sleep-token-ii": ("default", "groove-pack"),
     "iof-drummer": ("default", "old"),
     "ezdrummer-3": ("default",),
     "superior-drummer-3": ("default",),
@@ -32,6 +32,17 @@ SHIPPED = {
     "ni-abbey-road": ("default",),
     "logic-pro-drums": ("default",),
     "garageband-drums": ("default",),
+    "counterkit": ("default",),
+    "ni-drum-lab": ("default",),
+    "krimh-drums": ("default",),
+    "ggd-matt-halpern": ("default",),
+}
+NEW_IN_M3 = {
+    # library: (articulations, pitches, the notes of its mapping it leaves out) (ADR 0055)
+    "counterkit": (20, 20, (64, 65)),
+    "ni-drum-lab": (32, 37, (62, 63)),
+    "krimh-drums": (44, 50, (29, 49)),
+    "ggd-matt-halpern": (22, 22, ()),
 }
 
 
@@ -118,6 +129,40 @@ def test_the_sleep_token_map_has_its_68_pitches_as_58_articulations() -> None:
     flam, rimshot = SLEEP_TOKEN.resolve(39, 100, 9), SLEEP_TOKEN.resolve(40, 100, 9)
     assert (flam and flam.name, rimshot and rimshot.name) == ("snare.flam", "snare.rimshot")
     assert (SLEEP_TOKEN.pieces("tom"), SLEEP_TOKEN.pieces("crash")) == (3, 4)
+
+
+@pytest.mark.parametrize("library", NEW_IN_M3)
+def test_the_maps_added_in_m3_have_their_counts_and_leave_out_what_they_say(library: str) -> None:
+    kit = MAPS.kit(library)
+    articulations, pitches, left_out = NEW_IN_M3[library]
+    notes = [binding.note for entry in kit.articulations for binding in entry.bindings]
+
+    assert (len(kit.articulations), len(notes)) == (articulations, pitches)
+    assert len(set(notes)) == pitches
+    assert not set(notes) & set(left_out)
+    assert all(kit.read(pitch, 100, 9) == () for pitch in left_out)
+
+
+def test_sleep_token_ii_s_groove_pack_kit_is_inferred_throughout() -> None:
+    kit = MAPS.kit("sleep-token-ii", "groove-pack")
+    notes = [binding.note for entry in kit.articulations for binding in entry.bindings]
+
+    assert (len(kit.articulations), len(set(notes))) == (15, 15)
+    assert {(entry.source, entry.confidence) for entry in kit.articulations} == {
+        ("inferred", "low")
+    }
+
+
+def test_krimh_drums_is_low_confidence_throughout_and_the_inferred_map_is_inferred() -> None:
+    # Krimh Drums' mapping gives no note numbers, so each rests on reading its kick at 36.
+    krimh = MAPS.kit("krimh-drums")
+    assert {(entry.source, entry.confidence) for entry in krimh.articulations} == {
+        ("mapping", "low")
+    }
+    ggd = MAPS.kit("ggd-matt-halpern")
+    assert {(entry.source, entry.confidence) for entry in ggd.articulations} == {
+        ("inferred", "low")
+    }
 
 
 @pytest.mark.parametrize("kit", KITS, ids=lambda kit: kit.ref)
@@ -321,7 +366,8 @@ def test_a_sample_layer_is_asked_about_on_every_kit_without_one() -> None:
     without = [kit for kit in KITS if not kit.pieces("sample")]
 
     assert len(layers) == 6
-    assert len(without) == len(KITS) - 2
+    # The two layouts of iof-drummer, and ni-drum-lab's percussion slots.
+    assert len(without) == len(KITS) - 3
     for target in without:
         conversion = convert(notes, DRUMMER, target, FOUR_FOUR)
         assert conversion.notes == ()

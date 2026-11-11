@@ -1,6 +1,6 @@
 # 0049. Each section draws from its own seeded stream, and the song's drifts from streams of their own
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - All randomness comes from `numpy.random.Generator`s built with `numpy.random.default_rng(SeedSequence(seed, spawn_key=...))` from the plan's seed ([ADR 0046](0046-controls-are-layered-pydantic-models-with-a-json-round-trip.md)). Nothing uses `random` or numpy's global state, and a render needs the seed: there is no default.

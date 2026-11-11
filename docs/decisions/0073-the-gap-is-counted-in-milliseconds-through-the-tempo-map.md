@@ -1,0 +1,16 @@
+# 0073. The gap is counted in milliseconds through the tempo map, so it never takes a note past the cap
+
+- **Status:** Proposed
+- **Date:** 2026-11-10
+
+- The guards' same-pitch gap ([ADR 0050](0050-guards-hold-every-backend-and-keep-each-section-independent.md)) is counted in milliseconds through the song's tempo map, as the ±12 ms cap is: a note keeps 0.6 of the milliseconds between its grid point and the note before's, measured between their starts, and at least a tick. The gap to a note played as it came in, before or after, is counted the same way. A tick worked out through milliseconds that is within a millionth of a whole tick is that tick.
+- A main note and its graces move by one shift in milliseconds, counted in the ticks of whichever of them has the shortest tick where it is, the main on a tie, and the others go to their nearest tick.
+- The gap is held in each pitch's play order: a main note and its graces are taken after the notes before theirs on their pitches, so the gap is counted from where the note before ends up.
+- Between two notes of one section, the gap never takes a note past the cap, but for whole ticks: a note keeps a tick after the note before on its grid point, which can leave it about a tick past the cap for each note before it there. Next to a note played as it came in, the cap wins over the gap, and `unmet` counts it.
+- Each note's side of a boundary is held as the tick it rounds to. A latest tick is carried back through the section's notes before it, each by the gap it keeps to the next, which can move a note earlier than its draw, counted under `gap`. Of two notes of one pitch on one grid point either side of a boundary, the later keeps a tick or more after it. All of it comes from the score, so sections stay independent.
+- A grace the score puts on its main's tick takes its main later with it to keep its gap from the note before, as far as the cap and the main's bounds allow. Past that, the grace goes on alone, its gap to its main is shortened, and `unmet` counts it.
+- [ADR 0052](0052-each-control-is-tested-against-the-statistic-it-mainly-drives.md)'s **same pitch** property also draws up to 120 tempo changes, often at 60 or 600 BPM, and measures the gap in milliseconds, less half a tick where each note lands. Its **cap** property draws hats on every 16th of the four bars its changes fall in half the time. Examples pin hits a 16th or a 32nd apart at the cap either way, with a change of 10 to 1 either way between them, on a grid point or before the first; two notes of one pitch on one grid point across a boundary, before one, and with a grace on the later; and a grace on its main's tick behind a note there.
+
+**Why:** Appendix A's timing is in milliseconds, converted with the local tempo, and the cap is the plan's hard limit, so counted in ticks a tempo change between two notes could make the gap worth more milliseconds than their grid gap and take a note past the cap uncounted. Held in play order, and by ticks at a boundary, notes that share a grid point keep their order and their gap.
+
+**Consequences:** ADR 0050's same-pitch gap and ADR 0052's same-pitch and cap properties are amended by this ADR. Across a tempo change, a note's gap in ticks can differ from 0.6 of its grid gap in ticks, and a note before a boundary can sit earlier than its draw.

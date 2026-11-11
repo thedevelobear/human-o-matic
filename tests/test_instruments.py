@@ -10,7 +10,7 @@ from human_o_matic.instruments.generic import GENERIC
 from human_o_matic.midi.io import MidiSong, midi_bytes
 from human_o_matic.normalize.score import Normalized
 from human_o_matic.render.engine import Rendered, render
-from human_o_matic.render.style import STYLES
+from human_o_matic.render.style import built_in_styles
 from human_o_matic.render.target import place_score
 
 
@@ -36,16 +36,17 @@ def test_both_instruments_meet_the_seam() -> None:
     instruments: list[Instrument] = [DRUMS, GENERIC]
     midi = with_fills(1)
     score = normalized(midi).score
-    style = STYLES["tight"]
+    style = built_in_styles()["tight"]
 
     for instrument in instruments:
         assert len(instrument.parts(score)) == len(score.notes)
-        assert instrument.compile(style.defaults, style).controls == style.defaults
+        assert instrument.compile(style.defaults, style, 120.0).controls == style.defaults
 
 
 def test_generic_mode_plays_every_note_with_no_role_and_feel_moves_them_all() -> None:
     midi = with_fills(8)
     result = normalized(midi)
+    laid_back, pushed = built_in_styles()["tight"].feel_ms
 
     early = rendered_by(GENERIC, midi, result, ControlVector(feel=-1))
     late = rendered_by(GENERIC, midi, result, ControlVector(feel=1))
@@ -57,7 +58,8 @@ def test_generic_mode_plays_every_note_with_no_role_and_feel_moves_them_all() ->
             for a, b in zip(early.notes, late.notes, strict=True)
             if a.family == family and not a.grace
         ]
-        assert np.mean(shift) > 6
+        # Most of the style's span from -1 to +1, which the guards can trim.
+        assert np.mean(shift) > 2 / 3 * (laid_back + pushed)
 
 
 def test_fill_intensity_changes_nothing_in_generic_mode_and_the_fills_in_drums() -> None:

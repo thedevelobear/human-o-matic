@@ -20,8 +20,8 @@ class Generic:
     def parts(self, score: Score) -> tuple[Part, ...]:
         return tuple(_PART for _ in score.notes)
 
-    def compile(self, controls: Controls, style: Style) -> Params:
-        return compile_section(controls, style, roles=False)
+    def compile(self, controls: Controls, style: Style, bpm: float) -> Params:
+        return compile_section(controls, style, bpm, roles=False)
 
 
 GENERIC = Generic()

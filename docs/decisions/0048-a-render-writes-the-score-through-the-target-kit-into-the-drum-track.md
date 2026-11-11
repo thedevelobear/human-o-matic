@@ -1,6 +1,6 @@
 # 0048. A render writes the score through the target kit into the drum track, and nothing else changes
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-09
 
 - **Placing notes** (`render/target.py`): in the kit the score was read with, a note keeps its pitch and channel, and its velocities stay within the ranges of the bindings that read it. In another kit, its articulation is placed by conversion's fallback order through the same function `convert` uses (`maps.convert.place`), and it takes the target binding's note, its channel or else the kit's or else the note's own, and its velocity range ([ADR 0020](0020-map-files-are-toml-checked-when-they-load.md), [ADR 0021](0021-conversion-falls-back-within-a-family.md)).

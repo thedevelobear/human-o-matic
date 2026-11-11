@@ -103,6 +103,23 @@ def test_hat_openness_is_in_words_and_falls_back_to_fully_open() -> None:
     assert VOCABULARY.parse("hat.open.half").path[:-1] == ("open",)
 
 
+@pytest.mark.parametrize(
+    ("text", "parent"),
+    [
+        ("kick.hit.dampened", "kick.hit"),
+        ("snare.center.dampened", "snare.center"),
+        ("snare.2.center.wires_off", "snare.2.center"),
+        ("crash.2.hit.tip", "crash.2.hit"),
+    ],
+)
+def test_a_damped_stroke_wires_off_and_a_crash_tip_are_variants_that_drop_to_the_stroke(
+    text: str, parent: str
+) -> None:
+    name = VOCABULARY.parse(text)
+
+    assert VOCABULARY.name(name.family, name.piece, name.path[:-1]).text == parent
+
+
 def test_a_sample_layer_is_numbered_and_nothing_stands_in_for_it() -> None:
     assert VOCABULARY.families["sample"].pieces == "numbered"
     assert "sample" not in VOCABULARY.suggestions

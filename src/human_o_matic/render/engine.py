@@ -28,7 +28,7 @@ from human_o_matic.render.controllers import windows
 from human_o_matic.render.guards import GuardCounts, Slot, Tally, hold_timing, hold_velocity
 from human_o_matic.render.output import with_drums
 from human_o_matic.render.parts import Part, play_key
-from human_o_matic.render.style import STYLES
+from human_o_matic.render.style import built_in_styles
 from human_o_matic.render.target import Placement
 
 STREAM_DRIFT = 0
@@ -125,7 +125,7 @@ def render(
     bars = drum_bars(song, score)
     if plan.bars != bars:
         raise ValueError(f"the plan's sections cover {plan.bars} bars, and the drums {bars}")
-    style = STYLES[plan.style]
+    style = built_in_styles()[plan.style]
     parts = instrument.parts(score)
     starts = [section.start for section in plan.sections]
     section_of = [
@@ -172,7 +172,7 @@ def render(
             notes,
             [parts[position] for position in members],
             [min(max((note.tick - first) / length, 0.0), 1.0) for note in notes],
-            instrument.compile(controls, style),
+            instrument.compile(controls, style, score.tempos.bpm(first)),
             section_stream(plan.seed, section.start, section.take),
         )
         for index, position in enumerate(members):

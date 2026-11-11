@@ -78,7 +78,7 @@ def test_a_clean_render_writes_the_file_and_prints_its_summary(tmp_path: Path) -
     assert out["decisions"] == []
     summary = out["summary"]
     assert summary["kit"] == summary["to_kit"] == "gm/default"
-    assert (summary["style"], summary["placeholder"], summary["seed"]) == ("tight", True, 7)
+    assert (summary["style"], summary["placeholder"], summary["seed"]) == ("tight", False, 7)
     assert summary["notes"] == {"written": 96, "kept": 0, "dropped": 0}
     assert set(summary["guards"]) >= {"capped", "tick_zero", "gap", "nudged", "unmet"}
     (section,) = out["sections"]
@@ -128,7 +128,7 @@ def test_a_conversion_request_is_open_until_a_substitution_answers_it(tmp_path: 
     song = write(tmp_path, [*rock(2), (0, COWBELL)])
     typed = {"hit_types": {**ANSWERS["hit_types"], "cowbell": TYPED}}
     dropped = {**typed, "substitutions": {"cowbell.hit": "drop"}}
-    args = [song, "--from-map", "gm", "--to-map", "sleep-token-ii", "--seed", "1"]
+    args = [song, "--from-map", "gm", "--to-map", "sleep-token-ii/default", "--seed", "1"]
 
     asked = render(*args, "--answers", json_file(tmp_path, "a.json", typed), "-o", tmp_path / "a")
     settled = render(
@@ -221,7 +221,7 @@ def test_the_input_is_never_overwritten(tmp_path: Path) -> None:
     [
         ["--seed", "-1"],
         ["--seed", str(MAX_SEED + 1)],
-        ["--style", "loose"],
+        ["--style", "sloppy"],
         ["--to-map", "nope"],
         ["--bpm", "2"],
     ],

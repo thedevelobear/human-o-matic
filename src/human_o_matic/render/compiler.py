@@ -3,8 +3,9 @@
 The compiled parameters are the style's numbers scaled by the controls, as ADR 0051 sets out:
 the spreads, gaps and offsets are plain numbers, and what depends on a note's energy, its
 velocity center, its accent and its soft center, is worked out per note from the energy the arc
-gives its place in the section. `roles=False` is `generic` mode: no limb takes an offset of its
-own, and `feel` moves every note.
+gives its place in the section. The timing is the style's for the tempo band of the section's
+tempo. `roles=False` is `generic` mode: no limb takes an offset of its own, and `feel` moves every
+note.
 """
 
 from collections.abc import Mapping
@@ -24,6 +25,8 @@ class Params:
 
     controls: Controls
     velocity: Mapping[Role, Anchors]
+    metric_velocity: Mapping[Role, tuple[float, ...]]
+    """What a note of each role adds by its metric level."""
     arc_span: float
     noise_sd: float
     """The spread of a velocity about its center."""
@@ -77,24 +80,26 @@ def swap_chance(flip: float) -> float:
     return (1 - sqrt(max(2 * flip - 1, 0.0))) / 2
 
 
-def compile_section(controls: Controls, style: Style, *, roles: bool = True) -> Params:
-    """The parameters of a section rendered with `controls`, in `style`."""
+def compile_section(controls: Controls, style: Style, bpm: float, *, roles: bool = True) -> Params:
+    """The parameters of a section rendered with `controls`, in `style`, at `bpm`."""
+    timing = style.timing_at(bpm)
     late, early = style.feel_ms
     feel = late * controls.feel if controls.feel >= 0 else early * controls.feel
     limb_ms: dict[Limb, float] = {}
     for limb in LIMBS:
         if roles:
-            limb_ms[limb] = style.limb_ms[limb] + (feel if limb != "other" else 0.0)
+            limb_ms[limb] = timing.limb_ms[limb] + (feel if limb != "other" else 0.0)
         else:
             limb_ms[limb] = feel
     gap_low, gap_high = style.rider_gap
     groove_base, groove_scale = style.rider_groove
-    jitter_loose, jitter_tight = style.jitter_sd
+    jitter_loose, jitter_tight = timing.jitter_sd
     accent_base, accent_energy = style.accent
     contrast = 0.5 + controls.groove
     return Params(
         controls=controls,
         velocity=style.velocity,
+        metric_velocity=style.metric_velocity,
         arc_span=style.arc_span,
         noise_sd=style.noise_sd * (0.5 + controls.dynamic_range),
         feet=style.feet,
@@ -110,8 +115,8 @@ def compile_section(controls: Controls, style: Style, *, roles: bool = True) -> 
         fill_hand=style.fill_hand,
         fill_crescendo=style.fill_crescendo * controls.fill_intensity,
         snare_loudness=style.snare_loudness * max(controls.feel, 0.0) if roles else 0.0,
-        shared_sd=style.shared_sd * (1.5 - controls.tightness),
+        shared_sd=timing.shared_sd * (1.5 - controls.tightness),
         jitter_sd=jitter_loose + (jitter_tight - jitter_loose) * controls.tightness,
-        jitter_clip=style.jitter_clip,
+        jitter_clip=timing.jitter_clip,
         limb_ms=limb_ms,
     )

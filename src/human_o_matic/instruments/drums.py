@@ -53,8 +53,8 @@ class Drums:
     def parts(self, score: Score) -> tuple[Part, ...]:
         return drum_parts(score)
 
-    def compile(self, controls: Controls, style: Style) -> Params:
-        return compile_section(controls, style)
+    def compile(self, controls: Controls, style: Style, bpm: float) -> Params:
+        return compile_section(controls, style, bpm)
 
 
 DRUMS = Drums()
@@ -90,7 +90,7 @@ def drum_parts(score: Score) -> tuple[Part, ...]:
         else:
             role = "other"
         limb: Limb = "snare" if note.family == "snare" else "rider" if role == "rider" else "other"
-        metric, hand, crescendo = fills.get(position, (0, 0, 0.0))
+        metric, hand, crescendo = fills.get(position, (_metric_level(score, note.tick), 0, 0.0))
         shape, strong = riders.get(position, ("center", False))
         parts[note.source_index] = Part(
             role=role,

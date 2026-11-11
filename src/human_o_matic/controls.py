@@ -23,8 +23,8 @@ type Unit = Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]
 type Feel = Annotated[float, Field(ge=-1, le=1, allow_inf_nan=False)]
 type Arc = Literal["steady", "build", "drop"]
 """The energy's shape across a section: level, rising or falling."""
-type StyleName = Literal["tight"]
-"""The built-in styles. `medium` and `loose` come with calibration (ADR 0044)."""
+type StyleName = Literal["tight", "medium", "loose"]
+"""The built-in styles, from the tightest (ADR 0044)."""
 type Seed = Annotated[int, Field(ge=0, le=MAX_SEED)]
 
 _STRICT = ConfigDict(frozen=True, extra="forbid", strict=True)
