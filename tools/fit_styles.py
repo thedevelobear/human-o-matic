@@ -17,7 +17,8 @@ The grooves are `calibrate.py`'s, and every statistic here is one the engine dra
   shared part. A style draws its band's medians at the default tightness, and the control's
   shape about them stays the placeholder's.
 - What a performance can't give keeps the placeholder's value, and so do three values whose fit
-  runs against Appendix A or ADR 0052's tests (`KEPT`).
+  runs against Appendix A or ADR 0052's tests, and the riders' noise, which would blur their
+  alternation (`KEPT`).
 
 The fitted numbers are rounded to hundredths, and the kept ones are the placeholder's exactly, so
 running the fit again on the same grooves gives the same files byte for byte.
@@ -80,6 +81,7 @@ KEPT = (
     "rider_gap",
     "accent",
     "fill_crescendo",
+    "rider_noise_sd",
 )
 """What keeps the placeholder's value: the controls' defaults and the shapes of their effects,
 which a performance plays at one setting only; which foot is which, and which hand, which MIDI
@@ -92,7 +94,11 @@ Three the grooves do give run against Appendix A or ADR 0052's tests, so they ke
   to move by 2 steps;
 - the accent, whose line in energy pushes accents past 127, so their contrast falls as `groove`
   rises;
-- a fill's crescendo, which the grooves' fills fit at none, where Appendix A's rise."""
+- a fill's crescendo, which the grooves' fills fit at none, where Appendix A's rise.
+
+The riders' noise keeps Appendix A's too: the grooves' riders spread about twice as far, with
+their strong, weak and metric means taken out, which would blur the alternation of their strong
+and weak hits (ADR 0076)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -348,8 +354,9 @@ def style_toml(style: Style) -> str:
         "aggregate statistics only (ADRs 0007, 0044). The velocities are fitted once and shared "
         "by the three styles (ADR 0065), and the timing is this style's band's, by tempo band. "
         "Values a performance can't give keep the placeholder's, and so do the rider gap, accent "
-        "and fill crescendo, whose fits run against Appendix A or ADR 0052's tests (ADR 0068). "
-        "Don't edit it: change the fit and run it again."
+        "and fill crescendo, whose fits run against Appendix A or ADR 0052's tests (ADR 0068), "
+        "and the riders' noise, whose fit would blur their alternation (ADR 0076). Don't edit "
+        "it: change the fit and run it again."
     )
     lines = textwrap.wrap(header, width=98, initial_indent="# ", subsequent_indent="# ")
     _table(lines, [], cast(dict[str, Json], style.model_dump(mode="json")))

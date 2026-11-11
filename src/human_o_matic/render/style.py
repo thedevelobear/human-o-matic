@@ -87,7 +87,11 @@ class Style(BaseModel):
     """What a note of each role adds to its center on a quarter note, an 8th, a 16th and
     elsewhere, counted from the bar. A fill note takes `fill_metric` instead."""
     noise_sd: float
-    """The spread of a note's velocity about its center, at `dynamic_range` 0.5."""
+    """The spread of a note's velocity about its center, at `dynamic_range` 0.5, riders and
+    soft-typed notes aside."""
+    rider_noise_sd: float
+    """The same for a rider hit not typed soft, smaller so its strong and weak hits stay apart
+    (ADR 0076)."""
     feet: float
     """How much louder the right foot is than the center in double kick, and the left quieter."""
     rider_gap: tuple[float, float]
@@ -183,6 +187,7 @@ PLACEHOLDER = Style(
     },
     metric_velocity=dict.fromkeys(ROLES, (0.0, 0.0, 0.0, 0.0)),
     noise_sd=2.5,
+    rider_noise_sd=2.5,
     feet=3,
     rider_gap=(4, 14),
     rider_groove=(0.6, 0.8),

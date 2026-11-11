@@ -163,6 +163,13 @@ def test_the_rider_gap_accent_and_crescendo_keep_the_placeholder_though_grooves_
         assert f"| {row} | kept | kept | kept |" in text
 
 
+def test_the_riders_keep_appendix_a_s_noise_below_the_fitted_noise(fitted: Fit) -> None:
+    for style in fitted.styles.values():
+        assert style.rider_noise_sd == PLACEHOLDER.rider_noise_sd == 2.5
+        assert style.rider_noise_sd < style.noise_sd
+    assert "| rider_noise_sd | 2.5 | kept | kept | kept |" in table(fitted)
+
+
 def test_a_style_file_reads_back_as_the_style(fitted: Fit) -> None:
     for style in (PLACEHOLDER, *fitted.styles.values()):
         text = style_toml(style)

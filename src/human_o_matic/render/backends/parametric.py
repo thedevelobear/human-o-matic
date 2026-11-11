@@ -6,8 +6,9 @@ uniform value that may swap a rider's label. So the draws depend only on how man
 onsets the section has, and the same section and stream always draw the same numbers.
 
 A note's velocity is its role's center at its energy, moved by what its part, its metric level
-and its type add, plus noise. A soft-typed note is drawn about the soft center instead, whatever
-its role. Its offset is its limb's, the onset's shared offset and its own jitter, cut to the
+and its type add, plus noise, a rider's with its own smaller spread so its strong and weak hits
+stay apart (ADR 0076). A soft-typed note is drawn about the soft center instead, whatever its
+role. Its offset is its limb's, the onset's shared offset and its own jitter, cut to the
 clip. A grace's offset is left at 0, since the guards give it its main note's. The song's drifts
 and the guards come after (`render/engine.py`, `render/guards.py`), so they hold for every
 backend."""
@@ -85,7 +86,8 @@ def sample(
                 center += params.accent_at(energy)
             if part.limb == "snare":
                 center += params.snare_loudness
-            velocities[position] = center + params.noise_sd * noise[position]
+            spread = params.rider_noise_sd if part.role == "rider" else params.noise_sd
+            velocities[position] = center + spread * noise[position]
         if note.grace_of is None:
             own = params.jitter_sd * jitter[position]
             offsets[position] = (
