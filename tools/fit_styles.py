@@ -96,9 +96,9 @@ Three the grooves do give run against Appendix A or ADR 0052's tests, so they ke
   rises;
 - a fill's crescendo, which the grooves' fills fit at none, where Appendix A's rise.
 
-The riders' noise keeps Appendix A's too: the grooves' riders spread more than twice as far
-about their classes' means, which would blur the alternation of their strong and weak hits. `fit`
-prints what the grooves give beside it (`Fit.rider_noise`, ADR 0076)."""
+The riders' noise keeps Appendix A's too: the grooves' riders spread about two and a half times
+as far about their classes' means, which would blur the alternation of their strong and weak
+hits. `fit` prints what the grooves give beside it (`Fit.rider_noise`, ADR 0076)."""
 
 
 @dataclass(frozen=True, slots=True)
