@@ -2,7 +2,7 @@
 
 > **Status:** Active. M0 to M2 are merged, M3's engine, the first of its three PRs, is merged, and calibration, the second, is ready for review, with the preview, the third, to follow.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-11 (M3's engine merged and ADRs 0043 to 0054 accepted; `feat/calibration` ready for review, with `tools/infer_map.py`, maps for four more libraries, `tools/calibrate.py` measuring the grooves and fitting the styles, the three styles in `data/styles/`, which the engine now reads, the research cross-check, and the guards' gap counted in milliseconds and held for notes sharing a grid point, with ADRs 0055 to 0073 proposed and ADRs 0001, 0002, 0011, 0012, 0019, 0023, 0044, 0050, 0051 and 0052 amended by them).
+> Last updated: 2026-11-11 (M3's engine merged and ADRs 0043 to 0054 accepted; `feat/calibration` ready for review, with `tools/infer_map.py`, maps for four more libraries, `tools/calibrate.py` measuring the grooves and fitting the styles, the three styles in `data/styles/`, which the engine now reads, the research cross-check, and the guards' gap counted in milliseconds and held for notes sharing a grid point, with ADRs 0055 to 0073 proposed and ADRs 0001, 0002, 0011, 0012, 0019, 0023, 0044, 0046, 0050, 0051, 0052 and 0054 amended by them).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 

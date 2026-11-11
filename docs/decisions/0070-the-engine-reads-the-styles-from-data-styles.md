@@ -9,4 +9,4 @@
 
 **Why:** The fit writes the files and the engine reads them, so nothing in the code repeats a fitted number, and the placeholder stays where the fit and the tests can compare against it.
 
-**Consequences:** [ADR 0051](0051-the-tight-style-s-placeholders-fill-in-what-appendix-a-leaves-out.md)'s rendering from the placeholders is amended by this ADR, and its values by [ADR 0068](0068-what-calibration-fits-and-what-stays-modelled.md) where they are fitted.
+**Consequences:** [ADR 0051](0051-the-tight-style-s-placeholders-fill-in-what-appendix-a-leaves-out.md)'s rendering from the placeholders is amended by this ADR, and its values by [ADR 0068](0068-what-calibration-fits-and-what-stays-modelled.md) where they are fitted. [ADR 0046](0046-controls-are-layered-pydantic-models-with-a-json-round-trip.md)'s `tight`-only style and [ADR 0054](0054-human-o-matic-render-writes-a-new-midi-file-by-a-plan-and-prints-json.md)'s `--style` taking only `tight` are amended by this ADR.
