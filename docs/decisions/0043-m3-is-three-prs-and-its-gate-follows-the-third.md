@@ -1,6 +1,6 @@
 # 0043. M3 is three PRs, the engine, calibration and preview, and its gate follows the third
 
-- **Status:** Accepted
+- **Status:** Accepted. Its third PR is amended by [ADR 0074](0074-a-render-is-heard-from-its-midi-file-in-the-daw-and-there-is-no-live-preview.md)
 - **Date:** 2026-11-09
 
 - M3 lands in three PRs, in this order, each a branch from `main` ([ADR 0003](0003-branches-off-main-merged-without-squashing.md)):
