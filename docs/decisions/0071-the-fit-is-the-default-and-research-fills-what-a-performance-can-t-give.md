@@ -18,7 +18,7 @@ Six values, compared in [the styles against published measurements](../research/
 | `accent` | 2, 6 | 33.21, -11.95 | The placeholder | The fit pushes accents past 127, so their contrast falls as `groove` rises |
 | `rider_gap` | 4, 14 | 0.11, 0.39 | The placeholder | Under half a step, it can't move 2 steps with `dynamic_range` and `groove` |
 
-Three premises, from Appendix A and ADR 0068's check, no longer hold a fitted value back:
+Three fitted values run against premises from Appendix A and ADR 0068's check. Both numbers have been seen, and the fit stands for all three, so these premises no longer hold a fitted value back:
 - **The pushed side of `feel` is smaller:** `medium` pushes 2.35 ms and lays back 2.21.
 - **Laid back is about twice pushed:** `loose` lays back 4.10 ms, 1.23 times its pushed 3.32.
 - **A rider is never early:** `loose`'s riders from 150 BPM play 1.31 ms before the other drums.
