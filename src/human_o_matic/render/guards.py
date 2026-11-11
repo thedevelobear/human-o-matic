@@ -7,7 +7,8 @@ Timing, in turn:
    placed before its main by the gap it was played at, from the source notes.
 3. Across a section boundary, two notes in a row on one pitch each keep to their side of it: the
    earlier at most `BOUNDARY_SHARE` of their grid gap late, the later at most that early, so
-   they keep `MIN_GAP_SHARE` of the gap whatever the other section draws.
+   they keep `MIN_GAP_SHARE` of the gap whatever the other section draws. On one grid point,
+   the later keeps a tick or more after it.
 4. Each note goes to its nearest tick, and to tick 0 when it would be before it. When a grace
    would start before tick 0, its main note goes later with it, so the grace starts at tick 0
    and keeps its gap, up to the cap: past it, the gap is shortened, and `unmet` counts it. A
@@ -15,12 +16,14 @@ Timing, in turn:
 5. In each pitch's play order, a note after another of its pitch in its own section, or after a
    note played as it came in, keeps `MIN_GAP_SHARE` of their grid gap and at least a tick, by
    moving later with its main note and graces. A note before one played as it came in keeps it
-   by moving earlier. The gap is counted in milliseconds through the tempo map, as the cap is,
-   and a main note and its graces move by one shift in milliseconds, so they keep one offset. So
-   between two notes of a section the gap never takes a note past the cap (ADR 0073). When a
-   note can't keep both gaps, the one from the note before wins, and `unmet` counts it. Next to
-   a note played as it came in, the cap wins over the gap, so the note stops at the cap with
-   less of its gap, a tick or more from the kept note, and `unmet` counts it, not `gap`.
+   by moving earlier, and so does a note before one at a boundary, so the gap never takes that
+   one past its side: each side is carried back through the section's notes before it. The gap
+   is counted in milliseconds through the tempo map, as the cap is, and a main note and its
+   graces move by one shift in milliseconds, so they keep one offset. So between two notes of a
+   section the gap never takes a note past the cap (ADR 0073). When a note can't keep both
+   gaps, the one from the note before wins, and `unmet` counts it. Next to a note played as it
+   came in, the cap wins over the gap, so the note stops at the cap with less of its gap, a tick
+   or more from the kept note, and `unmet` counts it, not `gap`.
 6. A note a controller value decides or shapes stays within its window, between the controller
    events around its source note (ADR 0053), which wins over the gap.
 7. Each note keeps its source length, at least a tick, and ends by the time the next note of its
@@ -118,10 +121,10 @@ class GuardCounts(BaseModel):
     tick_zero: int = 0
     """Notes that would start before tick 0, moved to it, or later with their graces."""
     gap: int = 0
-    """Notes moved, later after a note of their pitch or earlier before a kept one, to keep
-    their gap. A note that can't keep both gaps keeps the one from the note before, and counts
-    here and under `unmet`. One the cap stops short of a kept note's gap counts only under
-    `unmet`."""
+    """Notes moved, later after a note of their pitch, or earlier before a kept one or one at a
+    boundary, to keep their gap or side. A note that can't keep both gaps keeps the one from the
+    note before, and counts here and under `unmet`. One the cap stops short of a kept note's gap
+    counts only under `unmet`."""
     controller: int = 0
     """Notes their controller window moved, which wins over the gap."""
     range: int = 0
@@ -194,6 +197,7 @@ def hold_timing(
     for position, unit in enumerate(unit_of):
         members.setdefault(unit, []).append(position)
     previous = _previous(slots, unit_of)
+    side_low, side_high = _sides(slots, places, grid_ms, previous, tempos)
     lowest = np.full(count, -MAX_OFFSET_MS)
     for unit, held in members.items():
         if slots[unit].kept:
@@ -239,15 +243,19 @@ def hold_timing(
     # of theirs with the shortest tick, and what bounds it wins in this order: the controller
     # window; then a tick after a kept note before it and a tick before a kept note after it, so
     # notes never reorder; then the cap, over the gap to a kept note; then the gap from the note
-    # before over the gap to a kept note after. Each unit is taken after the notes before its own
-    # on their pitches, so a gap is counted from where that note ends up.
+    # before, and the note's side of a boundary from the note before, over the gap to a kept note
+    # after and its side of a boundary to the note after. Each unit is taken after the notes before
+    # its own on their pitches, so a gap is counted from where that note ends up.
     for unit in _unit_order(slots, members, unit_of, previous):
         held = members[unit]
         if not slots[unit].kept:
             counted = _counted_in(tempos, starts, held, unit)
             base = int(starts[counted])
             before_low = -_FAR
-            """The shift that keeps the gap from the note before in the note's section."""
+            """The shift that keeps the gap from the note before in the note's section, or the
+            note's side of a boundary from the note before."""
+            side_high_shift = _FAR
+            """The shift that keeps the note's side of a boundary to the note after."""
             kept_low, kept_high = -_FAR, _FAR
             """The shifts that keep the gap from a kept note before and to a kept note after."""
             order_low, order_high = -_FAR, _FAR
@@ -263,6 +271,15 @@ def hold_timing(
                 capped_high = min(
                     capped_high, _shift_to(tempos, int(cap_high[member]), here, base, upper=True)
                 )
+                if side_low[member] > -_FAR:
+                    before_low = max(
+                        before_low, _shift_to(tempos, int(side_low[member]), here, base)
+                    )
+                if side_high[member] < _FAR:
+                    side_high_shift = min(
+                        side_high_shift,
+                        _shift_to(tempos, int(side_high[member]), here, base, upper=True),
+                    )
                 before = previous[member]
                 if before is not None and (
                     slots[before].kept or slots[before].section == slot.section
@@ -295,7 +312,7 @@ def hold_timing(
             short = kept_low > capped_high or kept_high < capped_low
             kept_low = max(min(kept_low, capped_high), order_low)
             kept_high = min(max(kept_high, capped_low), order_high)
-            gap_low, gap_high = max(before_low, kept_low), kept_high
+            gap_low, gap_high = max(before_low, kept_low), min(kept_high, side_high_shift)
             unmet = short
             if gap_low > gap_high:
                 unmet = True
@@ -367,6 +384,51 @@ def _previous(slots: Sequence[Slot], unit_of: Sequence[int]) -> list[int | None]
         for prior, position in pairwise(sequence):
             previous[position] = previous[prior] if unit_of[prior] == unit_of[position] else prior
     return previous
+
+
+def _sides(
+    slots: Sequence[Slot],
+    places: FloatArray,
+    grid_ms: FloatArray,
+    previous: Sequence[int | None],
+    tempos: TempoMap,
+) -> tuple[IntArray, IntArray]:
+    """The earliest and latest tick of each note at a boundary, from the score alone, that the gap
+    from the note before can't move it past: its side of its grid gap to the note of another
+    section on its pitch, rounded to a tick, and on one grid point the later a tick or more after
+    the earlier. A latest tick is carried back through the notes before it in its section, each
+    by the gap it keeps to the next."""
+    count = len(slots)
+    late, early = np.zeros(count), np.zeros(count)
+    """How far late each note may go before the next on its pitch, and how far early after the
+    one before, in milliseconds, at a boundary."""
+    pairs: list[tuple[int, int]] = []
+    for sequence in _sequences([slot.key for slot in slots]):
+        for earlier, later in pairwise(sequence):
+            a, b = slots[earlier], slots[later]
+            if a.kept or b.kept or a.section == b.section:
+                continue
+            gap = float(grid_ms[later] - grid_ms[earlier])
+            pairs.append((earlier, later))
+            late[earlier], early[later] = BOUNDARY_SHARE * gap, -BOUNDARY_SHARE * gap
+    latest = np.rint(tempos.ms_to_ticks(places + late)).astype(np.int64)
+    earliest = np.rint(tempos.ms_to_ticks(places + early)).astype(np.int64)
+    side_low = np.full(count, -_FAR, dtype=np.int64)
+    side_high = np.full(count, _FAR, dtype=np.int64)
+    for earlier, later in pairs:
+        side_high[earlier] = latest[earlier]
+        side_low[later] = max(int(earliest[later]), int(latest[earlier]) + 1)
+    for position in reversed(range(count)):
+        before = previous[position]
+        if side_high[position] == _FAR or before is None:
+            continue
+        if slots[before].kept or slots[before].section != slots[position].section:
+            continue
+        gap = MIN_GAP_SHARE * float(grid_ms[position] - grid_ms[before])
+        side_high[before] = min(
+            int(side_high[before]), _last_before(tempos, int(side_high[position]), gap)
+        )
+    return side_low, side_high
 
 
 def _unit_order(
