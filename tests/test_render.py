@@ -544,6 +544,50 @@ def test_graces_keep_their_gap_and_their_order_and_on_the_first_tick_up_to_the_c
     one_pitch_keeps_its_order(result, out)
 
 
+@pytest.mark.parametrize(
+    ("hits", "bpm", "cuts"),
+    [
+        pytest.param(
+            [(0, KICK), (2 * BAR - 48, HAT), (2 * BAR, HAT), (2 * BAR + PPQ, KICK)],
+            600.0,
+            (2,),
+            id="either-side-of-a-boundary",
+        ),
+        pytest.param(
+            [(step * SIXTEENTH, HAT) for step in range(41)] + [(2 * BAR - 250, HAT)],
+            600.0,
+            (2,),
+            id="before-a-boundary",
+        ),
+        pytest.param(
+            [(230, HAT, SOFT), (240, HAT, SOFT), (230, PEDAL, SOFT), (240, PEDAL, SOFT)],
+            120.0,
+            (),
+            id="the-later-with-a-grace",
+        ),
+    ],
+)
+@pytest.mark.parametrize("style", STYLE_NAMES)
+def test_two_hats_read_onto_one_grid_point_keep_their_order_and_gaps(
+    hits: list[Hit], bpm: float, cuts: tuple[int, ...], style: StyleName
+) -> None:
+    # Two hats played a few milliseconds apart and read onto one grid point. Either side of a
+    # boundary they landed on one tick. Before one, the second was pushed past its side of the
+    # gap, and the next section's hat kept under 0.6 of it. With a grace before each, the second
+    # kept its place and the first went after it.
+    midi = song(hits, bpm=bpm)
+    result = normalized(midi)
+
+    for seed in range(4):
+        for feel in (-1.0, 1.0):
+            loose = ControlVector(tightness=0.0, feel=feel)
+            plan = plan_for(midi, result, cuts=cuts, controls=loose, seed=seed, style=style)
+            out = rendered(midi, plan, result=result)
+            one_pitch_keeps_its_order(result, out)
+            graces_keep_their_gap(result, out)
+            offsets_within_the_cap(result, out)
+
+
 @given(grooves(), CUTS, st.data())
 def test_a_section_played_as_it_came_in_comes_out_unchanged(
     hits: list[Hit], cuts: list[int], data: st.DataObject
