@@ -1,6 +1,6 @@
 # 0071. The fit is the default, research fills what a performance can't give, and a value they disagree on waits for both numbers
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - A style's value is the fit from the performed MIDI by default ([ADR 0068](0068-what-calibration-fits-and-what-stays-modelled.md)).

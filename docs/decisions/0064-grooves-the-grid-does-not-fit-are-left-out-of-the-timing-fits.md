@@ -1,6 +1,6 @@
 # 0064. Grooves the grid doesn't fit are left out of the timing fits
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - A groove whose notes the quantizer's grids can't place, such as tuplets or groupings none of its four grids holds ([ADR 0026](0026-a-grid-per-beat-by-timing-error-and-complexity.md)), is left out of the timing fits, since its offsets then measure the grid's misfit rather than the drummer.

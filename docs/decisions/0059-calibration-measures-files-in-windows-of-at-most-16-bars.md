@@ -1,6 +1,6 @@
 # 0059. Calibration measures each file in windows of at most 16 bars, around what the file leaves open
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - `tools/calibrate.py measure` reads every file of a folder that `private/data/midi-folders.toml` assigns a kit ([ADR 0057](0057-each-folder-s-kit-is-in-a-gitignored-file-under-private-data.md)) through that kit with `normalize()`, as the app reads a song.

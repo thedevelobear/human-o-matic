@@ -1,6 +1,6 @@
 # 0056. The calibration tools add no dependency, and `symusic` is not used
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - `tools/infer_map.py` reads performed MIDI with the project's own reader (`read_midi`, over `mido`), and `tools/calibrate.py` will read it the same way and through `normalize()`, and fit with numpy. M3's calibration adds no dependency.

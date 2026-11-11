@@ -1,6 +1,6 @@
 # 0065. Velocities are fitted once and shared by the three styles, which differ in timing only
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - One velocity fit serves `tight`, `medium` and `loose`. It is fitted on every groove of every assigned folder whose velocities aren't flat, whatever its timing: performed, held to the grid ([ADR 0060](0060-a-groove-held-to-the-grid-is-left-out-of-timing.md)), without a tempo, or with too few notes for a timing spread.

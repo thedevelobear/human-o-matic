@@ -1,6 +1,6 @@
 # 0061. Calibration measures the engine's statistics, with feel taken against the kick
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 Each groove gets the plan's four attributes, measured as `render/measure.py` measures a render ([ADR 0052](0052-each-control-is-tested-against-the-statistic-it-mainly-drives.md)):

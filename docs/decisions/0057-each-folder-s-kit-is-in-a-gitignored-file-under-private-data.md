@@ -1,6 +1,6 @@
 # 0057. The kit that reads each folder of performed MIDI is in a gitignored file under `private/data/`
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - `private/data/midi-folders.toml` says, for each folder of `private/midi/` or a folder inside one, the built-in kit that reads it (`map = "library/kit"`, or `"library"` for a library with one kit) or why it is left out (`exclude = "..."`). Its keys are paths under `private/midi/`, and a file follows the longest key its path starts with.

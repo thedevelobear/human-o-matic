@@ -96,22 +96,22 @@ What was decided, specifically enough to check the code against.
 | [0052](decisions/0052-each-control-is-tested-against-the-statistic-it-mainly-drives.md) | Each control is tested against the statistic it mainly drives, and the plan's properties have exact definitions | Accepted. Its `feel` row's smaller pushed side is amended by [ADR 0071](decisions/0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md), and its same-pitch and cap properties by [ADR 0073](decisions/0073-the-gap-is-counted-in-milliseconds-through-the-tempo-map.md) |
 | [0053](decisions/0053-a-controller-bound-note-keeps-its-controller-value.md) | A controller-bound note keeps its controller value, and following and writing controllers wait for a map that gives them | Accepted |
 | [0054](decisions/0054-human-o-matic-render-writes-a-new-midi-file-by-a-plan-and-prints-json.md) | `human-o-matic render` writes a new MIDI file by a plan, and prints its summary and each section's statistics as JSON | Accepted. Its `--style` taking only `tight` is amended by [ADR 0070](decisions/0070-the-engine-reads-the-styles-from-data-styles.md) |
-| [0055](decisions/0055-m3-adds-maps-for-four-drum-libraries.md) | M3 adds maps for Counterkit, NI Drum Lab, Krimh Drums and GGD Matt Halpern Signature Pack | Proposed |
-| [0056](decisions/0056-the-calibration-tools-add-no-dependency.md) | The calibration tools add no dependency, and `symusic` is not used | Proposed |
-| [0057](decisions/0057-each-folder-s-kit-is-in-a-gitignored-file-under-private-data.md) | The kit that reads each folder of performed MIDI is in a gitignored file under `private/data/` | Proposed |
-| [0058](decisions/0058-tools-are-scripts-checked-like-src.md) | Tracked tools are scripts in `tools/`, checked as strictly as `src/`, and tested from `tests/` | Proposed |
-| [0059](decisions/0059-calibration-measures-files-in-windows-of-at-most-16-bars.md) | Calibration measures each file in windows of at most 16 bars, around what the file leaves open | Proposed |
-| [0060](decisions/0060-a-groove-held-to-the-grid-is-left-out-of-timing.md) | A groove held to the grid is left out of the timing statistics | Proposed |
-| [0061](decisions/0061-calibration-measures-the-engine-s-statistics-with-feel-against-the-kick.md) | Calibration measures the engine's statistics, with feel taken against the kick | Proposed |
-| [0062](decisions/0062-the-vocabulary-adds-damped-strokes-wires-off-and-crash-tips.md) | The vocabulary adds damped strokes, a snare with its wires off, and a crash's tip stroke | Proposed |
-| [0063](decisions/0063-a-pack-is-a-source.md) | A pack, a folder's first-level subfolder, is a source | Proposed |
-| [0064](decisions/0064-grooves-the-grid-does-not-fit-are-left-out-of-the-timing-fits.md) | Grooves the grid doesn't fit are left out of the timing fits | Proposed |
-| [0065](decisions/0065-velocities-are-fitted-once-and-shared-by-the-three-styles.md) | Velocities are fitted once and shared by the three styles, which differ in timing only | Proposed |
-| [0066](decisions/0066-sleep-token-ii-gets-an-inferred-groove-pack-kit.md) | Sleep Token II gets a second kit, `groove-pack`, inferred, for the layout its groove files play | Proposed |
-| [0067](decisions/0067-the-bands-are-cut-at-3-and-6-ms.md) | The bands are cut at 3 and 6 ms of timing spread | Proposed |
-| [0068](decisions/0068-what-calibration-fits-and-what-stays-modelled.md) | What calibration fits, by energy, metric level and tempo, and what stays modelled or placeholder | Proposed. Its fitting of the rider gap, accent and fill crescendo, and three premises of its check, are amended by [ADR 0071](decisions/0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md) |
-| [0069](decisions/0069-a-style-is-one-complete-toml-file-written-by-the-fit.md) | A style is one complete TOML file in `data/styles/`, written by the fit | Proposed |
-| [0070](decisions/0070-the-engine-reads-the-styles-from-data-styles.md) | The engine reads the three styles from `data/styles/`, and the placeholder stays as the fit's source | Proposed |
-| [0071](decisions/0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md) | The fit is the default, research fills what a performance can't give, and a value they disagree on waits for both numbers | Proposed |
-| [0072](decisions/0072-docs-research-holds-published-measurements-compared-with-the-project-s-values.md) | `docs/research/` holds published measurements compared with the project's values | Proposed |
-| [0073](decisions/0073-the-gap-is-counted-in-milliseconds-through-the-tempo-map.md) | The gap is counted in milliseconds through the tempo map, so it never takes a note past the cap | Proposed |
+| [0055](decisions/0055-m3-adds-maps-for-four-drum-libraries.md) | M3 adds maps for Counterkit, NI Drum Lab, Krimh Drums and GGD Matt Halpern Signature Pack | Accepted |
+| [0056](decisions/0056-the-calibration-tools-add-no-dependency.md) | The calibration tools add no dependency, and `symusic` is not used | Accepted |
+| [0057](decisions/0057-each-folder-s-kit-is-in-a-gitignored-file-under-private-data.md) | The kit that reads each folder of performed MIDI is in a gitignored file under `private/data/` | Accepted |
+| [0058](decisions/0058-tools-are-scripts-checked-like-src.md) | Tracked tools are scripts in `tools/`, checked as strictly as `src/`, and tested from `tests/` | Accepted |
+| [0059](decisions/0059-calibration-measures-files-in-windows-of-at-most-16-bars.md) | Calibration measures each file in windows of at most 16 bars, around what the file leaves open | Accepted |
+| [0060](decisions/0060-a-groove-held-to-the-grid-is-left-out-of-timing.md) | A groove held to the grid is left out of the timing statistics | Accepted |
+| [0061](decisions/0061-calibration-measures-the-engine-s-statistics-with-feel-against-the-kick.md) | Calibration measures the engine's statistics, with feel taken against the kick | Accepted |
+| [0062](decisions/0062-the-vocabulary-adds-damped-strokes-wires-off-and-crash-tips.md) | The vocabulary adds damped strokes, a snare with its wires off, and a crash's tip stroke | Accepted |
+| [0063](decisions/0063-a-pack-is-a-source.md) | A pack, a folder's first-level subfolder, is a source | Accepted |
+| [0064](decisions/0064-grooves-the-grid-does-not-fit-are-left-out-of-the-timing-fits.md) | Grooves the grid doesn't fit are left out of the timing fits | Accepted |
+| [0065](decisions/0065-velocities-are-fitted-once-and-shared-by-the-three-styles.md) | Velocities are fitted once and shared by the three styles, which differ in timing only | Accepted |
+| [0066](decisions/0066-sleep-token-ii-gets-an-inferred-groove-pack-kit.md) | Sleep Token II gets a second kit, `groove-pack`, inferred, for the layout its groove files play | Accepted |
+| [0067](decisions/0067-the-bands-are-cut-at-3-and-6-ms.md) | The bands are cut at 3 and 6 ms of timing spread | Accepted |
+| [0068](decisions/0068-what-calibration-fits-and-what-stays-modelled.md) | What calibration fits, by energy, metric level and tempo, and what stays modelled or placeholder | Accepted. Its fitting of the rider gap, accent and fill crescendo, and three premises of its check, are amended by [ADR 0071](decisions/0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md) |
+| [0069](decisions/0069-a-style-is-one-complete-toml-file-written-by-the-fit.md) | A style is one complete TOML file in `data/styles/`, written by the fit | Accepted |
+| [0070](decisions/0070-the-engine-reads-the-styles-from-data-styles.md) | The engine reads the three styles from `data/styles/`, and the placeholder stays as the fit's source | Accepted |
+| [0071](decisions/0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md) | The fit is the default, research fills what a performance can't give, and a value they disagree on waits for both numbers | Accepted |
+| [0072](decisions/0072-docs-research-holds-published-measurements-compared-with-the-project-s-values.md) | `docs/research/` holds published measurements compared with the project's values | Accepted |
+| [0073](decisions/0073-the-gap-is-counted-in-milliseconds-through-the-tempo-map.md) | The gap is counted in milliseconds through the tempo map, so it never takes a note past the cap | Accepted |

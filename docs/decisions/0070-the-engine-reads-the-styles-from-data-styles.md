@@ -1,6 +1,6 @@
 # 0070. The engine reads the three styles from `data/styles/`, and the placeholder stays as the fit's source
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - `render/style.py` reads `tight`, `medium` and `loose` from `data/styles/<name>.toml` through `data_dir()` ([ADR 0024](0024-built-in-data-is-found-beside-the-source.md)), checking each against the `Style` model as it loads, once per run. A missing or invalid file, or one holding another style's name, is an error that names the file.

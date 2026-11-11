@@ -1,6 +1,6 @@
 # 0062. The vocabulary adds damped strokes, a snare with its wires off, and a crash's tip stroke
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - `data/vocabulary.toml` adds four names, each a variant that drops to the stroke it refines:
