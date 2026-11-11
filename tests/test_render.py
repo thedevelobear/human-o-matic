@@ -62,6 +62,8 @@ CAP_MS = 12.0
 """The plan's cap on an offset from the grid."""
 GAP_SHARE = 0.6
 """The share of its grid gap the plan says a note keeps from the one before it on its pitch."""
+ROUNDING_MS = 1e-6
+"""Float rounding in the conversions between ticks and milliseconds."""
 
 
 def by_key(notes: Sequence[RenderedNote], key: str) -> dict[object, list[RenderedNote]]:
@@ -202,15 +204,31 @@ def at_corners(
     return plan_for(midi, result, cuts=cuts, sections=controls, controls=song_controls, style=style)
 
 
+EXTREMES = st.sampled_from((60.0, 600.0)) | TEMPOS
+"""Tempos at 60 or 600 BPM half the time, so a change is often 10 to 1 either way."""
+
+
+def tempo_changes(bars: int) -> st.SearchStrategy[list[tuple[int, float]]]:
+    """Up to 120 tempo changes as `(tick, bpm)`, each on a 64th of the first `bars` bars, so they
+    often fall between two hits a 16th apart."""
+    ticks = st.integers(1, 64 * bars - 1).map(lambda step: step * SIXTEENTH // 4)
+    return st.lists(st.tuples(ticks, EXTREMES), max_size=120)
+
+
 DENSE = grooves((KICK, SNARE, HAT), per_bar=36)
 """Grooves on three drums, so notes on one pitch are often a 16th apart."""
 
 
-@given(DENSE, CUTS, TEMPOS, LENGTHS, st.data())
+@given(DENSE, CUTS, TEMPOS, tempo_changes(6), LENGTHS, st.data())
 def test_notes_on_one_pitch_keep_their_order_and_most_of_their_grid_gap(
-    hits: list[Hit], cuts: list[int], bpm: float, length: int, data: st.DataObject
+    hits: list[Hit],
+    cuts: list[int],
+    bpm: float,
+    changes: list[tuple[int, float]],
+    length: int,
+    data: st.DataObject,
 ) -> None:
-    midi = song(hits, bpm=bpm, length=length)
+    midi = song(hits, bpm=bpm, tempos=changes, length=length)
     result = normalized(midi)
 
     one_pitch_keeps_its_order(
@@ -219,36 +237,58 @@ def test_notes_on_one_pitch_keep_their_order_and_most_of_their_grid_gap(
 
 
 def one_pitch_keeps_its_order(result: Normalized, out: Rendered) -> None:
-    """Notes on one pitch keep their order and 0.6 of their grid gap less a tick, and a rendered
-    note ends by the next one's start."""
+    """Notes on one pitch keep their order and 0.6 of their grid gap in milliseconds, less half a
+    tick where each lands for going to a tick, and a rendered note ends by the next one's start
+    (ADR 0073)."""
+    tempos = result.score.tempos
     for notes in by_key(out.notes, "pitch").values():
         for earlier, later in pairwise(notes):
             if earlier.kept and later.kept:
                 continue
-            grid = (
-                result.score.notes[later.position].tick - result.score.notes[earlier.position].tick
-            )
+            ticks = [result.score.notes[note.position].tick for note in (earlier, later)]
+            grid = tempos.tick_to_ms(ticks[1]) - tempos.tick_to_ms(ticks[0])
+            played = tempos.tick_to_ms(later.note.start) - tempos.tick_to_ms(earlier.note.start)
+            rounding = (landing_tick(result, earlier) + landing_tick(result, later)) / 2
             assert later.note.start > earlier.note.start
-            assert later.note.start - earlier.note.start >= GAP_SHARE * grid - 1
+            assert played >= GAP_SHARE * grid - rounding - ROUNDING_MS
             if not earlier.kept:
                 assert earlier.note.end <= later.note.start
 
 
+def landing_tick(result: Normalized, note: RenderedNote) -> float:
+    """The length of a tick where the note lands, in milliseconds: the longer of the ticks either
+    side of its start, since a note going up to a tempo change is rounded in the tick before it."""
+    tempos, start = result.score.tempos, note.note.start
+    return max(tempos.ms_per_tick(max(start - 1, 0)), tempos.ms_per_tick(start))
+
+
+@st.composite
+def hat_runs(draw: st.DrawFn, groove: st.SearchStrategy[list[Hit]], bars: int) -> list[Hit]:
+    """A groove with, half the time, a hat on every 16th of `bars` bars, so notes on one pitch are
+    a 16th apart and their gap binds."""
+    hits = draw(groove)
+    if not draw(st.booleans()):
+        return hits
+    run: list[Hit] = [(step * SIXTEENTH, HAT) for step in range(16 * bars)]
+    return [hit for hit in hits if hit[1] != HAT] + run
+
+
 @given(
-    flams(grooves((KICK, SNARE, HAT), max_bars=4)),
+    flams(hat_runs(grooves((KICK, SNARE, HAT), max_bars=4), 4)),
     TEMPOS,
-    st.lists(st.tuples(st.integers(1, 4 * 64 - 1), TEMPOS), max_size=120),
+    tempo_changes(4),
     CUTS,
     st.data(),
 )
 def test_offsets_stay_within_the_cap_at_every_tempo(
     hits: list[Hit],
     bpm: float,
-    tempos: list[tuple[int, float]],
+    changes: list[tuple[int, float]],
     cuts: list[int],
     data: st.DataObject,
 ) -> None:
-    changes = [(step * SIXTEENTH // 4, value) for step, value in tempos]
+    # Hats often run in 16ths, with changes of 10 to 1 between them, so the gap binds across a
+    # change, and with graces, whose main notes move with them.
     midi = song(hits, bpm=bpm, tempos=changes)
     result = normalized(midi)
 
@@ -258,14 +298,10 @@ def test_offsets_stay_within_the_cap_at_every_tempo(
 def offsets_within_the_cap(result: Normalized, out: Rendered) -> None:
     """Each rendered note's offset is within the cap plus two ticks for going to a tick, ticks of
     the tempo where the note lands, which a tempo change can set apart from its grid point's. A
-    note going up to a tempo change is rounded in the tick before it. A note played as it came in
-    keeps its timing, however far off the grid it was played."""
-    tempos = result.score.tempos
+    note played as it came in keeps its timing, however far off the grid it was played."""
     for note in out.notes:
         if not note.kept:
-            start = note.note.start
-            tick = max(tempos.ms_per_tick(max(start - 1, 0)), tempos.ms_per_tick(start))
-            assert abs(note.offset_ms) <= CAP_MS + 2 * tick
+            assert abs(note.offset_ms) <= CAP_MS + 2 * landing_tick(result, note)
 
 
 def test_a_note_cut_to_the_cap_before_a_tempo_change_goes_to_a_tick_of_that_tempo() -> None:
