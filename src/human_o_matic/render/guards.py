@@ -15,8 +15,9 @@ Timing, in turn:
 5. In time order, a note after another of its pitch in its own section, or after a note played as
    it came in, keeps `MIN_GAP_SHARE` of their grid gap and at least a tick, by moving later with
    its main note and graces. A note before one played as it came in keeps it by moving earlier.
-   The gap is counted in milliseconds through the tempo map, as the cap is, so between two notes
-   of a section it never takes the later past the cap (ADR 0073). When a note can't keep both
+   The gap is counted in milliseconds through the tempo map, as the cap is, and a main note and
+   its graces move by one shift in milliseconds, so they keep one offset. So between two notes
+   of a section the gap never takes a note past the cap (ADR 0073). When a note can't keep both
    gaps, the one from the note before wins, and `unmet` counts it. Next to a note played as it
    came in, the cap wins over the gap, so the note stops at the cap with less of its gap, a tick
    or more from the kept note, and `unmet` counts it, not `gap`.
@@ -217,10 +218,7 @@ def hold_timing(
             starts[position] = slot.source.start
     for unit, held in members.items():
         if not slots[unit].kept:
-            least = 0
-            for member in sorted(held, key=lambda member: (float(places[member]), member)):
-                starts[member] = max(int(starts[member]), least)
-                least = int(starts[member]) + 1
+            _keep_order(starts, held, places)
     earliest = np.maximum(np.floor(tempos.ms_to_ticks(places + lowest)), 0).astype(np.int64)
 
     kept_after = {
@@ -234,15 +232,17 @@ def hold_timing(
     cap_high = np.floor(tempos.ms_to_ticks(grid_ms + MAX_OFFSET_MS)).astype(np.int64)
     """The earliest and latest ticks within the cap, for the gap to a kept note."""
 
-    # Each note moves by one shift with its main note and graces, and what bounds it wins in this
-    # order: the controller window; then a tick after a kept note before it and a tick before a
-    # kept note after it, so notes never reorder; then the cap, over the gap to a kept note; then
-    # the gap from the note before over the gap to a kept note after.
+    # Each note moves by one shift with its main note and graces, in milliseconds, so they keep
+    # their offset across a tempo change (ADR 0073). The shift is counted in the main note's ticks,
+    # and what bounds it wins in this order: the controller window; then a tick after a kept note
+    # before it and a tick before a kept note after it, so notes never reorder; then the cap, over
+    # the gap to a kept note; then the gap from the note before over the gap to a kept note after.
     last: dict[Key, int] = {}
     order = sorted(members, key=lambda unit: (min(slots[m].tick for m in members[unit]), unit))
     for unit in order:
         held = members[unit]
         if not slots[unit].kept:
+            main = int(starts[unit])
             before_low = -_FAR
             """The shift that keeps the gap from the note before in the note's section."""
             kept_low, kept_high = -_FAR, _FAR
@@ -256,28 +256,39 @@ def hold_timing(
             for member in held:
                 slot = slots[member]
                 here = int(starts[member])
-                capped_low = max(capped_low, int(cap_low[member]) - here)
-                capped_high = min(capped_high, int(cap_high[member]) - here)
+                capped_low = max(capped_low, _shift_to(tempos, int(cap_low[member]), here, main))
+                capped_high = min(
+                    capped_high, _shift_to(tempos, int(cap_high[member]), here, main, upper=True)
+                )
                 previous = last.get(slot.key)
                 if previous is not None and (
                     slots[previous].kept or slots[previous].section == slot.section
                 ):
                     gap = MIN_GAP_SHARE * float(grid_ms[member] - grid_ms[previous])
-                    least = _first_after(tempos, int(starts[previous]), gap)
+                    least = _shift_to(
+                        tempos, _first_after(tempos, int(starts[previous]), gap), here, main
+                    )
                     if slots[previous].kept:
-                        kept_low = max(kept_low, least - here)
-                        order_low = max(order_low, int(starts[previous]) + 1 - here)
+                        kept_low = max(kept_low, least)
+                        order_low = max(
+                            order_low, _shift_to(tempos, int(starts[previous]) + 1, here, main)
+                        )
                     else:
-                        before_low = max(before_low, least - here)
+                        before_low = max(before_low, least)
                 after = kept_after.get(member)
                 if after is not None:
                     gap = MIN_GAP_SHARE * float(grid_ms[after] - grid_ms[member])
                     most = _last_before(tempos, int(starts[after]), gap)
-                    kept_high = min(kept_high, most - here)
-                    order_high = min(order_high, int(starts[after]) - 1 - here)
+                    kept_high = min(kept_high, _shift_to(tempos, most, here, main, upper=True))
+                    order_high = min(
+                        order_high,
+                        _shift_to(tempos, int(starts[after]) - 1, here, main, upper=True),
+                    )
                 if slot.window is not None:
-                    held_low = max(held_low, slot.window[0] - here)
-                    held_high = min(held_high, slot.window[1] - here)
+                    held_low = max(held_low, _shift_to(tempos, slot.window[0], here, main))
+                    held_high = min(
+                        held_high, _shift_to(tempos, slot.window[1], here, main, upper=True)
+                    )
             short = kept_low > capped_high or kept_high < capped_low
             kept_low = max(min(kept_low, capped_high), order_low)
             kept_high = min(max(kept_high, capped_low), order_high)
@@ -297,7 +308,17 @@ def hold_timing(
                 tally.add("gap")
             if unmet:
                 tally.add("unmet")
-            starts[held] += shift
+            if shift:
+                moved = tempos.tick_to_ms(main + shift) - tempos.tick_to_ms(main)
+                for member in held:
+                    here = int(starts[member])
+                    starts[member] = (
+                        main + shift
+                        if member == unit
+                        else round(tempos.ms_to_tick(tempos.tick_to_ms(here) + moved))
+                    )
+                if len(held) > 1:
+                    _keep_order(starts, held, places)
         for member in held:
             last[slots[member].key] = member
 
@@ -335,6 +356,26 @@ def _places(slots: Sequence[Slot], grid_ms: FloatArray, tempos: TempoMap) -> Flo
             gap = tempos.tick_to_ms(main.source.start) - tempos.tick_to_ms(slot.source.start)
             places[position] = grid_ms[slot.main] - gap
     return places
+
+
+def _keep_order(starts: IntArray, held: Sequence[int], places: FloatArray) -> None:
+    """Holds a main note and its graces in the order of their places, a tick or more apart, and
+    from tick 0."""
+    least = 0
+    for member in sorted(held, key=lambda member: (float(places[member]), member)):
+        starts[member] = max(int(starts[member]), least)
+        least = int(starts[member]) + 1
+
+
+def _shift_to(tempos: TempoMap, tick: int, here: int, main: int, *, upper: bool = False) -> int:
+    """The shift of a main note on `main` that takes a note of its unit from `here` to `tick`,
+    when the unit moves by one shift in milliseconds: the least that reaches it, or with `upper`
+    the most that stays at or before it. At one tempo, it is `tick - here`."""
+    if here == main:
+        return tick - here
+    distance = tempos.tick_to_ms(tick) - tempos.tick_to_ms(here)
+    at = tempos.ms_to_tick(tempos.tick_to_ms(main) + distance)
+    return (floor(at + _ROUNDING) if upper else ceil(at - _ROUNDING)) - main
 
 
 def _first_after(tempos: TempoMap, tick: int, gap_ms: float) -> int:

@@ -304,3 +304,23 @@ def test_notes_keep_their_gap_in_milliseconds_and_the_cap_across_a_tempo_change(
 
             held_to_the_cap_and_the_gap(slots, timed.starts, tempo_map)
             assert tally.frozen().unmet == 0
+
+
+def test_a_main_note_across_a_tempo_change_moves_with_its_grace_in_milliseconds() -> None:
+    # 600 BPM up to tick 1600 and 60 after it. The grace on tick 1440 keeps its gap from the
+    # snare before it by moving about 14 ms later. Moved by the same 134 ticks, its main on tick
+    # 1680 would go 127 ms late. Moved by the same milliseconds, it keeps the grace's offset, to
+    # within the tick each went to.
+    tempos = TempoMap(PPQ, [0, 1600], [FAST, SLOW])
+    slots = [slot(1200, order=1), replace(slot(1440, order=2), main=2), slot(1680, order=3)]
+    tally = Tally()
+
+    timed = hold_timing(slots, np.array([12.0, -12.0, -12.0]), tempos, tally)
+
+    held_to_the_cap_and_the_gap(slots, timed.starts, tempos)
+    grid = tempos.ticks_to_ms(np.array([1440, 1680]))
+    grace, main = tempos.ticks_to_ms(timed.starts[1:]) - grid
+    assert grace > 0
+    assert abs(grace - main) <= tempos.ms_per_tick(1680)
+    counts = tally.frozen()
+    assert (counts.gap, counts.unmet) == (1, 0)
