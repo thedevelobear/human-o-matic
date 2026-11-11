@@ -445,6 +445,47 @@ def test_rider_hits_alternate_strong_and_weak_about_three_times_in_four(style: S
     assert np.mean(strong) > np.mean(weak)
 
 
+TURNS = 0.81
+"""The least share of turns on a quarter-note ride, over `TURN_SEEDS` takes of 256 bars at the
+defaults. Simulated over 100 seeds, one such take turns 0.77 of the time, spread 0.015, with the
+riders drawing the other roles' noise, 5.12, and 0.84, spread 0.016, with their own, 2.5 (ADR
+0076). The mean of four takes spreads about half as far, so this is 4 to 5 of its spreads from
+each. The styles share their velocities, so each draws the same."""
+TURN_SEEDS = range(1, 5)
+
+
+def turns(velocities: Sequence[int]) -> tuple[int, int]:
+    """Of the neighbouring steps between the velocities that both move, how many change
+    direction, and how many there are."""
+    signs = np.sign(np.diff(np.array(velocities, dtype=np.float64)))
+    moving = (signs[:-1] != 0) & (signs[1:] != 0)
+    return int(((signs[:-1] != signs[1:]) & moving).sum()), int(moving.sum())
+
+
+@pytest.mark.parametrize("style", STYLE_NAMES)
+def test_a_quarter_note_ride_turns_up_and_down_clearly(style: StyleName) -> None:
+    hits: list[Hit] = []
+    for bar in range(256):
+        at = bar * BAR
+        hits.extend([(at, KICK), (at + 2 * PPQ, KICK), (at + PPQ, SNARE), (at + 3 * PPQ, SNARE)])
+        hits.extend((at + quarter * PPQ, RIDE) for quarter in range(4))
+    midi = song(hits)
+    result = normalized(midi)
+
+    changed = steps = 0
+    for seed in TURN_SEEDS:
+        plan = plan_for(midi, result, cuts=range(8, 256, 8), seed=seed, style=style)
+        sections: dict[int, list[int]] = {}
+        for note in rendered(midi, plan, result=result).notes:
+            if note.part.rider == "alternate":
+                sections.setdefault(note.section, []).append(note.note.velocity)
+        for velocities in sections.values():
+            more, of = turns(velocities)
+            changed, steps = changed + more, steps + of
+
+    assert changed / steps >= TURNS, changed / steps
+
+
 def test_hits_on_one_grid_point_stay_within_10_ms_of_each_other_by_default() -> None:
     fill = ((4, SNARE), (3, TOM_1), (2, TOM_2), (1, TOM_2))
     hits: list[Hit] = [(0, CRASH)]
