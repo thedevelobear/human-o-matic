@@ -1,6 +1,6 @@
 # 0066. Sleep Token II gets a second kit, `groove-pack`, inferred, for the layout its groove files play
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - `sleep-token-ii` ships a second kit, `groove-pack` ("Groove Pack layout"), for the note layout the library's own groove files play, which differs from its default mapping. The library's mapping at hand names only the default layout, so each of the kit's 15 names is inferred from where the library puts its notes, `inferred` at `low` ([ADR 0025](0025-proposed-names-ship-at-low-confidence.md)): a kick, a snare's center and rimshot strokes, four toms, a closed hat with its tip stroke and an open hat, a ride's bow and bell, and three crashes.

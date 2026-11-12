@@ -1,6 +1,6 @@
 # 0073. The gap is counted in milliseconds through the tempo map, so it never takes a note past the cap
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - The guards' same-pitch gap ([ADR 0050](0050-guards-hold-every-backend-and-keep-each-section-independent.md)) is counted in milliseconds through the song's tempo map, as the ±12 ms cap is: a note keeps 0.6 of the milliseconds between its grid point and the note before's, measured between their starts, and at least a tick. The gap to a note played as it came in, before or after, is counted the same way. A tick worked out through milliseconds that is within a millionth of a whole tick is that tick.

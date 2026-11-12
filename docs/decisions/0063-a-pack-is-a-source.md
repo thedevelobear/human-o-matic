@@ -1,6 +1,6 @@
 # 0063. A pack, a folder's first-level subfolder, is a source
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - For [ADR 0044](0044-m3-ships-tight-medium-and-loose-styles-pooled-by-tightness.md)'s rule that no style is fitted on one source, a source is a pack: a first-level subfolder of a folder in `private/midi/`, or the folder itself for the files directly in it. A band that pools several packs meets the rule, even when they share a folder.

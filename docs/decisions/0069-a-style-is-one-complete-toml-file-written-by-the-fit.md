@@ -1,6 +1,6 @@
 # 0069. A style is one complete TOML file in `data/styles/`, written by the fit
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - Each style is one file, `data/styles/<name>.toml`, holding every field of the `Style` model, so a file alone is the whole style. The shared velocities ([ADR 0065](0065-velocities-are-fitted-once-and-shared-by-the-three-styles.md)) are written in each of the three, the same in all.

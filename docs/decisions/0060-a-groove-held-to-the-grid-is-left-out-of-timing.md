@@ -1,6 +1,6 @@
 # 0060. A groove held to the grid is left out of the timing statistics
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - A groove's offsets from their grid points are counted in steps, a step being the smallest gap between them: a tick, or more for a file saved at a finer resolution than it was played at. The groove is held to the grid when either:

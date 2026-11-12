@@ -7,9 +7,24 @@ from typing import Any
 import pytest
 from typer.testing import CliRunner, Result
 
-from grooves import BAR, COWBELL, HAT, KICK, PPQ, RIDE, SNARE, Hit, midi_file, rock
+from grooves import (
+    BAR,
+    COWBELL,
+    HAT,
+    KICK,
+    PPQ,
+    RIDE,
+    SNARE,
+    TOM_1,
+    TOM_2,
+    TOM_3,
+    Hit,
+    midi_file,
+    rock,
+)
 from human_o_matic.cli import app, read_plan
 from human_o_matic.controls import MAX_SEED, ControlVector
+from human_o_matic.maps.loader import find_kit
 from human_o_matic.midi.io import read_midi
 from midi_files import MidoMessage, build, end, name, off, on, tempo, track
 
@@ -92,6 +107,11 @@ def test_a_clean_render_writes_the_file_and_prints_its_summary(tmp_path: Path) -
     written = read_midi(tmp_path / "out.mid")
     assert len(written.notes) == 96
     assert "\n" not in result.stdout.strip()
+    assert summary["conversion"] == {
+        "changed": [],
+        "collisions": [],
+        "low_confidence": {"read": {}, "written": {}},
+    }
 
 
 def test_the_same_file_answers_plan_and_seed_write_the_same_bytes(tmp_path: Path) -> None:
@@ -141,6 +161,122 @@ def test_a_conversion_request_is_open_until_a_substitution_answers_it(tmp_path: 
     assert settled.exit_code == 0, settled.output
     assert output(settled)["summary"]["notes"]["dropped"] == 1
     assert output(settled)["summary"]["to_kit"].startswith("sleep-token-ii/")
+    assert output(settled)["summary"]["conversion"]["changed"] == [
+        {
+            "source": "cowbell.hit",
+            "target": "drop",
+            "notes": 1,
+            "steps": [{"kind": "picked", "asked": "cowbell.hit", "used": "drop"}],
+        }
+    ]
+
+
+TOMS = {"hit_types": {**ANSWERS["hit_types"], "tom": TYPED}}
+
+
+def test_the_summary_counts_the_notes_written_as_another_articulation(tmp_path: Path) -> None:
+    song = write(tmp_path, [*rock(2), (BAR - PPQ, TOM_3), (2 * BAR - PPQ, TOM_3)])
+    answers = json_file(tmp_path, "answers.json", TOMS)
+    args = [song, "--from-map", "gm", "--answers", answers, "--seed", "1"]
+
+    result = render(*args, "--to-map", "sleep-token-ii/default", "-o", tmp_path / "out.mid")
+
+    assert result.exit_code == 0, result.output
+    conversion = output(result)["summary"]["conversion"]
+    # GM's six toms re-spread onto the target's three, so its third becomes the second.
+    assert conversion["changed"] == [
+        {
+            "source": "tom.3.hit",
+            "target": "tom.2.hit",
+            "notes": 2,
+            "steps": [{"kind": "piece", "asked": "tom.3.hit", "used": "tom.2.hit"}],
+        }
+    ]
+    assert conversion["collisions"] == []
+
+
+def test_toms_that_land_on_one_pitch_at_one_tick_are_a_collision_and_two_hits(
+    tmp_path: Path,
+) -> None:
+    song = write(tmp_path, [*rock(2), (BAR + 3 * PPQ, TOM_1), (BAR + 3 * PPQ, TOM_2)])
+    answers = json_file(tmp_path, "answers.json", TOMS)
+    target = find_kit("sleep-token-ii/default")
+    out_file = tmp_path / "out.mid"
+
+    result = render(
+        song,
+        "--from-map",
+        "gm",
+        "--answers",
+        answers,
+        "--seed",
+        "1",
+        "--to-map",
+        target.ref,
+        "-o",
+        out_file,
+    )
+
+    assert result.exit_code == 0, result.output
+    pitch = target.write("tom.1.hit").pitch
+    channel = target.write("tom.1.hit").channel
+    assert output(result)["summary"]["conversion"]["collisions"] == [
+        {
+            "pitch": pitch,
+            "channel": channel,
+            "count": 1,
+            "notes": 2,
+            "sources": ["tom.1.hit", "tom.2.hit"],
+            "positions": [[1, 3.0]],
+        }
+    ]
+    first, second = sorted(note.start for note in read_midi(out_file).notes if note.pitch == pitch)
+    assert second > first
+
+
+def test_the_summary_counts_the_notes_read_and_written_through_low_confidence_names(
+    tmp_path: Path,
+) -> None:
+    song = write(tmp_path, rock(2))
+    answers = json_file(tmp_path, "answers.json", ANSWERS)
+    inferred = "sleep-token-ii/groove-pack"
+    to_inferred = render(
+        song,
+        "--from-map",
+        "gm",
+        "--answers",
+        answers,
+        "--seed",
+        "1",
+        "--to-map",
+        inferred,
+        "-o",
+        tmp_path / "inferred.mid",
+    )
+    from_inferred = render(
+        tmp_path / "inferred.mid",
+        "--from-map",
+        inferred,
+        "--answers",
+        answers,
+        "--seed",
+        "1",
+        "--to-map",
+        "gm",
+        "-o",
+        tmp_path / "back.mid",
+    )
+
+    assert to_inferred.exit_code == from_inferred.exit_code == 0, from_inferred.output
+    counts = {"kick.hit": 4, "snare.center": 4, "hat.closed": 16}
+    assert output(to_inferred)["summary"]["conversion"]["low_confidence"] == {
+        "read": {},
+        "written": counts,
+    }
+    assert output(from_inferred)["summary"]["conversion"]["low_confidence"] == {
+        "read": counts,
+        "written": {},
+    }
 
 
 def test_a_plan_sets_the_song_s_controls_and_a_section_s_by_its_first_bar(tmp_path: Path) -> None:
@@ -243,6 +379,15 @@ def test_a_substitution_the_target_can_t_play_is_a_usage_error(tmp_path: Path) -
     args[4] = json_file(tmp_path, "answers.json", answers)
 
     assert "substitutions." in usage_error(render(*args))
+
+
+def test_the_help_names_every_control_a_plan_takes() -> None:
+    result = runner.invoke(app, ["render", "--help"])
+
+    assert result.exit_code == 0, result.output
+    text = " ".join(result.stdout.split())
+    assert all(control in text for control in ControlVector.model_fields)
+    assert '{"controls": {"energy": 0.8}, "sections": {"8": {"skip": true}}}' in text
 
 
 def test_a_plan_file_reads_into_controls_by_bar() -> None:

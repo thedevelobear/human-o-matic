@@ -1,6 +1,6 @@
 # 0067. The bands are cut at 3 and 6 ms of timing spread
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - A groove whose timing spread is under 3 ms is `tight`, from 3 to under 6 ms `medium`, and 6 ms or more `loose` ([ADR 0044](0044-m3-ships-tight-medium-and-loose-styles-pooled-by-tightness.md)). The spread is the one `tools/calibrate.py` measures over a groove of at most 16 bars ([ADR 0059](0059-calibration-measures-files-in-windows-of-at-most-16-bars.md)), of the performed grooves the grid fits ([ADRs 0060](0060-a-groove-held-to-the-grid-is-left-out-of-timing.md) and [0064](0064-grooves-the-grid-does-not-fit-are-left-out-of-the-timing-fits.md)).

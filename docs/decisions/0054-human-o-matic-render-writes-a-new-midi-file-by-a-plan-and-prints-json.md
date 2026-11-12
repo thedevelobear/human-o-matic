@@ -1,6 +1,6 @@
 # 0054. `human-o-matic render` writes a new MIDI file by a plan, and prints its summary and each section's statistics as JSON
 
-- **Status:** Accepted. Its `--style` taking only `tight` is amended by [ADR 0070](0070-the-engine-reads-the-styles-from-data-styles.md)
+- **Status:** Accepted. Its `--style` taking only `tight` is amended by [ADR 0070](0070-the-engine-reads-the-styles-from-data-styles.md), and its summary by [ADR 0075](0075-render-s-summary-counts-how-the-notes-were-placed-in-the-target-kit.md)
 - **Date:** 2026-11-09
 
 - `human-o-matic render MIDI_FILE --from-map LIBRARY[/KIT] --seed N -o OUTPUT [--to-map LIBRARY[/KIT]] [--track N] [--bpm BPM] [--style tight] [--answers FILE] [--plan FILE] [--overwrite]` normalizes the song's drums as `analyze` does ([ADR 0033](0033-analyze-takes-flags-and-an-answers-file-and-prints-json.md)), finds their sections with the file's markers, renders them by a plan ([ADR 0046](0046-controls-are-layered-pydantic-models-with-a-json-round-trip.md)) and writes a new MIDI file.

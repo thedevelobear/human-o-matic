@@ -1,6 +1,6 @@
 # 0045. The engine is a set of render modules behind a small instrument seam
 
-- **Status:** Accepted
+- **Status:** Accepted. Its line on `preview.py` is amended by [ADR 0074](0074-a-render-is-heard-from-its-midi-file-in-the-daw-and-there-is-no-live-preview.md)
 - **Date:** 2026-11-09
 
 - The engine's modules, as the plan's architecture lays them out, with some it didn't list:

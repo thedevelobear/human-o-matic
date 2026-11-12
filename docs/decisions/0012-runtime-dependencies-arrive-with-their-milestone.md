@@ -1,6 +1,6 @@
 # 0012. M1 adds mido, numpy, pydantic and typer, and other runtime dependencies wait for their milestone
 
-- **Status:** Accepted. Its line on `scipy` is amended by [ADR 0041](0041-m2-adds-no-runtime-dependency.md), and its line on `symusic` by [ADR 0056](0056-the-calibration-tools-add-no-dependency.md)
+- **Status:** Accepted. Its line on `scipy` is amended by [ADR 0041](0041-m2-adds-no-runtime-dependency.md), its line on `symusic` by [ADR 0056](0056-the-calibration-tools-add-no-dependency.md), and its line on `python-rtmidi` by [ADR 0074](0074-a-render-is-heard-from-its-midi-file-in-the-daw-and-there-is-no-live-preview.md)
 - **Date:** 2026-11-08
 
 - M1's runtime dependencies are `mido` (MIDI I/O), `numpy` (quantizer and hit types), `pydantic` (map validation) and `typer` (the `human-o-matic analyze` CLI).

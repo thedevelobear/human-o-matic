@@ -452,6 +452,20 @@ def test_another_error_is_a_crash_not_a_bad_answer(
     assert "--answers" not in result.output
 
 
+@pytest.mark.parametrize("command", ["analyze", "render"])
+def test_the_help_lists_every_built_in_kit_by_a_name_the_maps_take(command: str) -> None:
+    result = runner.invoke(app, [command, "--help"])
+
+    assert result.exit_code == 0, result.output
+    text = " ".join(result.stdout.split())
+    listed = text.split("The built-in maps: ")[1].removesuffix(".").split(", ")
+    assert sorted(find_kit(name).ref for name in listed) == sorted(
+        kit.ref for kit in built_in_maps()
+    )
+    assert "iof-drummer/old" in listed
+    assert "gm" in listed
+
+
 def test_the_kit_is_named_by_library_and_kit(tmp_path: Path) -> None:
     result = analyze(drums(tmp_path, GROOVE), "--from-map", "iof-drummer/old")
 

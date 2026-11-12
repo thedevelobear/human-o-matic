@@ -12,8 +12,9 @@ request's `answer_with` names (ADR 0033).
 
 `render` does the same, then renders the drums by a plan and writes them to a new MIDI file,
 through `--to-map` when given, and prints its summary and each section's statistics instead
-(ADR 0054). Its answers file also takes `substitutions`, and `--plan` names a JSON file of the
-song's controls and each section's. It writes nothing while a request is open.
+(ADR 0054), the summary saying how the notes were placed in the target kit (ADR 0075). Its
+answers file also takes `substitutions`, and `--plan` names a JSON file of the song's controls
+and each section's. It writes nothing while a request is open.
 
 The exit code is 0 when no request is open and 3 when one is, with the JSON printed either way.
 A usage error, such as a map that doesn't exist, a `--bpm` outside `MIN_BPM` to `MAX_BPM`, or an
@@ -24,6 +25,7 @@ Anything else is a crash, 1.
 
 import json
 import re
+import textwrap
 from collections import Counter
 from collections.abc import Sequence
 from pathlib import Path
@@ -43,7 +45,7 @@ from human_o_matic.controls import (
 )
 from human_o_matic.decisions import DecisionRequest, DecisionRequired
 from human_o_matic.maps.kit import DrumKit
-from human_o_matic.maps.loader import find_kit
+from human_o_matic.maps.loader import built_in_maps, find_kit
 from human_o_matic.midi.io import MidiFileError, MidiSong, read_midi, write_midi
 from human_o_matic.midi.tempo import MAX_BPM, MICROSECONDS_PER_MINUTE, MIN_BPM, tempo_map
 from human_o_matic.midi.tracks import DrumTrackReason, choose_drum_track, track_name
@@ -56,7 +58,7 @@ from human_o_matic.render.engine import render
 from human_o_matic.render.guards import GuardCounts
 from human_o_matic.render.measure import SectionStats, section_stats
 from human_o_matic.render.style import STYLE_NAMES, built_in_styles
-from human_o_matic.render.target import place_score
+from human_o_matic.render.target import ConversionReport, place_score
 
 EXIT_OPEN = 3
 """The exit code when a decision request is open."""
@@ -334,6 +336,17 @@ def report(
     return json.dumps(out, separators=(",", ":"))
 
 
+def _maps_help() -> str:
+    """The built-in maps, for the help of the commands that take one: a library with one kit by
+    its id, and each kit of any other as `library/kit`. The help keeps these lines as they are
+    (`\\b`), since rewrapping them could break an id at a hyphen."""
+    kits = list(built_in_maps())
+    per_library = Counter(kit.library.id for kit in kits)
+    names = [kit.library.id if per_library[kit.library.id] == 1 else kit.ref for kit in kits]
+    lines = textwrap.wrap(f"{', '.join(names)}.", width=76, break_on_hyphens=False)
+    return "\b\nThe built-in maps:\n" + "\n".join(lines)
+
+
 app = typer.Typer(
     name="human-o-matic",
     add_completion=False,
@@ -348,7 +361,7 @@ def main() -> None:
     """Re-perform a drum MIDI file, section by section."""
 
 
-@app.command()
+@app.command(epilog=_maps_help())
 def analyze(
     midi_file: Annotated[
         Path,
@@ -365,7 +378,8 @@ def analyze(
         typer.Option(
             "--from-map",
             metavar="LIBRARY[/KIT]",
-            help="The built-in map the file is in. A library with one kit needs no kit.",
+            help="The built-in map the file is in, from those listed below. A library with one "
+            "kit needs no kit.",
         ),
     ],
     track: Annotated[
@@ -383,7 +397,8 @@ def analyze(
             exists=True,
             dir_okay=False,
             readable=True,
-            help="A JSON file of answers: unmapped, grids and hit_types.",
+            help="A JSON file of answers: unmapped, grids and hit_types, as the requests ask, "
+            'such as {"hit_types": {"snare": {"soft_below": 50, "accent_from": 110}}}.',
         ),
     ] = None,
 ) -> None:
@@ -507,6 +522,9 @@ class RenderSummary(BaseModel):
     seed: int
     notes: RenderedNotes
     guards: GuardCounts
+    conversion: ConversionReport
+    """How the notes were placed in `to_kit`: the articulations written as another, the drums
+    that land on one pitch, and the names read or written at `low` confidence (ADR 0075)."""
 
 
 class RenderedSection(BaseModel):
@@ -544,7 +562,12 @@ def _kit(name: str, flag: str) -> DrumKit:
         raise typer.BadParameter(str(error.args[0]), param_hint=f"'{flag}'") from error
 
 
-@app.command(name="render")
+def _listed(names: Sequence[str]) -> str:
+    """`a, b and c`."""
+    return f"{', '.join(names[:-1])} and {names[-1]}" if len(names) > 1 else "".join(names)
+
+
+@app.command(name="render", epilog=_maps_help())
 def render_song(
     midi_file: Annotated[
         Path,
@@ -561,7 +584,8 @@ def render_song(
         typer.Option(
             "--from-map",
             metavar="LIBRARY[/KIT]",
-            help="The built-in map the file is in. A library with one kit needs no kit.",
+            help="The built-in map the file is in, from those listed below. A library with one "
+            "kit needs no kit.",
         ),
     ],
     output: Annotated[
@@ -579,7 +603,8 @@ def render_song(
         typer.Option(
             min=0,
             max=MAX_SEED,
-            help="The seed. The same file, answers, plan and seed write the same bytes.",
+            help="The seed. The same file, answers, plan and seed write the same bytes, and "
+            "another seed plays another take.",
         ),
     ],
     to_map: Annotated[
@@ -587,7 +612,10 @@ def render_song(
         typer.Option(
             "--to-map",
             metavar="LIBRARY[/KIT]",
-            help="The built-in map to write to. Left out, the file's own.",
+            help="The built-in map to write to, from those listed below: the kit of the drum "
+            "instrument that will play the file. Left out, the file's own. The summary's "
+            "conversion counts the notes written as another articulation, the drums that land "
+            "on one pitch, and the names read or written at low confidence.",
         ),
     ] = None,
     track: Annotated[
@@ -608,7 +636,9 @@ def render_song(
             exists=True,
             dir_okay=False,
             readable=True,
-            help="A JSON file of answers: unmapped, grids, hit_types and substitutions.",
+            help="A JSON file of answers: unmapped, grids, hit_types and substitutions, as the "
+            'requests ask, such as {"hit_types": {"snare": {"soft_below": 50, "accent_from": '
+            "110}}}.",
         ),
     ] = None,
     plan: Annotated[
@@ -617,7 +647,10 @@ def render_song(
             exists=True,
             dir_okay=False,
             readable=True,
-            help="A JSON file of controls: the song's, and each section's by its first bar.",
+            help="A JSON file of controls: the song's under \"controls\", and each section's "
+            'under "sections" by the bar it starts at, from 0, as the sections print "start", '
+            'such as {"controls": {"energy": 0.8}, "sections": {"8": {"skip": true}}}. The '
+            f"controls are {_listed(list(ControlVector.model_fields))}.",
         ),
     ] = None,
     overwrite: Annotated[
@@ -625,7 +658,10 @@ def render_song(
     ] = False,
 ) -> None:
     """Normalize a song's drums, find their sections, render them by a plan and write a new MIDI
-    file, then print a summary and each section's statistics as JSON."""
+    file, then print a summary and each section's statistics as JSON.
+
+    While a decision request is open it writes nothing, prints the sections and the requests, and
+    exits 3: answer them, in --answers or with --track or --bpm, and run it again."""
     kit = _kit(from_map, "--from-map")
     target = _kit(to_map, "--to-map") if to_map is not None else kit
     if bpm is not None and not MIN_BPM <= bpm <= MAX_BPM:
@@ -741,6 +777,7 @@ def render_song(
             dropped=len(normalized.dropped) + len(placement.dropped),
         ),
         guards=rendered.guards,
+        conversion=placement.report,
     )
     sections = [
         RenderedSection(

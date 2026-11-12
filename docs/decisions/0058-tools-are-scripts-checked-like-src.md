@@ -1,6 +1,6 @@
 # 0058. Tracked tools are scripts in `tools/`, checked as strictly as `src/`, and tested from `tests/`
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - `tools/` holds tracked scripts that aren't part of the app, such as `infer_map.py`. Each runs as `uv run python tools/NAME.py`, and imports the package, and the other tools by module name.

@@ -1,6 +1,6 @@
 # 0056. The calibration tools add no dependency, and `symusic` is not used
 
-- **Status:** Proposed
+- **Status:** Accepted. Its line on `python-rtmidi` is amended by [ADR 0074](0074-a-render-is-heard-from-its-midi-file-in-the-daw-and-there-is-no-live-preview.md)
 - **Date:** 2026-11-10
 
 - `tools/infer_map.py` reads performed MIDI with the project's own reader (`read_midi`, over `mido`), and `tools/calibrate.py` will read it the same way and through `normalize()`, and fit with numpy. M3's calibration adds no dependency.

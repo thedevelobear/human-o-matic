@@ -1,6 +1,6 @@
 # 0072. `docs/research/` holds published measurements compared with the project's values
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 
 - `docs/research/` holds research pages, named `YYYY-MM-DD-topic.md` and indexed in `docs/README.md` beside the plans and decisions. A page compares the project's values with published measurements.
