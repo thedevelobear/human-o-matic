@@ -131,6 +131,22 @@ def test_a_new_session_never_takes_a_taken_name_and_leaves_no_temporary_file(
     assert store.load(first.id) == first
 
 
+def test_a_new_session_whose_write_fails_leaves_no_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = SessionStore(tmp_path / "sessions")
+    file = song_file(tmp_path)
+
+    def broken(_: Session) -> str:
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(Session, "dump", broken)
+
+    with pytest.raises(OSError, match="No space left"):
+        open_in(store, file)
+    assert list(store.directory.iterdir()) == []
+
+
 def test_a_missing_or_broken_session_is_a_session_error(tmp_path: Path) -> None:
     store = SessionStore(tmp_path)
     with pytest.raises(SessionError, match="there is no session 0123456789ab"):
