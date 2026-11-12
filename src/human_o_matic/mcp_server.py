@@ -542,8 +542,9 @@ class Tools:
     ) -> Reply:
         """Render the session and write it to a new MIDI file through to_map, with a JSON
         report beside it of the session and each section's statistics. It never writes over the
-        input, and refuses a file that exists unless overwrite is set. It writes both files or
-        neither. While a decision request is open it writes nothing and returns the requests."""
+        input, and refuses a file that exists unless overwrite is set. It writes both new files or
+        neither, and with overwrite replaces the report, then the MIDI file. While a decision
+        request is open it writes nothing and returns the requests."""
         session = self._session(session_id)
         output = _given_path(output_path, "output_path")
         if output.suffix.lower() not in MIDI_SUFFIXES:
@@ -611,9 +612,11 @@ def _write_aside(folder: Path, data: bytes) -> Path:
 
 
 def _write_together(files: Sequence[tuple[Path, bytes]], overwrite: bool) -> None:
-    """Write each file, all or none: each is written aside first, and only then takes its name,
-    by a link that fails when the name is taken, or by replacing it with `overwrite`. A failure
-    removes what this call wrote. Raises `ToolError` saying what failed."""
+    """Write each file: each is written aside first, and only then takes its name, in order.
+    New files are all or none: each takes its name by a link that fails when the name is taken,
+    and a failure removes those this call named. With `overwrite` each replaces the file of its
+    name, one after the other, which can't be undone: a failure between two replacements leaves
+    the first new file beside the second old one. Raises `ToolError` saying what failed."""
     aside: list[Path] = []
     named: list[Path] = []
     current = files[0][0]
