@@ -162,7 +162,8 @@ def song_facts(
     """The facts of each section, in order. `parts` are the drums' parts of the score's notes,
     and `bars` the drums' bars, which the sections cover."""
     read = bar_patterns(score, bars)
-    bar_of = heard_bars(score)
+    # A hit after the drums' bars, played just before the bar after them, counts in the last.
+    bar_of = [min(bar, bars - 1) for bar in heard_bars(score)]
     groups: dict[str, list[Section]] = {}
     for section in sections:
         groups.setdefault(section.group, []).append(section)

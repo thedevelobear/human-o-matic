@@ -68,7 +68,7 @@ What was decided, specifically enough to check the code against.
 | [0023](decisions/0023-built-in-library-ids.md) | Built-in libraries have short kebab-case ids | Accepted. Its list of ids is amended by [ADR 0055](decisions/0055-m3-adds-maps-for-four-drum-libraries.md), and its library with several kits by [ADR 0066](decisions/0066-sleep-token-ii-gets-an-inferred-groove-pack-kit.md) |
 | [0024](decisions/0024-built-in-data-is-found-beside-the-source.md) | Built-in data is found in `data/` beside the source, by one function | Accepted |
 | [0025](decisions/0025-proposed-names-ship-at-low-confidence.md) | A proposed name ships at low confidence, and only a check raises it | Accepted |
-| [0026](decisions/0026-a-grid-per-beat-by-timing-error-and-complexity.md) | Each beat takes one of four grids, by its timing error in milliseconds plus a complexity penalty | Accepted |
+| [0026](decisions/0026-a-grid-per-beat-by-timing-error-and-complexity.md) | Each beat takes one of four grids, by its timing error in milliseconds plus a complexity penalty | Accepted. Which onsets are a beat's is amended by [ADR 0086](decisions/0086-a-note-belongs-to-the-beat-its-tick-is-in.md) |
 | [0027](decisions/0027-hits-on-one-drum-under-45-ms-apart-are-a-grace-and-its-main.md) | Two hits on one drum from 5 ms to under 45 ms apart are a grace and its main, unless the gap is a grid step | Accepted |
 | [0028](decisions/0028-limbs-within-20-ms-share-a-grid-point.md) | Hits on different drums within 20 ms, or half a 32nd at a fast tempo, share one grid point | Accepted |
 | [0029](decisions/0029-unclear-beats-are-one-ambiguous-bars-request.md) | A beat whose grid is unclear keeps its best guess, and all of them are one `ambiguous_bars` request | Accepted |
@@ -128,3 +128,4 @@ What was decided, specifically enough to check the code against.
 | [0083](decisions/0083-expected-results-are-the-section-rendered-and-measured-by-role.md) | A section's expected results are the section rendered with its controls and measured by role | Proposed |
 | [0084](decisions/0084-the-tools-take-ids-and-paths-and-reply-with-compact-json.md) | The tools take IDs and paths, answer each request by the argument it names, and reply with compact JSON | Proposed |
 | [0085](decisions/0085-the-server-is-the-mcp-sdk-s-mcpserver-over-stdio-run-as-human-o-matic-mcp.md) | The server is the official SDK's `MCPServer` over stdio, run as `human-o-matic-mcp` | Proposed |
+| [0086](decisions/0086-a-note-belongs-to-the-beat-its-tick-is-in.md) | A note belongs to the beat its tick is in, and each beat's grid is chosen from the onsets that end up in it | Proposed |

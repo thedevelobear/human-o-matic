@@ -1,0 +1,13 @@
+# 0086. A note belongs to the beat its tick is in, and each beat's grid is chosen from the onsets that end up in it
+
+- **Status:** Proposed
+- **Date:** 2026-11-12
+
+- `grid.snap` first scores each onset in the beat it was played in, as before ([ADR 0026](0026-a-grid-per-beat-by-timing-error-and-complexity.md)). An onset its beat's best grid puts on the beat's end, the next beat's start, then belongs to the next beat, and both beats are scored again with their onsets as they now stand. Such an onset is one played just before a beat, or one whose time comes back from milliseconds a hair under the beat's first tick.
+- Scoring again moves no point. The next beat's start is a point of every grid, and an onset placed there goes there whatever the grid. Its distance to the end is the most it added to any grid of the beat it was played in, so without it the grid that placed it stays that beat's best. Only which beat a note belongs to, the beats listed with notes, and their largest offsets and alternatives change.
+- `quantize` lists beats to the end of the bar after the last hit's, so a hit played just before that bar has a beat to belong to.
+- So a note's beat starts at or before its tick and ends after it. A backbeat played early is a backbeat ([ADR 0047](0047-roles-come-from-canonical-families-and-the-score.md)), and a downbeat played early renders with its own section and stream ([ADR 0049](0049-each-section-draws-from-its-own-seeded-stream.md)).
+
+**Why:** A note's beat was the one its onset was played in, so a note played a few milliseconds before a beat, or put exactly on it at a tempo whose milliseconds don't round-trip, was filed under the beat before, though its tick was right. Over the assigned performed MIDI, measured on 2026-11-12, that was 40,595 of 388,257 notes, 10.5%: 30,800 played early, 6,843 exactly on their point, and 2,952 late in an onset whose mean was early. 39.4% of the snares on a beat other than the first, not typed soft, weren't backbeats, and with this 22.0% aren't, every one of them in a fill. On the grid, built in code, up to 16% of the notes on a beat's start were filed under the beat before, at 90 BPM, and none at others, such as 100 or 128 BPM. With this, every file's ticks, offsets and hit types are as they were.
+
+**Consequences:** [ADR 0026](0026-a-grid-per-beat-by-timing-error-and-complexity.md)'s onsets of a beat are amended by this ADR. Calibration read the roles through the old filing, so the fitted styles can move, and a refit waits for a decision. A beat with notes only because one was played just before it is now listed, so a song lists about 1% more beats with notes.

@@ -16,6 +16,13 @@ makes a complex grid save that many milliseconds of timing error before it is ch
 alone doesn't turn 16ths into 32nds. A beat with one onset is scored the same way, and one with
 none has no grid.
 
+An onset belongs to the beat its point is in (ADR 0086). It is first scored in the beat it was
+played in, and one put on that beat's end, the next beat's start, as an onset played just before
+a beat is, or one whose time comes back from milliseconds a hair under the beat's first tick,
+then belongs to the next beat, and both beats are scored again. That moves no point: the start is
+a point of every grid, and with the onset gone the grid that put it there stays the best of the
+beat it was played in, since its distance to the end is the most it adds to any grid.
+
 A beat is ambiguous when another grid scores within `AMBIGUITY_MS` of the best and would put an
 onset on a different tick, or when an onset is more than `FAR_MS` from its point on the best
 grid. The best grid is still used, and the beat says it was a guess.
@@ -179,10 +186,27 @@ def snap(
     notes may take. Raises `AnswerError` for an answer to a beat with no notes or one the song
     doesn't have, and for a grid the beat can't have.
     """
-    which = np.searchsorted(beats.starts, ticks, side="right") - 1
-    used, beat_of = np.unique(which, return_inverse=True)
     given = answers or {}
-    _check_answered(given, beats, used)
+    played = np.searchsorted(beats.starts, ticks, side="right") - 1
+    snapped = _snap_in(played, ticks, ms, beats, tempos, given)
+    heard = np.searchsorted(beats.starts, snapped.ticks, side="right") - 1
+    if not np.array_equal(heard, played):
+        snapped = _snap_in(heard, ticks, ms, beats, tempos, given)
+    _check_answered(given, beats, np.unique(heard))
+    return snapped
+
+
+def _snap_in(
+    which: IntArray,
+    ticks: FloatArray,
+    ms: FloatArray,
+    beats: Beats,
+    tempos: TempoMap,
+    given: Mapping[tuple[int, int], Grid],
+) -> Snapped:
+    """`snap` with each onset taken to belong to the beat `which` gives it. An onset before its
+    beat's start goes to the start, whatever the grid."""
+    used, beat_of = np.unique(which, return_inverse=True)
     starts = beats.starts[used].astype(np.float64)
     ends = beats.ends[used].astype(np.float64)
     denominators = beats.denominators[used]
@@ -199,7 +223,7 @@ def snap(
         # A grid that doesn't apply is measured as if it did, and its cost is set to infinity.
         step = (lengths / np.maximum(count, 1))[beat_of]
         start, end = starts[beat_of], ends[beat_of]
-        low = np.minimum(start + np.floor((ticks - start) / step) * step, end)
+        low = np.minimum(np.maximum(start + np.floor((ticks - start) / step) * step, start), end)
         high = np.minimum(low + step, end)
         low_error = np.abs(ms - tempos.ticks_to_ms(low))
         high_error = np.abs(ms - tempos.ticks_to_ms(high))
