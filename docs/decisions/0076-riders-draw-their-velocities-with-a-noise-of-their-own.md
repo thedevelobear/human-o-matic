@@ -1,6 +1,6 @@
 # 0076. Riders draw their velocities with a noise of their own, Appendix A's 2.5
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-11
 
 - The `Style` model has `rider_noise_sd`: the spread of a rider hit's velocity about its center at `dynamic_range` 0.5, scaled by 0.5 plus `dynamic_range` as `noise_sd` is. Every rider hit not typed soft draws with it, alternating, weak, lone and accent-typed alike. Soft-typed riders keep `soft_sd`, and every other role keeps `noise_sd`.

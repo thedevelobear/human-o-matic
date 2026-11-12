@@ -1,6 +1,6 @@
 # 0074. A render is heard from its MIDI file in the DAW, and there is no live preview
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-11
 
 - This version plays nothing through a MIDI port: there is no `preview.py`, no IAC Driver route, and `python-rtmidi` is not added.
