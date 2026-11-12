@@ -122,3 +122,9 @@ What was decided, specifically enough to check the code against.
 | [0077](decisions/0077-a-rider-s-strong-hits-are-held-under-127-by-a-spread-of-their-noise.md) | A rider's strong hits are held under 127 by a spread of their noise, and its weak hits take the gap below them | Accepted |
 | [0078](decisions/0078-m4-is-three-prs-and-its-gate-follows-the-third.md) | M4 is three PRs, the MCP server, the skill and the blind test, and its gate follows the third | Proposed |
 | [0079](decisions/0079-sessions-are-json-files-in-the-user-s-state-directory.md) | Sessions are JSON files in the user's state directory, one per session ID | Proposed |
+| [0080](decisions/0080-a-session-holds-what-a-render-needs-and-reads-its-file-again-by-its-hash.md) | A session holds what a render needs besides its file, and reads the file again, checked by its hash | Proposed |
+| [0081](decisions/0081-sections-are-edited-by-split-merge-move-and-rename-all-or-none.md) | Sections are edited by split, merge, move and rename, applied in turn, all or none | Proposed |
+| [0082](decisions/0082-a-section-s-facts-are-counted-and-its-guess-says-only-what-the-score-shows.md) | A section's facts are counted from the score, its pattern is its most typical bar, and its guess says only what the score shows | Proposed |
+| [0083](decisions/0083-expected-results-are-the-section-rendered-and-measured-by-role.md) | A section's expected results are the section rendered with its controls and measured by role | Proposed |
+| [0084](decisions/0084-the-tools-take-ids-and-paths-and-reply-with-compact-json.md) | The tools take IDs and paths, answer each request by the argument it names, and reply with compact JSON | Proposed |
+| [0085](decisions/0085-the-server-is-the-mcp-sdk-s-mcpserver-over-stdio-run-as-human-o-matic-mcp.md) | The server is the official SDK's `MCPServer` over stdio, run as `human-o-matic-mcp` | Proposed |
