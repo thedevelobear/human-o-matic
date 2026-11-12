@@ -454,8 +454,8 @@ class Tools:
         except SessionError as error:
             raise ToolError(str(error)) from error
         loaded = self._loaded(session)
-        self.store.save(session)
         rendered = render_session(session, loaded) if loaded.complete else None
+        self.store.save(session)
         defaults = built_in_styles()[session.style].defaults
         chosen = set(section_ids if section_ids is not None else session.starts)
         sections: list[JsonValue] = []
@@ -508,8 +508,9 @@ class Tools:
             return {"sections": _table(session), "decisions": _decisions(loaded.decisions)}
         if take is not None:
             session = with_takes(session, section_ids, take)
-            self.store.save(session)
         rendered = render_session(session, loaded)
+        if take is not None:
+            self.store.save(session)
         chosen = set(section_ids if section_ids is not None else session.starts)
         return {
             "session_id": session.id,

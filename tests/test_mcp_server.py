@@ -333,6 +333,25 @@ def test_set_section_controls_stores_them_and_says_what_they_give(
         tools.set_section_controls(session_id, ControlInput(energy=0.1), [5])
 
 
+def test_a_render_that_fails_stores_neither_controls_nor_a_take(
+    tools: Tools, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    session_id = ready(tools, tmp_path)
+    store = SessionStore(tmp_path / "sessions")
+    before = store.load(session_id)
+
+    def broken(*_: object) -> None:
+        raise RuntimeError("the engine failed")
+
+    monkeypatch.setattr(mcp_server, "render_session", broken)
+
+    with pytest.raises(RuntimeError, match="the engine failed"):
+        tools.set_section_controls(session_id, ControlInput(energy=0.9), [4])
+    with pytest.raises(RuntimeError, match="the engine failed"):
+        tools.render(session_id, [4], 3)
+    assert store.load(session_id) == before
+
+
 def test_set_section_controls_says_nothing_expected_while_notes_wait(
     tools: Tools, tmp_path: Path
 ) -> None:
