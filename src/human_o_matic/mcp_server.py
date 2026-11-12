@@ -16,6 +16,8 @@ file that exists, is a tool error whose message says why.
 
 import functools
 import json
+import os
+import tempfile
 import threading
 from collections.abc import Callable, Sequence
 from pathlib import Path
@@ -539,8 +541,8 @@ class Tools:
     ) -> Reply:
         """Render the session and write it to a new MIDI file through to_map, with a JSON
         report beside it of the session and each section's statistics. It never writes over the
-        input, and refuses a file that exists unless overwrite is set. While a decision request
-        is open it writes nothing and returns the requests."""
+        input, and refuses a file that exists unless overwrite is set. It writes both files or
+        neither. While a decision request is open it writes nothing and returns the requests."""
         session = self._session(session_id)
         output = _given_path(output_path, "output_path")
         if output.suffix.lower() not in MIDI_SUFFIXES:
@@ -581,14 +583,9 @@ class Tools:
             "session": json.loads(session.model_dump_json(exclude_none=True)),
             "sections": measured,
         }
-        mode = "wb" if overwrite else "xb"
-        try:
-            with output.open(mode) as file:
-                file.write(data)
-            with report.open(mode) as file:
-                file.write(json.dumps(record, indent=2).encode("utf-8"))
-        except OSError as error:
-            raise ToolError(f"can't write {output}: {error}") from error
+        _write_together(
+            [(report, json.dumps(record, indent=2).encode("utf-8")), (output, data)], overwrite
+        )
         self.store.save(session)
         return {
             "session_id": session.id,
@@ -598,6 +595,49 @@ class Tools:
             "sections": measured,
             "decisions": [],
         }
+
+
+def _write_aside(folder: Path, data: bytes) -> Path:
+    """A temporary file in `folder` holding `data` whole."""
+    with tempfile.NamedTemporaryFile(dir=folder, prefix=".", suffix=".tmp", delete=False) as file:
+        try:
+            file.write(data)
+        except BaseException:
+            file.close()
+            Path(file.name).unlink()
+            raise
+    return Path(file.name)
+
+
+def _write_together(files: Sequence[tuple[Path, bytes]], overwrite: bool) -> None:
+    """Write each file, all or none: each is written aside first, and only then takes its name,
+    by a link that fails when the name is taken, or by replacing it with `overwrite`. A failure
+    removes what this call wrote. Raises `ToolError` saying what failed."""
+    aside: list[Path] = []
+    named: list[Path] = []
+    current = files[0][0]
+    try:
+        for current, data in files:
+            aside.append(_write_aside(current.parent, data))
+        for (current, _), written in zip(files, aside, strict=True):
+            if overwrite:
+                os.replace(written, current)
+            else:
+                os.link(written, current)
+                named.append(current)
+    except FileExistsError as error:
+        _remove(named)
+        raise ToolError(f"{current} exists; give overwrite to replace it") from error
+    except OSError as error:
+        _remove(named)
+        raise ToolError(f"can't write {current}: {error}") from error
+    finally:
+        _remove(aside)
+
+
+def _remove(paths: Sequence[Path]) -> None:
+    for path in paths:
+        path.unlink(missing_ok=True)
 
 
 def _of(rendered: Rendered, number: int) -> list[RenderedNote]:

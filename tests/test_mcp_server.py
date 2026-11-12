@@ -3,6 +3,7 @@ in memory and over stdio. Sessions are kept in `tmp_path`, never in the user's s
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,7 @@ from mcp.server.mcpserver.exceptions import ToolError
 from mcp_types import TextContent
 
 from grooves import BAR, CRASH, KICK, PPQ, SIXTEENTH, SNARE, SOFT, Hit, midi_file, rock
+from human_o_matic import mcp_server
 from human_o_matic.controls import ControlInput
 from human_o_matic.mcp_server import Tools, build_server
 from human_o_matic.midi.io import midi_bytes, read_midi
@@ -451,6 +453,53 @@ def test_export_refuses_a_path_it_can_t_use(
 
     with pytest.raises(ToolError, match=message):
         tools.export(session_id, name)
+
+
+@pytest.mark.parametrize(
+    ("failing", "named"), [(b"{", "song-2.report.json"), (b"MThd", "song-2.mid")]
+)
+def test_a_failed_write_leaves_neither_file_nor_an_export(
+    tools: Tools, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failing: bytes, named: str
+) -> None:
+    session_id = ready(tools, tmp_path)
+    folder = tmp_path / "out"
+    folder.mkdir()
+    real = mcp_server._write_aside
+
+    def full(where: Path, data: bytes) -> Path:
+        if data.startswith(failing):
+            raise OSError(28, "No space left on device")
+        return real(where, data)
+
+    monkeypatch.setattr(mcp_server, "_write_aside", full)
+
+    with pytest.raises(ToolError, match=rf"can't write .*{re.escape(named)}: .*No space left"):
+        tools.export(session_id, str(folder / "song-2.mid"))
+    assert list(folder.iterdir()) == []
+    assert SessionStore(tmp_path / "sessions").load(session_id).exports == ()
+
+
+def test_a_file_that_appears_while_exporting_is_kept_and_the_report_taken_back(
+    tools: Tools, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    session_id = ready(tools, tmp_path)
+    folder = tmp_path / "out"
+    folder.mkdir()
+    real = mcp_server._write_aside
+
+    def racing(where: Path, data: bytes) -> Path:
+        written = real(where, data)
+        if data.startswith(b"MThd"):
+            (folder / "song-2.mid").write_bytes(b"theirs")
+        return written
+
+    monkeypatch.setattr(mcp_server, "_write_aside", racing)
+
+    with pytest.raises(ToolError, match=r"song-2\.mid exists; give overwrite"):
+        tools.export(session_id, str(folder / "song-2.mid"))
+    assert [path.name for path in folder.iterdir()] == ["song-2.mid"]
+    assert (folder / "song-2.mid").read_bytes() == b"theirs"
+    assert SessionStore(tmp_path / "sessions").load(session_id).exports == ()
 
 
 def test_a_changed_input_file_is_refused(tools: Tools, tmp_path: Path) -> None:
