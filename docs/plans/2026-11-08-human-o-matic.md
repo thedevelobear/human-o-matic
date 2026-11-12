@@ -2,7 +2,7 @@
 
 > **Status:** Active. M0 to M3 are merged, M3 after the owner listened to rendered files on their own kit and passed its gate. M4 is under way.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-12 (`docs/no-preview` and `fix/rider-noise` merged and ADRs 0074 to 0077 accepted; the owner passed M3's gate, so M3 is merged and M4 starts).
+> Last updated: 2026-11-12 (`docs/no-preview` and `fix/rider-noise` merged and ADRs 0074 to 0077 accepted; the owner passed M3's gate, so M3 is merged and M4 starts; `feat/mcp` proposes ADR 0078, M4 as three PRs, the MCP server, the skill and the blind test, and ADR 0079, sessions as JSON files in the user's state directory).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 
@@ -16,7 +16,7 @@ Milestones are done in order, and work stops at each gate ([`AGENTS.md`](../../A
 | M1 | Normalize | The M1 exit tests | Merged ([#2](https://github.com/thedevelobear/human-o-matic/pull/2)) |
 | M2 | Sections | Boundary F1 of at least 0.70 on at least 10 tracks the owner has hand-labelled | Merged ([#3](https://github.com/thedevelobear/human-o-matic/pull/3)) |
 | M3 | Parametric engine and calibration | Each control moves its statistic the right way, and the property tests pass | Merged: the engine ([#4](https://github.com/thedevelobear/human-o-matic/pull/4)) and calibration ([#5](https://github.com/thedevelobear/human-o-matic/pull/5)), with the three styles in `data/styles/`, which the engine reads, the research cross-check, and the guards' gap counted in milliseconds and held for notes sharing a grid point; no preview PR ([#6](https://github.com/thedevelobear/human-o-matic/pull/6), [ADR 0074](../decisions/0074-a-render-is-heard-from-its-midi-file-in-the-daw-and-there-is-no-live-preview.md)); riders draw a velocity noise of their own, and hold their strong hits under 127 by a spread of it ([#7](https://github.com/thedevelobear/human-o-matic/pull/7), [ADR 0076](../decisions/0076-riders-draw-their-velocities-with-a-noise-of-their-own.md), [ADR 0077](../decisions/0077-a-rider-s-strong-hits-are-held-under-127-by-a-spread-of-their-noise.md)); the exit's tests pass on the three styles, and the owner passed the gate after listening |
-| M4 | MCP, skill and the main gate | The blind listening test, judged by the owner | In progress |
+| M4 | MCP, skill and the main gate | The blind listening test, judged by the owner | In progress: PR 1 of 3, `feat/mcp`, the session, the facts and the MCP tools ([ADR 0078](../decisions/0078-m4-is-three-prs-and-its-gate-follows-the-third.md)) |
 | M5 | Trained model experiment | Follows the controls and wins a blind test, judged by the owner | Not started. Not before M4 |
 | M6 | Added notes | The owner confirms the priority first | Not started |
 
@@ -309,6 +309,11 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
 - **Exit:** raising each control moves its measured statistic in the right direction, and all property tests below pass. It is checked at the gate, after calibration, on the calibrated styles.
 
 ### M4 MCP, skill and the main gate
+- M4 is three PRs, in this order, and its gate follows the third ([ADR 0078](../decisions/0078-m4-is-three-prs-and-its-gate-follows-the-third.md)):
+  1. `feat/mcp`: `session.py`, `analyze/facts.py`, `mcp_server.py` and the MCP tools, with the `mcp` dependency.
+  2. `feat/skill`: `SKILL.md`, `references/vocabulary.md` and the check of about 30 answers.
+  3. `feat/blind-test`: `tools/make_ab.py` and the five variants.
+- Sessions are JSON files, one per session ID, in `sessions/` under the user's state directory, `$XDG_STATE_HOME/human-o-matic/` or `~/.local/state/human-o-matic/`, which `HUMAN_O_MATIC_STATE_DIR` replaces, never in the repository or `private/` ([ADR 0079](../decisions/0079-sessions-are-json-files-in-the-user-s-state-directory.md)).
 - Build the MCP server and skill. Register with `claude mcp add human-o-matic -- uv run --directory ~/Projects/human-o-matic human-o-matic-mcp`, then test a full session in Claude Code.
 - Build `analyze/facts.py`, each section's facts and its compact ASCII pattern, with the MCP tools that return them, such as `get_sections` ([ADR 0035](../decisions/0035-m2-finds-the-sections-and-their-facts-wait-for-m4.md)).
 - `references/vocabulary.md` plus a check of about 30 answers against expected control ranges, run through a real agent session.

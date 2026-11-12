@@ -120,3 +120,5 @@ What was decided, specifically enough to check the code against.
 | [0075](decisions/0075-render-s-summary-counts-how-the-notes-were-placed-in-the-target-kit.md) | `human-o-matic render`'s summary counts how the notes were placed in the target kit | Accepted |
 | [0076](decisions/0076-riders-draw-their-velocities-with-a-noise-of-their-own.md) | Riders draw their velocities with a noise of their own, Appendix A's 2.5 | Accepted |
 | [0077](decisions/0077-a-rider-s-strong-hits-are-held-under-127-by-a-spread-of-their-noise.md) | A rider's strong hits are held under 127 by a spread of their noise, and its weak hits take the gap below them | Accepted |
+| [0078](decisions/0078-m4-is-three-prs-and-its-gate-follows-the-third.md) | M4 is three PRs, the MCP server, the skill and the blind test, and its gate follows the third | Proposed |
+| [0079](decisions/0079-sessions-are-json-files-in-the-user-s-state-directory.md) | Sessions are JSON files in the user's state directory, one per session ID | Proposed |
