@@ -1,6 +1,6 @@
 # 0079. Sessions are JSON files in the user's state directory, one per session ID
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-12
 
 - Each session is one JSON file, `<session ID>.json`, in `sessions/` under the app's state directory: `$XDG_STATE_HOME/human-o-matic/`, or `~/.local/state/human-o-matic/` when `XDG_STATE_HOME` is unset, empty or not an absolute path, on every platform.

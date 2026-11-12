@@ -1,6 +1,6 @@
 # 0085. The server is the official SDK's `MCPServer` over stdio, run as `human-o-matic-mcp`
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-12
 
 - `mcp` 2.3.0, the official MCP Python SDK, is a runtime dependency at that exact version ([ADR 0004](0004-exact-dependency-versions.md), [ADR 0012](0012-runtime-dependencies-arrive-with-their-milestone.md)).

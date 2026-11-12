@@ -1,6 +1,6 @@
 # 0080. A session holds what a render needs besides its file, and reads the file again, checked by its hash
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-12
 
 - `session.py`'s `Session`, a frozen pydantic model, is the session's JSON file ([ADR 0079](0079-sessions-are-json-files-in-the-user-s-state-directory.md)):
