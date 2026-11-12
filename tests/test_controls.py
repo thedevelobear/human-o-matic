@@ -8,10 +8,13 @@ from pydantic import ValidationError
 from human_o_matic.controls import (
     MAX_SEED,
     Arc,
+    Clamped,
+    ControlInput,
     Controls,
     ControlVector,
     SectionPlan,
     SessionPlan,
+    clamp,
 )
 
 DEFAULTS = Controls(
@@ -110,3 +113,41 @@ def test_a_plan_s_json_reads_back_equal_without_its_unset_controls(
     assert SessionPlan.model_validate_json(plan.model_dump_json(exclude_none=True)) == plan
     assert "skip" not in data["controls"] or song.skip is not None
     assert all(value is not None for value in data["controls"].values())
+
+
+def test_a_number_outside_its_range_is_clamped_and_said() -> None:
+    given = ControlInput.model_validate({"energy": 1.3, "feel": -2, "groove": 0.4, "arc": "build"})
+
+    vector, moved = clamp(given)
+
+    assert vector == ControlVector(energy=1.0, feel=-1.0, groove=0.4, arc="build")
+    assert moved == (
+        Clamped(control="energy", given=1.3, used=1.0),
+        Clamped(control="feel", given=-2.0, used=-1.0),
+    )
+
+
+@pytest.mark.parametrize(
+    "text", ['{"energy": "0.5"}', '{"skip": 1}', '{"arc": "rise"}', '{"tempo": 120}']
+)
+def test_an_input_of_the_wrong_type_or_unknown_is_refused(text: str) -> None:
+    with pytest.raises(ValidationError):
+        ControlInput.model_validate_json(text)
+
+
+def test_a_patch_replaces_what_it_gives_unsets_its_nulls_and_keeps_the_rest() -> None:
+    held = ControlVector(energy=0.8, groove=0.3, feel=0.2)
+    patch, _ = clamp(ControlInput.model_validate({"energy": 0.9, "groove": None}))
+
+    assert held.patched(patch) == ControlVector(energy=0.9, feel=0.2)
+    assert held.patched(clamp(ControlInput())[0]) == held
+
+
+@given(_vectors(), _vectors())
+def test_a_patch_of_set_controls_is_the_patch_over_the_held(
+    held: ControlVector, given: ControlVector
+) -> None:
+    patch, moved = clamp(ControlInput.model_validate(given.model_dump(exclude_none=True)))
+
+    assert moved == ()
+    assert held.patched(patch) == given.over(held)
