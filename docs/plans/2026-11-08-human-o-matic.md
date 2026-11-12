@@ -1,8 +1,8 @@
 # human-o-matic: guided MIDI drum performance
 
-> **Status:** Active. M0 to M3 are merged, M3 after the owner listened to rendered files on their own kit and passed its gate. M4 is under way.
+> **Status:** Active. M0 to M3 are merged, M3 after the owner listened to rendered files on their own kit and passed its gate. M4 is under way, in three PRs: the first, `feat/mcp`, builds the sessions, the facts and the MCP server.
 > A living document. Each PR updates the progress table and the sections its work changes. Decisions are in [`../decisions/`](../decisions/).
-> Last updated: 2026-11-12 (`docs/no-preview` and `fix/rider-noise` merged and ADRs 0074 to 0077 accepted; the owner passed M3's gate, so M3 is merged and M4 starts; `feat/mcp` proposes ADR 0078, M4 as three PRs, the MCP server, the skill and the blind test, and ADR 0079, sessions as JSON files in the user's state directory).
+> Last updated: 2026-11-12 (`docs/no-preview` and `fix/rider-noise` merged and ADRs 0074 to 0077 accepted; the owner passed M3's gate, so M3 is merged and M4 starts; `feat/mcp` proposes ADR 0078, M4 as three PRs, the MCP server, the skill and the blind test, ADR 0079, sessions as JSON files in the user's state directory, ADR 0080, what a session holds, its file read again and checked by its hash, ADR 0081, the section edits, ADR 0082, each section's facts, pattern and guess, ADR 0083, expected results from a render measured by role, ADR 0084, the tools' arguments, errors and replies, and ADR 0085, the SDK's `MCPServer` over stdio as `human-o-matic-mcp`).
 
 Handoff document for an implementing agent with no prior context. The app is called **human-o-matic**: use `human-o-matic` for the repo, distribution, CLI and skill, and `human_o_matic` for the Python package.
 
@@ -16,7 +16,7 @@ Milestones are done in order, and work stops at each gate ([`AGENTS.md`](../../A
 | M1 | Normalize | The M1 exit tests | Merged ([#2](https://github.com/thedevelobear/human-o-matic/pull/2)) |
 | M2 | Sections | Boundary F1 of at least 0.70 on at least 10 tracks the owner has hand-labelled | Merged ([#3](https://github.com/thedevelobear/human-o-matic/pull/3)) |
 | M3 | Parametric engine and calibration | Each control moves its statistic the right way, and the property tests pass | Merged: the engine ([#4](https://github.com/thedevelobear/human-o-matic/pull/4)) and calibration ([#5](https://github.com/thedevelobear/human-o-matic/pull/5)), with the three styles in `data/styles/`, which the engine reads, the research cross-check, and the guards' gap counted in milliseconds and held for notes sharing a grid point; no preview PR ([#6](https://github.com/thedevelobear/human-o-matic/pull/6), [ADR 0074](../decisions/0074-a-render-is-heard-from-its-midi-file-in-the-daw-and-there-is-no-live-preview.md)); riders draw a velocity noise of their own, and hold their strong hits under 127 by a spread of it ([#7](https://github.com/thedevelobear/human-o-matic/pull/7), [ADR 0076](../decisions/0076-riders-draw-their-velocities-with-a-noise-of-their-own.md), [ADR 0077](../decisions/0077-a-rider-s-strong-hits-are-held-under-127-by-a-spread-of-their-noise.md)); the exit's tests pass on the three styles, and the owner passed the gate after listening |
-| M4 | MCP, skill and the main gate | The blind listening test, judged by the owner | In progress: PR 1 of 3, `feat/mcp`, the session, the facts and the MCP tools ([ADR 0078](../decisions/0078-m4-is-three-prs-and-its-gate-follows-the-third.md)) |
+| M4 | MCP, skill and the main gate | The blind listening test, judged by the owner | In progress: PR 1 of 3, `feat/mcp`, the sessions, the facts and the nine MCP tools over stdio, `mcp` 2.3.0 added ([ADR 0078](../decisions/0078-m4-is-three-prs-and-its-gate-follows-the-third.md) to [ADR 0085](../decisions/0085-the-server-is-the-mcp-sdk-s-mcpserver-over-stdio-run-as-human-o-matic-mcp.md)); `feat/skill` and `feat/blind-test` to follow |
 | M5 | Trained model experiment | Follows the controls and wins a blind test, judged by the owner | Not started. Not before M4 |
 | M6 | Added notes | The owner confirms the priority first | Not started |
 
@@ -128,7 +128,7 @@ Questions come from the agent, not the server. The server provides facts, sugges
     analyze/sections.py   bar patterns, similarity matrix, novelty peaks, silences, markers, repeat groups
     analyze/scoring.py    boundaries matched one to one within a bar, and their F1
     analyze/labels.py     hand-label files, and the detector measured on them
-    analyze/facts.py      per-section facts and compact ASCII pattern for the agent, in M4
+    analyze/facts.py      each section's facts, its most typical bar in ASCII, a modest guess and questions
     controls.py           pydantic ControlVector, Controls, SectionPlan, SessionPlan
     render/parts.py       each note's role and limb, and the play order
     render/style.py       styles: tight, medium and loose from data/styles/, and the placeholder the fit keeps values from
@@ -139,10 +139,11 @@ Questions come from the agent, not the server. The server provides facts, sugges
     render/controllers.py the windows that keep a controller-bound note's value
     render/output.py      the rendered notes back into the drum track
     render/measure.py     each section's statistics
+    render/describe.py    how a section came out, by role, in numbers and plain words
     render/backends/      parametric.py; neural.py in M5 only
     instruments/          base protocol, drums.py, generic.py
-    session.py            session JSON on disk: sections, answers, controls, seed
-    mcp_server.py         thin MCP layer over the above
+    session.py            session JSON on disk: sections, answers, controls, seed, takes, exports
+    mcp_server.py         thin MCP layer over the above: the tools, served over stdio
     cli.py                analyze: a song's summary, sections and decision requests as JSON; render: a new MIDI file by a plan
   skills/human-o-matic/SKILL.md       question policy and workflow
   skills/human-o-matic/references/vocabulary.md
@@ -168,16 +169,22 @@ Tools take IDs and file paths and return compact JSON. **Never pass note arrays:
 | Tool | Purpose |
 |---|---|
 | `list_maps` | The built-in libraries and their kits |
-| `open_session(midi_path, from_map, to_map, instrument, bpm?, track?)` | Normalize and detect sections. `from_map` and `to_map` name a built-in library and kit, never a map file ([ADR 0010](../decisions/0010-built-in-maps-only.md)). Returns a session ID, summary, and anything needing a decision |
+| `open_session(midi_path, from_map, to_map?, instrument?, bpm?, track?)` | Normalize and detect sections. `from_map` and `to_map` name a built-in library and kit, never a map file ([ADR 0010](../decisions/0010-built-in-maps-only.md)). Returns a session ID, summary, and anything needing a decision |
 | `get_sections(session_id)` | Bars, repeat group, facts, ASCII pattern, plus suggested questions and a guess with confidence |
 | `update_sections(session_id, ops)` | Split, merge, move boundaries, rename |
-| `set_hit_types(session_id, decisions)` | Confirm soft notes and resolve ambiguous bars |
-| `set_style(session_id, style, seed?)` | Song-wide style, `tight`, `medium` or `loose` ([ADR 0044](../decisions/0044-m3-ships-tight-medium-and-loose-styles-pooled-by-tightness.md)), and tightness |
-| `set_section_controls(session_id, section_ids, controls, note)` | Validate and store. Returns plain-language expected results, such as "snare about 118 to 127, timing spread about 3 ms", and any clamping |
+| `set_hit_types(session_id, hit_types?, grids?, unmapped?, substitutions?)` | Confirm soft notes and resolve ambiguous bars, and place unmapped notes and notes `to_map` lacks, each under the name its request's `answer_with` gives |
+| `set_style(session_id, style?, seed?, tightness?)` | Song-wide style, `tight`, `medium` or `loose` ([ADR 0044](../decisions/0044-m3-ships-tight-medium-and-loose-styles-pooled-by-tightness.md)), and tightness |
+| `set_section_controls(session_id, controls, section_ids?, note?)` | Validate and store, for the sections given or the whole song. Returns plain-language expected results, such as "snare about 118 to 127, timing spread about 3 ms", and any clamping |
 | `render(session_id, section_ids?, take?)` | Sample, returning measured stats per section |
 | `export(session_id, output_path, overwrite?)` | Write MIDI and a report. Never overwrite the input; refuse existing files unless `overwrite` is set |
 
 **Listening:** the sample library determines how velocities sound, so the user listens on their own kit: a render is written to a new MIDI file through the kit `to_map` names, and the user drags it into the DAW, onto a track with that drum instrument. There is no live preview through a MIDI port, and no `preview` tool ([ADR 0074](../decisions/0074-a-render-is-heard-from-its-midi-file-in-the-daw-and-there-is-no-live-preview.md)).
+
+**As built:**
+- The tools are plain methods of `mcp_server.Tools` over a `SessionStore`, registered with the official SDK's `MCPServer` and served over stdio by the console script `human-o-matic-mcp`, one call at a time ([ADR 0085](../decisions/0085-the-server-is-the-mcp-sdk-s-mcpserver-over-stdio-run-as-human-o-matic-mcp.md)). Each reply is one compact JSON object, with open requests as `decisions`, and an argument a tool can't use is a tool error saying why. `bpm` and `track` are answered by opening the session again, and every other request by `set_hit_types`. A control past its range is clamped and listed in `clamped`, and `export` writes a report, `<name>.report.json`, beside the MIDI file ([ADR 0084](../decisions/0084-the-tools-take-ids-and-paths-and-reply-with-compact-json.md)).
+- A session holds the file's path and hash, the kits, the answers, the style, the seed, 0 until set, the controls as merge patches, and the sections with their controls, words and takes, but no note: each tool reads the file again, and a changed file is an error. A section's ID is its first bar, from 0 ([ADR 0080](../decisions/0080-a-session-holds-what-a-render-needs-and-reads-its-file-again-by-its-hash.md)). The sections are found when the session opens, and change only by `update_sections`, all or none ([ADR 0081](../decisions/0081-sections-are-edited-by-split-merge-move-and-rename-all-or-none.md)).
+- `get_sections` gives each section's facts, counted from the score and the drums' parts, its most typical bar as ASCII, and a guess, `silent`, `repeat`, `fill` or `groove`, with how sure it is, never of how hard it plays, and questions after the question policy ([ADR 0082](../decisions/0082-a-section-s-facts-are-counted-and-its-guess-says-only-what-the-score-shows.md)).
+- `set_section_controls`'s expected results are the section rendered in memory with the stored controls, seed and takes, each role's velocities from the 5th to the 95th percentile, the riders' gap, the timing spread and how far snare and riders sit behind, in words, which `render` and `export` give too ([ADR 0083](../decisions/0083-expected-results-are-the-section-rendered-and-measured-by-role.md)).
 
 ### Control vector
 
@@ -316,6 +323,7 @@ Stop at each gate. Listening decisions belong to the owner, because no agent can
 - Sessions are JSON files, one per session ID, in `sessions/` under the user's state directory, `$XDG_STATE_HOME/human-o-matic/` or `~/.local/state/human-o-matic/`, which `HUMAN_O_MATIC_STATE_DIR` replaces, never in the repository or `private/` ([ADR 0079](../decisions/0079-sessions-are-json-files-in-the-user-s-state-directory.md)).
 - Build the MCP server and skill. Register with `claude mcp add human-o-matic -- uv run --directory ~/Projects/human-o-matic human-o-matic-mcp`, then test a full session in Claude Code.
 - Build `analyze/facts.py`, each section's facts and its compact ASCII pattern, with the MCP tools that return them, such as `get_sections` ([ADR 0035](../decisions/0035-m2-finds-the-sections-and-their-facts-wait-for-m4.md)).
+- **The MCP server, as built in `feat/mcp`:** `session.py`, `analyze/facts.py`, `render/describe.py` and `mcp_server.py` with the nine tools, as the architecture's MCP tools section sets out ([ADRs 0080 to 0085](../decisions/0080-a-session-holds-what-a-render-needs-and-reads-its-file-again-by-its-hash.md)). The tests call each tool as a method, and talk to the server through the SDK's in-memory client and over stdio through the console script. They check that a session round-trips through its file, that the same session JSON and seed export the same bytes, that another take of a section leaves the others' notes as they were, that `export` never writes the input and refuses an existing file unless `overwrite` is set, each section edit, the facts of songs built in code, and that no reply holds a note list. A full session in Claude Code, with the server registered, waits for the skill.
 - `references/vocabulary.md` plus a check of about 30 answers against expected control ranges, run through a real agent session.
 - **Blind test:** `tools/make_ab.py` writes shuffled, anonymized sections and a hidden key. The owner renders them through one kit and rates them, ideally with one or two other producers. Variants:
   1. Quantized, one flat velocity
@@ -396,4 +404,4 @@ The placeholder, with the values it leaves out in [ADR 0051](../decisions/0051-t
 
 ## Appendix B: Python libraries
 
-`mido` (lossless I/O), `numpy`, `scipy`, `pydantic`, `typer`, the official `mcp` Python SDK (check current docs, as the spec is moving), `pytest`, `hypothesis`, and PyTorch in M5 only. Each runtime dependency is added in the milestone that first needs it: `mido`, `numpy`, `pydantic` and `typer` in M1, none in M2 or M3, and `mcp` in M4 ([ADR 0012](../decisions/0012-runtime-dependencies-arrive-with-their-milestone.md)). `python-rtmidi`, once planned for a live preview, is not used: a render is heard from its file in the DAW ([ADR 0074](../decisions/0074-a-render-is-heard-from-its-midi-file-in-the-daw-and-there-is-no-live-preview.md)). `scipy` comes with the first code that imports it ([ADR 0041](../decisions/0041-m2-adds-no-runtime-dependency.md)). `symusic`, once planned for scanning the performed MIDI, is not used: the project's own reader scans it in seconds ([ADR 0056](../decisions/0056-the-calibration-tools-add-no-dependency.md)).
+`mido` (lossless I/O), `numpy`, `scipy`, `pydantic`, `typer`, the official `mcp` Python SDK (check current docs, as the spec is moving), `pytest`, `hypothesis`, and PyTorch in M5 only. Each runtime dependency is added in the milestone that first needs it: `mido`, `numpy`, `pydantic` and `typer` in M1, none in M2 or M3, and `mcp` in M4 ([ADR 0012](../decisions/0012-runtime-dependencies-arrive-with-their-milestone.md)), at 2.3.0, whose `MCPServer` serves the tools over stdio ([ADR 0085](../decisions/0085-the-server-is-the-mcp-sdk-s-mcpserver-over-stdio-run-as-human-o-matic-mcp.md)). `python-rtmidi`, once planned for a live preview, is not used: a render is heard from its file in the DAW ([ADR 0074](../decisions/0074-a-render-is-heard-from-its-midi-file-in-the-daw-and-there-is-no-live-preview.md)). `scipy` comes with the first code that imports it ([ADR 0041](../decisions/0041-m2-adds-no-runtime-dependency.md)). `symusic`, once planned for scanning the performed MIDI, is not used: the project's own reader scans it in seconds ([ADR 0056](../decisions/0056-the-calibration-tools-add-no-dependency.md)).
