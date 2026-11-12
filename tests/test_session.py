@@ -112,6 +112,25 @@ def test_an_id_of_the_wrong_form_names_no_file(tmp_path: Path, session_id: str) 
         SessionStore(tmp_path).path(session_id)
 
 
+def test_a_new_session_never_takes_a_taken_name_and_leaves_no_temporary_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = SessionStore(tmp_path / "sessions")
+    file = song_file(tmp_path)
+    ids = iter(["0123456789ab", "0123456789ab", "ba9876543210"])
+    monkeypatch.setattr("human_o_matic.session.secrets.token_hex", lambda _: next(ids))
+
+    first = open_in(store, file)
+    second = open_in(store, file)
+
+    assert (first.id, second.id) == ("0123456789ab", "ba9876543210")
+    assert sorted(path.name for path in store.directory.iterdir()) == [
+        "0123456789ab.json",
+        "ba9876543210.json",
+    ]
+    assert store.load(first.id) == first
+
+
 def test_a_missing_or_broken_session_is_a_session_error(tmp_path: Path) -> None:
     store = SessionStore(tmp_path)
     with pytest.raises(SessionError, match="there is no session 0123456789ab"):
