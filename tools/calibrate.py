@@ -73,6 +73,7 @@ from human_o_matic.normalize.grid import FAR_MS
 from human_o_matic.normalize.pipeline import normalize
 from human_o_matic.normalize.score import Score, ScoreNote
 from human_o_matic.render.parts import METRIC_LEVELS, Limb, Part, Role
+from human_o_matic.render.style import PLACEHOLDER
 from human_o_matic.resources import data_dir
 from midi_folders import ASSIGNMENTS, MIDI, AssignmentError, Assignments, folders, midi_files
 
@@ -126,6 +127,12 @@ class Detail:
     out, since their strong and weak hits differ by design."""
     rider_gap: float | None = None
     """How much louder the strong alternating rider hits are than the weak ones."""
+    rider_noise: float | None = None
+    """The spread of the normal-typed rider hits' velocities about their class's mean on one
+    drum, the classes being the alternating strong and weak hits and the other hits by shape and
+    metric level, as `_rider_noise` measures it."""
+    alternating_noise: float | None = None
+    """The same over the alternating quarter-note hits alone, strong and weak."""
     accent: float | None = None
     """How much louder accent-typed notes are than normal ones, over the drums with both."""
     soft: float | None = None
@@ -390,6 +397,7 @@ def detail(chosen: Sequence[tuple[ScoreNote, Part]], groove: Groove, bpm: float)
             key = (part.role, note.family, note.piece)
             groups.setdefault(key, []).append(note.source.velocity)
     spreads = [float(np.std(values)) for values in groups.values() if len(values) >= FLAT_NOTES]
+    riders = [(note, part) for note, part in normal if part.role == "rider"]
     alternating = [(note, part) for note, part in normal if part.rider == "alternate"]
     strong = [note.source.velocity for note, part in alternating if part.strong]
     weak = [note.source.velocity for note, part in alternating if not part.strong]
@@ -413,6 +421,8 @@ def detail(chosen: Sequence[tuple[ScoreNote, Part]], groove: Groove, bpm: float)
         rider_gap=float(np.mean(strong) - np.mean(weak))
         if len(strong) >= 2 and len(weak) >= 2
         else None,
+        rider_noise=_rider_noise(riders),
+        alternating_noise=_rider_noise(alternating),
         accent=_accent([note for note, _ in mains]),
         soft=float(np.mean([note.source.velocity for note in soft])) if soft else None,
         soft_sd=float(np.mean(soft_spreads)) if soft_spreads else None,
@@ -427,6 +437,30 @@ def detail(chosen: Sequence[tuple[ScoreNote, Part]], groove: Groove, bpm: float)
         limbs=timing[2] if timing else {},
         bpm=bpm,
     )
+
+
+def _rider_noise(riders: Sequence[tuple[ScoreNote, Part]]) -> float | None:
+    """The spread of rider hits' velocities about their class's mean, the engine's rider noise
+    (ADR 0076). On each drum, a hit's class is its shape, whether it is strong and its metric
+    level (`render/parts.py`), so what the alternation and the metric level add is taken out.
+    The spread is pooled over a drum's classes, with a degree of freedom taken for each class's
+    mean, on a drum with `FLAT_NOTES` hits or more, and averaged over those drums."""
+    drums: dict[tuple[str, int], dict[tuple[str, bool, int], list[int]]] = {}
+    for note, part in riders:
+        classes = drums.setdefault((note.family, note.piece), {})
+        classes.setdefault((part.rider, part.strong, part.metric), []).append(note.source.velocity)
+    spreads: list[float] = []
+    for classes in drums.values():
+        count = sum(len(values) for values in classes.values())
+        freedom = count - len(classes)
+        if count < FLAT_NOTES or freedom < 1:
+            continue
+        squares = sum(
+            float(np.sum((np.array(values, dtype=np.float64) - np.mean(values)) ** 2))
+            for values in classes.values()
+        )
+        spreads.append(math.sqrt(squares / freedom))
+    return float(np.mean(spreads)) if spreads else None
 
 
 def _accent(notes: Sequence[ScoreNote]) -> float | None:
@@ -798,6 +832,12 @@ def _fit(results: Sequence[FileResult], *, check: bool) -> int:
     for fallback in found.fallbacks:
         print(f"fallback: {fallback}")
     print(table(found))
+    print(
+        f"rider_noise_sd kept at the placeholder's {PLACEHOLDER.rider_noise_sd} (ADR 0076); the "
+        f"grooves give {found.rider_noise.value} over {found.rider_noise.grooves} grooves, and "
+        f"{found.alternating_noise.value} on the alternating quarter-note hits alone over "
+        f"{found.alternating_noise.grooves}"
+    )
     for problem in contradictions(found):
         print(f"contradicts: {problem}")
     directory = data_dir() / "styles"

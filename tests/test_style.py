@@ -23,7 +23,7 @@ BANDS = {"tight": (0.0, 3.0), "medium": (3.0, 6.0), "loose": (6.0, 99.0)}
 """Each style's band of timing spread, in ms (ADR 0067)."""
 KEPT = ("defaults", "feet", "rider_groove", "rider_flip", "soft_mix", "fill_hand", "fill_shift")
 KEPT += ("snare_loudness", "arc_span", "energy_drift_sd", "energy_drift_quarters", "drift_sd")
-KEPT += ("drift_quarters",)
+KEPT += ("drift_quarters", "rider_noise_sd")
 
 
 def test_a_center_passes_through_the_anchors_and_goes_on_along_their_lines() -> None:
@@ -65,10 +65,12 @@ def test_the_three_styles_load_from_their_files_and_tight_is_the_default() -> No
 def test_the_styles_share_their_velocities_and_keep_what_a_performance_can_t_give() -> None:
     tight, medium, loose = (built_in_styles()[name] for name in STYLE_NAMES)
     shared = ("velocity", "metric_velocity", "noise_sd", "rider_gap", "accent", "soft", "soft_sd")
-    shared += ("fill_metric", "fill_crescendo")
+    shared += ("fill_metric", "fill_crescendo", "rider_noise_sd")
 
     for name in shared:
         assert getattr(tight, name) == getattr(medium, name) == getattr(loose, name), name
+    # The riders' own noise is smaller than the other roles', so their alternation stays clear.
+    assert tight.rider_noise_sd < tight.noise_sd
     for style in (tight, medium, loose):
         for name in KEPT:
             assert getattr(style, name) == getattr(PLACEHOLDER, name), (style.name, name)

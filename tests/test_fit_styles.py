@@ -15,6 +15,7 @@ from fit_styles import (
     QUARTERS,
     STYLE_NAMES,
     Fit,
+    Measured,
     contradictions,
     drift_variance,
     fit,
@@ -53,6 +54,8 @@ def velocity_groove(energy: float, pack: str = "a/p") -> Groove:
             metric={("kick", 0): (energy + 1, 4), ("kick", 2): (energy - 1, 4)},
             noise=4.0,
             rider_gap=6.0,
+            rider_noise=6.0,
+            alternating_noise=5.0,
             accent=20.0,
             soft=30.0 + energy / 10,
             soft_sd=5.0,
@@ -161,6 +164,34 @@ def test_the_rider_gap_accent_and_crescendo_keep_the_placeholder_though_grooves_
     text = table(fitted)
     for row in ("rider_gap | [4.0, 14.0]", "accent | [2.0, 6.0]", "fill_crescendo | 11.0"):
         assert f"| {row} | kept | kept | kept |" in text
+
+
+def test_the_riders_keep_appendix_a_s_noise_below_the_fitted_noise(fitted: Fit) -> None:
+    for style in fitted.styles.values():
+        assert style.rider_noise_sd == PLACEHOLDER.rider_noise_sd == 2.5
+        assert style.rider_noise_sd < style.noise_sd
+    assert "| rider_noise_sd | 2.5 | kept | kept | kept |" in table(fitted)
+
+
+def test_the_fit_measures_the_riders_noise_it_keeps_less_the_energy_drift(
+    fitted: Fit,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    within = drift_variance(2.0, (64.0,))
+    # The velocity grooves built here measure a rider noise of 6 and 5, and the others none.
+    assert fitted.rider_noise == Measured(round(math.sqrt(36 - within), 2), 100)
+    assert fitted.alternating_noise == Measured(round(math.sqrt(25 - within), 2), 100)
+    monkeypatch.setattr(calibrate, "data_dir", lambda: tmp_path)
+
+    _fit([FileResult(path="a/x.mid", folder="a", grooves=grooves())], check=False)
+
+    assert (
+        f"rider_noise_sd kept at the placeholder's 2.5 (ADR 0076); the grooves give "
+        f"{fitted.rider_noise.value} over 100 grooves, and {fitted.alternating_noise.value} on "
+        "the alternating quarter-note hits alone over 100"
+    ) in capsys.readouterr().out
 
 
 def test_a_style_file_reads_back_as_the_style(fitted: Fit) -> None:

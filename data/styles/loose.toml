@@ -2,11 +2,12 @@
 # only (ADRs 0007, 0044). The velocities are fitted once and shared by the three styles (ADR
 # 0065), and the timing is this style's band's, by tempo band. Values a performance can't give
 # keep the placeholder's, and so do the rider gap, accent and fill crescendo, whose fits run
-# against Appendix A or ADR 0052's tests (ADR 0068). Don't edit it: change the fit and run it
-# again.
+# against Appendix A or ADR 0052's tests (ADR 0068), and the riders' noise, whose fit would blur
+# their alternation (ADR 0076). Don't edit it: change the fit and run it again.
 name = "loose"
 placeholder = false
 noise_sd = 5.12
+rider_noise_sd = 2.5
 feet = 3.0
 rider_gap = [4.0, 14.0]
 rider_groove = [0.6, 0.8]

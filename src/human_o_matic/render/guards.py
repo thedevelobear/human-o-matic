@@ -61,6 +61,8 @@ from pydantic import BaseModel, ConfigDict
 from human_o_matic.midi.io import Note
 from human_o_matic.midi.tempo import FloatArray, IntArray, TempoMap
 
+MAX_VELOCITY = 127.0
+"""The ceiling a draw above is reflected below (Appendix A)."""
 MAX_OFFSET_MS = 12.0
 """The cap on an offset from the grid, either way (Appendix A)."""
 MIN_GAP_SHARE = 0.6
@@ -551,7 +553,7 @@ def _earliest(slot: Slot, tick: int) -> int:
     return min(tick, slot.window[0]) if slot.window is not None else tick
 
 
-def reflect(values: FloatArray, floors: FloatArray, ceiling: float = 127.0) -> FloatArray:
+def reflect(values: FloatArray, floors: FloatArray, ceiling: float = MAX_VELOCITY) -> FloatArray:
     """Each value reflected back inside its floor and the ceiling."""
     out = np.asarray(values, dtype=np.float64).copy()
     for _ in range(4):

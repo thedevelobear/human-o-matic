@@ -1,6 +1,6 @@
 # 0071. The fit is the default, research fills what a performance can't give, and a value they disagree on waits for both numbers
 
-- **Status:** Accepted
+- **Status:** Accepted. Its list of the values the fit keeps from the placeholder is amended by [ADR 0076](0076-riders-draw-their-velocities-with-a-noise-of-their-own.md)
 - **Date:** 2026-11-10
 
 - A style's value is the fit from the performed MIDI by default ([ADR 0068](0068-what-calibration-fits-and-what-stays-modelled.md)).

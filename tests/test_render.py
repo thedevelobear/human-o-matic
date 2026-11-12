@@ -2,6 +2,7 @@
 kit do (ADRs 0048 to 0050)."""
 
 from collections.abc import Sequence
+from functools import cache
 from itertools import pairwise
 from pathlib import Path
 
@@ -48,6 +49,7 @@ from human_o_matic.midi.io import MidiSong, Note, midi_bytes, parse_midi
 from human_o_matic.normalize.answers import AnswerError
 from human_o_matic.normalize.score import Normalized
 from human_o_matic.render.engine import Rendered, RenderedNote, drift, render
+from human_o_matic.render.measure import rider_gap
 from human_o_matic.render.style import STYLE_NAMES
 from human_o_matic.render.target import place_score
 from map_files import articulation, load_kit
@@ -443,6 +445,87 @@ def test_rider_hits_alternate_strong_and_weak_about_three_times_in_four(style: S
 
     assert 0.70 <= flips <= 0.85
     assert np.mean(strong) > np.mean(weak)
+
+
+TURNS = 0.81
+"""The least share of turns on a quarter-note ride, over `TURN_SEEDS` takes of 256 bars at the
+defaults. Simulated over 100 seeds, one such take turns 0.77 of the time, spread 0.015, with the
+riders drawing the other roles' noise, 5.12, and 0.84, spread 0.016, with their own, 2.5 (ADR
+0076). The mean of four takes spreads about half as far, so this is 4 to 5 of its spreads from
+each. The styles share their velocities, so each draws the same."""
+TURN_SEEDS = range(1, 5)
+
+
+def turns(velocities: Sequence[int]) -> tuple[int, int]:
+    """Of the neighbouring steps between the velocities that both move, how many change
+    direction, and how many there are."""
+    signs = np.sign(np.diff(np.array(velocities, dtype=np.float64)))
+    moving = (signs[:-1] != 0) & (signs[1:] != 0)
+    return int(((signs[:-1] != signs[1:]) & moving).sum()), int(moving.sum())
+
+
+@cache
+def ride() -> tuple[MidiSong, Normalized]:
+    """256 bars of a quarter-note ride over kick on 1 and 3 and snare on 2 and 4."""
+    hits: list[Hit] = []
+    for bar in range(256):
+        at = bar * BAR
+        hits.extend([(at, KICK), (at + 2 * PPQ, KICK), (at + PPQ, SNARE), (at + 3 * PPQ, SNARE)])
+        hits.extend((at + quarter * PPQ, RIDE) for quarter in range(4))
+    midi = song(hits)
+    return midi, normalized(midi)
+
+
+def ride_takes(controls: ControlVector, style: StyleName) -> tuple[float, float, int]:
+    """Over `TURN_SEEDS` takes of `ride()` in sections of 8 bars, the share of turns between
+    neighbouring alternating hits of a section, the mean rider gap, and the loudest velocity."""
+    midi, result = ride()
+    changed = steps = top = 0
+    gaps: list[float] = []
+    for seed in TURN_SEEDS:
+        plan = plan_for(
+            midi, result, cuts=range(8, 256, 8), controls=controls, seed=seed, style=style
+        )
+        out = rendered(midi, plan, result=result)
+        sections: dict[int, list[int]] = {}
+        for note in out.notes:
+            if note.part.rider == "alternate":
+                sections.setdefault(note.section, []).append(note.note.velocity)
+        for velocities in sections.values():
+            more, of = turns(velocities)
+            changed, steps = changed + more, steps + of
+        gap = rider_gap(out.notes)
+        assert gap is not None
+        gaps.append(gap)
+        top = max(top, *(note.note.velocity for note in out.notes))
+    return changed / steps, float(np.mean(gaps)), top
+
+
+@pytest.mark.parametrize("style", STYLE_NAMES)
+def test_a_quarter_note_ride_turns_up_and_down_clearly(style: StyleName) -> None:
+    share, _, _ = ride_takes(ControlVector(), style)
+
+    assert share >= TURNS, share
+
+
+TOP_GAP = 7.8
+TOP_TURNS = 0.815
+"""The least rider gap and share of turns of `ride_takes` from energy 0.8 up. With the strong hits
+held a spread of their noise under 127 (ADR 0077), simulated over 30 seeds, one 256-bar take at
+energy 0.8 to 1.0 has a gap of 8.3, spread 0.29, and turns 0.84 of the time, spread 0.014, where
+letting them pass 127, to be reflected below it, gave gaps of 7.6, 4.8 and 0.5 at 0.8, 0.9 and
+1.0, and turns 0.83, 0.79 and 0.73. At 0.5 both give 9.1 and 0.84. The mean of four takes
+spreads about half as far as one, so each floor is about 3.6 of its spreads under the held gap
+and turns."""
+
+
+@pytest.mark.parametrize("energy", [0.8, 0.9, 1.0])
+def test_a_ride_keeps_its_gap_and_turns_at_full_energy_under_127(energy: float) -> None:
+    share, gap, top = ride_takes(ControlVector(energy=energy), "tight")
+
+    assert gap >= TOP_GAP, gap
+    assert share >= TOP_TURNS, share
+    assert top <= 127
 
 
 def test_hits_on_one_grid_point_stay_within_10_ms_of_each_other_by_default() -> None:

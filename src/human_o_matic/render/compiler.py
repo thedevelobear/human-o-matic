@@ -30,6 +30,8 @@ class Params:
     arc_span: float
     noise_sd: float
     """The spread of a velocity about its center."""
+    rider_noise_sd: float
+    """The same for a rider hit not typed soft."""
     feet: float
     rider_gap: float
     rider_swap: float
@@ -102,6 +104,7 @@ def compile_section(controls: Controls, style: Style, bpm: float, *, roles: bool
         metric_velocity=style.metric_velocity,
         arc_span=style.arc_span,
         noise_sd=style.noise_sd * (0.5 + controls.dynamic_range),
+        rider_noise_sd=style.rider_noise_sd * (0.5 + controls.dynamic_range),
         feet=style.feet,
         rider_gap=(gap_low + (gap_high - gap_low) * controls.dynamic_range)
         * (groove_base + groove_scale * controls.groove),

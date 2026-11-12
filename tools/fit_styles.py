@@ -17,7 +17,8 @@ The grooves are `calibrate.py`'s, and every statistic here is one the engine dra
   shared part. A style draws its band's medians at the default tightness, and the control's
   shape about them stays the placeholder's.
 - What a performance can't give keeps the placeholder's value, and so do three values whose fit
-  runs against Appendix A or ADR 0052's tests (`KEPT`).
+  runs against Appendix A or ADR 0052's tests, and the riders' noise, which would blur their
+  alternation (`KEPT`).
 
 The fitted numbers are rounded to hundredths, and the kept ones are the placeholder's exactly, so
 running the fit again on the same grooves gives the same files byte for byte.
@@ -80,6 +81,7 @@ KEPT = (
     "rider_gap",
     "accent",
     "fill_crescendo",
+    "rider_noise_sd",
 )
 """What keeps the placeholder's value: the controls' defaults and the shapes of their effects,
 which a performance plays at one setting only; which foot is which, and which hand, which MIDI
@@ -92,7 +94,20 @@ Three the grooves do give run against Appendix A or ADR 0052's tests, so they ke
   to move by 2 steps;
 - the accent, whose line in energy pushes accents past 127, so their contrast falls as `groove`
   rises;
-- a fill's crescendo, which the grooves' fills fit at none, where Appendix A's rise."""
+- a fill's crescendo, which the grooves' fills fit at none, where Appendix A's rise.
+
+The riders' noise keeps Appendix A's too: the grooves' riders spread about two and a half times
+as far about their classes' means, which would blur the alternation of their strong and weak
+hits. `fit` prints what the grooves give beside it (`Fit.rider_noise`, ADR 0076)."""
+
+
+@dataclass(frozen=True, slots=True)
+class Measured:
+    """What the grooves give for a value the styles keep from the placeholder, and over how many
+    grooves."""
+
+    value: float | None
+    grooves: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,6 +122,10 @@ class Fit:
     """Each style's timing grooves, folders and packs."""
     tempo: dict[StyleName, tuple[int, ...]]
     """Each style's grooves per tempo band, 0 where the band took the style's pooled timing."""
+    rider_noise: Measured
+    """The riders' noise the grooves give, which the styles don't take (ADR 0076)."""
+    alternating_noise: Measured
+    """The same on the alternating quarter-note hits alone."""
     fallbacks: list[str] = field(default_factory=list[str])
     """The statistics that had too few grooves and took a fallback."""
 
@@ -164,6 +183,7 @@ def fit(results: Sequence[FileResult]) -> Fit:
         data = PLACEHOLDER.model_dump(mode="json") | fitted | {"name": name, "placeholder": False}
         styles[name] = Style.model_validate_json(json.dumps(data))
     chosen = velocity_grooves(grooves)
+    energy_drift = drift_variance(PLACEHOLDER.energy_drift_sd, (PLACEHOLDER.energy_drift_quarters,))
     return Fit(
         styles=styles,
         velocity_grooves=len(chosen),
@@ -171,8 +191,20 @@ def fit(results: Sequence[FileResult]) -> Fit:
         velocity_packs=len({g.pack for g in chosen}),
         timing=counts,
         tempo=tempo,
+        rider_noise=_noise([g.detail.rider_noise for g in chosen], energy_drift),
+        alternating_noise=_noise([g.detail.alternating_noise for g in chosen], energy_drift),
         fallbacks=fallbacks,
     )
+
+
+def _noise(spreads: Sequence[float | None], energy_drift: float) -> Measured:
+    """The median of the grooves' spreads, less what the energy drift adds within a groove, as
+    `noise_sd` is fitted, rounded to hundredths."""
+    found = [spread for spread in spreads if spread is not None]
+    median = _median(found)
+    if median is None:
+        return Measured(None, len(found))
+    return Measured(round(math.sqrt(max(median**2 - energy_drift, 0.0)), 2), len(found))
 
 
 def _within(groove: Groove, low: float | None, high: float | None) -> bool:
@@ -348,8 +380,9 @@ def style_toml(style: Style) -> str:
         "aggregate statistics only (ADRs 0007, 0044). The velocities are fitted once and shared "
         "by the three styles (ADR 0065), and the timing is this style's band's, by tempo band. "
         "Values a performance can't give keep the placeholder's, and so do the rider gap, accent "
-        "and fill crescendo, whose fits run against Appendix A or ADR 0052's tests (ADR 0068). "
-        "Don't edit it: change the fit and run it again."
+        "and fill crescendo, whose fits run against Appendix A or ADR 0052's tests (ADR 0068), "
+        "and the riders' noise, whose fit would blur their alternation (ADR 0076). Don't edit "
+        "it: change the fit and run it again."
     )
     lines = textwrap.wrap(header, width=98, initial_indent="# ", subsequent_indent="# ")
     _table(lines, [], cast(dict[str, Json], style.model_dump(mode="json")))
