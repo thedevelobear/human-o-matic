@@ -170,16 +170,17 @@ def test_every_style_has_the_defaults_the_vocabulary_names() -> None:
 
 
 def test_full_power_plays_kick_and_backbeats_from_118_in_every_style() -> None:
-    loud = [
-        row
+    loud = {
+        row.answer: energy.low
         for row in VOCABULARY_ROWS.answers
         if isinstance(energy := row.controls.get("energy"), Span) and energy.low >= FULL_POWER
-    ]
+    }
 
-    assert {row.answer for row in loud} >= {"breakdown, full power", "big last chorus"}
+    assert set(loud) >= {"breakdown, full power", "big last chorus"}
     for style in built_in_styles().values():
         for role in ("kick", "backbeat"):
-            assert style.velocity[role].at(FULL_POWER) >= LOUD, (style.name, role)
+            for low in (FULL_POWER, *loud.values()):
+                assert style.velocity[role].at(low) >= LOUD, (style.name, role, low)
 
 
 TABLE = """\
