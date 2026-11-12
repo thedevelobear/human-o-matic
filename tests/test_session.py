@@ -2,6 +2,7 @@
 hold, and the file they render, rebuilt from the MIDI file each time."""
 
 import json
+import os
 import shutil
 from itertools import pairwise
 from pathlib import Path
@@ -131,10 +132,35 @@ def test_a_new_session_never_takes_a_taken_name_and_leaves_no_temporary_file(
     assert store.load(first.id) == first
 
 
+def test_a_new_session_is_written_where_files_can_t_be_linked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = SessionStore(tmp_path / "sessions")
+    file = song_file(tmp_path)
+    ids = iter(["0123456789ab", "0123456789ab", "ba9876543210"])
+    monkeypatch.setattr("human_o_matic.session.secrets.token_hex", lambda _: next(ids))
+
+    def refuse(*_: object) -> None:
+        raise PermissionError(1, "Operation not permitted")
+
+    monkeypatch.setattr(os, "link", refuse)
+
+    first = open_in(store, file)
+    second = open_in(store, file)
+
+    assert (first.id, second.id) == ("0123456789ab", "ba9876543210")
+    assert sorted(path.name for path in store.directory.iterdir()) == [
+        "0123456789ab.json",
+        "ba9876543210.json",
+    ]
+    assert store.load(second.id) == second
+
+
 def test_a_new_session_whose_write_fails_leaves_no_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     store = SessionStore(tmp_path / "sessions")
+    store.directory.mkdir()
     file = song_file(tmp_path)
 
     def broken(_: Session) -> str:

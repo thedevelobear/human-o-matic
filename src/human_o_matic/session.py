@@ -10,8 +10,8 @@ render. So the same session JSON and seed always give the same file (ADR 0049).
 
 Sessions are kept one JSON file per session ID in the user's state directory (ADR 0079), by a
 `SessionStore`, which writes each file whole to a temporary file that then takes its name: a new
-session's by a link that fails when the name is taken, and a saved one's by replacing it. So a
-crash never leaves half a session, and two new sessions never share a file.
+session's by a link that fails when the name is taken, and a saved one's by replacing it
+(`files.py`). So a crash never leaves half a session, and two new sessions never share a file.
 
 The sections are found once, when the session is opened, and change only by `edit_sections`:
 split, merge, move a boundary, or rename (ADR 0081). A section is named by its first bar, from 0,
@@ -23,7 +23,6 @@ import hashlib
 import os
 import re
 import secrets
-import tempfile
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -41,6 +40,7 @@ from human_o_matic.controls import (
     StyleName,
 )
 from human_o_matic.decisions import DecisionRequest
+from human_o_matic.files import name_new, write_aside
 from human_o_matic.instruments.base import Instrument
 from human_o_matic.instruments.drums import DRUMS
 from human_o_matic.instruments.generic import GENERIC
@@ -210,45 +210,32 @@ class SessionStore:
 
     def create(self, make: Callable[[str], Session]) -> Session:
         """A new session, made by `make` from a new ID, and saved whole under a name no other
-        session has: its file is written aside and then linked to its name, which fails when
-        the name is taken."""
+        session has: its file is written aside and then given its name, which fails when the
+        name is taken (`files.name_new`)."""
         # The ID only names the file. It is random so two sessions never share one, and no
         # render draws from it: a render's randomness is the session's seed (ADR 0049).
         while True:
             session = make(secrets.token_hex(6))
             path = self.path(session.id)
-            written = self._written(session)
+            aside = self._aside(session)
             try:
-                os.link(written, path)
+                name_new(aside, path)
             except FileExistsError:
                 continue
             finally:
-                written.unlink()
+                aside.unlink()
             return session
 
     def save(self, session: Session) -> None:
         """Write the session's file whole, replacing what it held."""
         path = self.path(session.id)
-        os.replace(self._written(session), path)
+        os.replace(self._aside(session), path)
 
-    def _written(self, session: Session) -> Path:
+    def _aside(self, session: Session) -> Path:
         """A temporary file beside the sessions' files, holding the session's JSON whole."""
+        text = session.dump()
         self.directory.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(
-            "w",
-            encoding="utf-8",
-            dir=self.directory,
-            prefix=f".{session.id}.",
-            suffix=".tmp",
-            delete=False,
-        ) as file:
-            try:
-                file.write(session.dump())
-            except BaseException:
-                file.close()
-                Path(file.name).unlink()
-                raise
-        return Path(file.name)
+        return write_aside(self.directory, text.encode("utf-8"), prefix=f".{session.id}.")
 
     def load(self, session_id: str) -> Session:
         """A saved session. Raises `SessionError` when there is none or it can't be read."""

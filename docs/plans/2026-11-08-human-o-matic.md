@@ -143,6 +143,7 @@ Questions come from the agent, not the server. The server provides facts, sugges
     render/backends/      parametric.py; neural.py in M5 only
     instruments/          base protocol, drums.py, generic.py
     session.py            session JSON on disk: sections, answers, controls, seed, takes, exports
+    files.py              files written whole: aside first, then named, linked or created exclusively
     mcp_server.py         thin MCP layer over the above: the tools, served over stdio
     cli.py                analyze: a song's summary, sections and decision requests as JSON; render: a new MIDI file by a plan
   skills/human-o-matic/SKILL.md       question policy and workflow

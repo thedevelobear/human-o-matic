@@ -15,7 +15,7 @@ from mcp.server.mcpserver.exceptions import ToolError
 from mcp_types import TextContent
 
 from grooves import BAR, CRASH, KICK, PPQ, SIXTEENTH, SNARE, SOFT, Hit, midi_file, rock
-from human_o_matic import mcp_server
+from human_o_matic import files, mcp_server
 from human_o_matic.controls import ControlInput
 from human_o_matic.mcp_server import Tools, build_server
 from human_o_matic.midi.io import midi_bytes, read_midi
@@ -483,14 +483,14 @@ def test_a_failed_write_leaves_neither_file_nor_an_export(
     session_id = ready(tools, tmp_path)
     folder = tmp_path / "out"
     folder.mkdir()
-    real = mcp_server._write_aside
+    real = files.write_aside
 
     def full(where: Path, data: bytes) -> Path:
         if data.startswith(failing):
             raise OSError(28, "No space left on device")
         return real(where, data)
 
-    monkeypatch.setattr(mcp_server, "_write_aside", full)
+    monkeypatch.setattr(mcp_server, "write_aside", full)
 
     with pytest.raises(ToolError, match=rf"can't write .*{re.escape(named)}: .*No space left"):
         tools.export(session_id, str(folder / "song-2.mid"))
@@ -504,7 +504,7 @@ def test_a_file_that_appears_while_exporting_is_kept_and_the_report_taken_back(
     session_id = ready(tools, tmp_path)
     folder = tmp_path / "out"
     folder.mkdir()
-    real = mcp_server._write_aside
+    real = files.write_aside
 
     def racing(where: Path, data: bytes) -> Path:
         written = real(where, data)
@@ -512,13 +512,43 @@ def test_a_file_that_appears_while_exporting_is_kept_and_the_report_taken_back(
             (folder / "song-2.mid").write_bytes(b"theirs")
         return written
 
-    monkeypatch.setattr(mcp_server, "_write_aside", racing)
+    monkeypatch.setattr(mcp_server, "write_aside", racing)
 
     with pytest.raises(ToolError, match=r"song-2\.mid exists; give overwrite"):
         tools.export(session_id, str(folder / "song-2.mid"))
     assert [path.name for path in folder.iterdir()] == ["song-2.mid"]
     assert (folder / "song-2.mid").read_bytes() == b"theirs"
     assert SessionStore(tmp_path / "sessions").load(session_id).exports == ()
+
+
+def test_export_writes_where_files_can_t_be_linked_and_still_refuses_a_taken_name(
+    tools: Tools, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    session_id = ready(tools, tmp_path)
+    output = tmp_path / "out.mid"
+
+    def refuse(*_: object) -> None:
+        raise PermissionError(1, "Operation not permitted")
+
+    monkeypatch.setattr(os, "link", refuse)
+    tools.export(session_id, str(output))
+    real = files.write_aside
+
+    def racing(where: Path, data: bytes) -> Path:
+        written = real(where, data)
+        if data.startswith(b"MThd"):
+            (tmp_path / "other.mid").write_bytes(b"theirs")
+        return written
+
+    monkeypatch.setattr(mcp_server, "write_aside", racing)
+
+    with pytest.raises(ToolError, match=r"other\.mid exists; give overwrite"):
+        tools.export(session_id, str(tmp_path / "other.mid"))
+    assert len(read_midi(output).notes) == 136
+    assert json.loads((tmp_path / "out.report.json").read_text())["session"]["id"] == session_id
+    assert (tmp_path / "other.mid").read_bytes() == b"theirs"
+    assert not (tmp_path / "other.report.json").exists()
+    assert [path.name for path in tmp_path.iterdir() if path.name.startswith(".")] == []
 
 
 def test_a_changed_input_file_is_refused(tools: Tools, tmp_path: Path) -> None:

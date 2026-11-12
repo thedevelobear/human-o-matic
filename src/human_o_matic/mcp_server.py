@@ -17,7 +17,6 @@ file that exists, is a tool error whose message says why.
 import functools
 import json
 import os
-import tempfile
 import threading
 from collections.abc import Callable, Sequence
 from pathlib import Path
@@ -40,6 +39,7 @@ from human_o_matic.cli import (
 )
 from human_o_matic.controls import MAX_SEED, ControlInput, ControlVector, StyleName, clamp
 from human_o_matic.decisions import DecisionRequest, DecisionRequired
+from human_o_matic.files import name_new, write_aside
 from human_o_matic.instruments.drums import DRUMS
 from human_o_matic.maps.kit import DrumKit
 from human_o_matic.maps.loader import built_in_maps, find_kit
@@ -599,35 +599,24 @@ class Tools:
         }
 
 
-def _write_aside(folder: Path, data: bytes) -> Path:
-    """A temporary file in `folder` holding `data` whole."""
-    with tempfile.NamedTemporaryFile(dir=folder, prefix=".", suffix=".tmp", delete=False) as file:
-        try:
-            file.write(data)
-        except BaseException:
-            file.close()
-            Path(file.name).unlink()
-            raise
-    return Path(file.name)
-
-
 def _write_together(files: Sequence[tuple[Path, bytes]], overwrite: bool) -> None:
     """Write each file: each is written aside first, and only then takes its name, in order.
-    New files are all or none: each takes its name by a link that fails when the name is taken,
-    and a failure removes those this call named. With `overwrite` each replaces the file of its
-    name, one after the other, which can't be undone: a failure between two replacements leaves
-    the first new file beside the second old one. Raises `ToolError` saying what failed."""
+    New files are all or none: each takes its name by `files.name_new`, which fails when the name
+    is taken, and a failure removes those this call named. With `overwrite` each replaces the
+    file of its name, one after the other, which can't be undone: a failure between two
+    replacements leaves the first new file beside the second old one. Raises `ToolError` saying
+    what failed."""
     aside: list[Path] = []
     named: list[Path] = []
     current = files[0][0]
     try:
         for current, data in files:
-            aside.append(_write_aside(current.parent, data))
+            aside.append(write_aside(current.parent, data))
         for (current, _), written in zip(files, aside, strict=True):
             if overwrite:
                 os.replace(written, current)
             else:
-                os.link(written, current)
+                name_new(written, current)
                 named.append(current)
     except FileExistsError as error:
         _remove(named)
