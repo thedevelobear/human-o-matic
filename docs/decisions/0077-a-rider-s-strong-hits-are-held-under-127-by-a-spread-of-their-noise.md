@@ -1,6 +1,6 @@
 # 0077. A rider's strong hits are held under 127 by a spread of their noise, and its weak hits take the gap below them
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-11
 
 - A rider hit that takes the gap, an alternating or a weak one, is centered half the gap above or below its role's center, as before, unless that puts the strong center within a margin of 127, the ceiling draws are reflected below ([ADR 0050](0050-guards-hold-every-backend-and-keep-each-section-independent.md)). The margin is the section's compiled rider noise, the style's `rider_noise_sd` scaled by 0.5 plus `dynamic_range` ([ADR 0076](0076-riders-draw-their-velocities-with-a-noise-of-their-own.md)). Then the strong center is 127 less the margin and the weak center the whole gap below it: `top = min(center + gap / 2, 127 - margin)`, strong at `top` and weak at `top - gap`. A lone rider hit keeps its center.

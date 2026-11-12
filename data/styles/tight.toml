@@ -6,7 +6,7 @@
 # their alternation (ADR 0076). Don't edit it: change the fit and run it again.
 name = "tight"
 placeholder = false
-noise_sd = 5.12
+noise_sd = 5.03
 rider_noise_sd = 2.5
 feet = 3.0
 rider_gap = [4.0, 14.0]
@@ -55,24 +55,24 @@ low = 99.62
 
 [velocity.backbeat]
 full = 127.0
-half = 123.24
-low = 117.0
+half = 123.13
+low = 114.38
 band = 6.0
 
 [velocity.snare]
 full = 127.0
-half = 121.54
-low = 109.0
+half = 119.5
+low = 105.0
 
 [velocity.rider]
-full = 126.78
+full = 126.81
 half = 113.24
 low = 92.52
 
 [velocity.accent_cymbal]
 full = 127.0
 half = 121.0
-low = 119.42
+low = 118.43
 band = 8.0
 
 [velocity.fill]
@@ -89,7 +89,7 @@ low = 101.33
 kick = [0.83, 0.0, -0.94, -0.33]
 double_kick = [0.9, 0.08, -0.29, -1.06]
 backbeat = [0.0, 0.0, 0.0, 0.0]
-snare = [0.0, 0.0, 0.0, -0.22]
+snare = [0.0, 0.0, 0.0, 0.0]
 rider = [0.0, 0.0, 0.0, 0.0]
 accent_cymbal = [0.0, 0.0, -0.88, 0.0]
 fill = [0.0, 0.0, 0.0, 0.0]
@@ -97,20 +97,20 @@ other = [0.0, 0.0, 0.0, 0.0]
 
 [[timing]]
 shared_sd = 0.73
-jitter_sd = [1.99, 1.19]
-jitter_clip = 2.65
+jitter_sd = [2.0, 1.2]
+jitter_clip = 2.67
 
 [timing.limb_ms]
 other = 0.0
 snare = 0.18
-rider = 0.46
+rider = 0.49
 
 [[timing]]
 shared_sd = 0.0
-jitter_sd = [1.28, 0.77]
-jitter_clip = 1.71
+jitter_sd = [1.29, 0.77]
+jitter_clip = 1.72
 
 [timing.limb_ms]
 other = 0.0
-snare = 0.51
-rider = 0.55
+snare = 0.53
+rider = 0.61

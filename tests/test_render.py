@@ -449,10 +449,10 @@ def test_rider_hits_alternate_strong_and_weak_about_three_times_in_four(style: S
 
 TURNS = 0.81
 """The least share of turns on a quarter-note ride, over `TURN_SEEDS` takes of 256 bars at the
-defaults. Simulated over 100 seeds, one such take turns 0.77 of the time, spread 0.015, with the
-riders drawing the other roles' noise, 5.12, and 0.84, spread 0.016, with their own, 2.5 (ADR
-0076). The mean of four takes spreads about half as far, so this is 4 to 5 of its spreads from
-each. The styles share their velocities, so each draws the same."""
+defaults. Simulated over 100 seeds, one such take turns 0.77 of the time, spread 0.014, with the
+riders drawing the other roles' noise, 5.03, and 0.84, spread 0.016, with their own, 2.5 (ADRs
+0076 and 0086). The mean of four takes spreads about half as far, so this is 4 to 5 of its
+spreads from each. The styles share their velocities, so each draws the same."""
 TURN_SEEDS = range(1, 5)
 
 

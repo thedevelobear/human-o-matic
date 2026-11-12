@@ -10,6 +10,11 @@ order.
 Every model is frozen, takes no unknown field and is strict, so a string or a boolean is never
 read as a number. Their JSON is `model_dump(mode="json", exclude_none=True)`, which leaves unset
 controls out, and `model_validate_json` reads it back to an equal model.
+
+A `ControlInput` is controls as an agent gives them, each number in any range, and `clamp` moves
+each into its control's range, saying which it moved. `ControlVector.patched` applies one layer
+over another as a merge patch: a control given replaces the one held, a control given as null
+unsets it, and a control left out keeps it.
 """
 
 from typing import Annotated, Literal, Self
@@ -76,6 +81,63 @@ class ControlVector(BaseModel):
     def resolve(self, defaults: Controls) -> Controls:
         """These controls, with `defaults` wherever these are unset."""
         return defaults.model_copy(update=self.model_dump(exclude_none=True))
+
+    def patched(self, patch: "ControlVector") -> "ControlVector":
+        """These controls with `patch`'s applied as a merge patch: each control `patch` was
+        given replaces this one, None unsetting it, and the rest stay."""
+        given = {name: getattr(patch, name) for name in patch.model_fields_set}
+        return ControlVector.model_validate(self.model_dump() | given)
+
+
+type Number = Annotated[float, Field(allow_inf_nan=False)]
+
+
+class ControlInput(BaseModel):
+    """Controls as an agent gives them: each number in any range, which `clamp` moves into its
+    control's, and null for a control to unset."""
+
+    model_config = _STRICT
+
+    energy: Number | None = None
+    groove: Number | None = None
+    dynamic_range: Number | None = None
+    tightness: Number | None = None
+    feel: Number | None = None
+    arc: Arc | None = None
+    fill_intensity: Number | None = None
+    ghost_level: Number | None = None
+    skip: bool | None = None
+
+
+class Clamped(BaseModel):
+    """A control given outside its range, and the value used instead."""
+
+    model_config = _STRICT
+
+    control: str
+    given: float
+    used: float
+
+
+def clamp(given: ControlInput) -> tuple[ControlVector, tuple[Clamped, ...]]:
+    """The controls given, each number moved into its control's range, as a `ControlVector` that
+    holds as given exactly the controls `given` was given, so it patches as a merge patch, and
+    the controls that were moved."""
+    values: dict[str, object] = {}
+    moved: list[Clamped] = []
+    for name in ControlInput.model_fields:
+        if name not in given.model_fields_set:
+            continue
+        value = getattr(given, name)
+        if isinstance(value, float):
+            # `feel` is from -1 to 1, and every other number from 0 to 1.
+            low = -1.0 if name == "feel" else 0.0
+            used = min(max(value, low), 1.0)
+            if used != value:
+                moved.append(Clamped(control=name, given=value, used=used))
+            value = used
+        values[name] = value
+    return ControlVector.model_validate(values), tuple(moved)
 
 
 class SectionPlan(BaseModel):

@@ -12,7 +12,9 @@ A drum is a family and piece, such as `snare` or `tom.2`, whatever the articulat
    local tempo when that is shorter, so two drums one 32nd apart stay apart. An onset's time is
    the mean of its hits'.
 3. **Grids.** Each beat's grid is chosen from its onsets, and each onset goes to its nearest
-   point (`grid.snap`). Every hit of an onset takes its tick and keeps its own offset.
+   point (`grid.snap`) and belongs to the beat that point is in, so one played just before a
+   beat belongs to it (ADR 0086). Every hit of an onset takes its tick, its beat and its own
+   offset.
 4. **Graces placed.** A grace goes before its main's tick by its performed gap, rounded to a
    tick and at least one tick, and takes its main's beat.
 Finally, a note never ends up before an earlier note of its pitch and channel.
@@ -86,7 +88,11 @@ def quantize(
 
     onset_of, onset_ms = _onsets(hits, starts, ms, grace_of, tempos)
     onset_ticks = tempos.ms_to_ticks(onset_ms)
-    beats = beat_windows(signatures, int(starts.max()) + 1)
+    # The beats run to the end of the bar after the last hit's, so a hit played just before
+    # that bar's first beat has a beat to belong to.
+    beats = beat_windows(
+        signatures, signatures.bar_start(signatures.bar_at(int(starts.max())) + 1) + 1
+    )
     snapped = snap(onset_ticks, onset_ms, beats, tempos, grids)
 
     ticks = np.zeros(len(hits), dtype=np.int64)

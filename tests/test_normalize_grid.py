@@ -251,7 +251,7 @@ def test_an_eighth_beat_never_takes_the_8th_triplet() -> None:
     assert result.beats[0].costs[GRIDS.index("8th_triplet")] is None
 
 
-def test_a_beat_cut_short_snaps_to_its_end() -> None:
+def test_a_beat_cut_short_snaps_to_its_end_which_starts_the_next_bar() -> None:
     signatures = TimeSignatureMap(PPQ, [(0, TimeSignature(4, 4)), (1200, TimeSignature(3, 4))])
     windows = beat_windows(signatures, 2 * PPQ)
     # Beat 1 of bar 0 runs from 960 to 1200, where bar 1 starts.
@@ -260,7 +260,8 @@ def test_a_beat_cut_short_snaps_to_its_end() -> None:
     result = snap(ticks, AT_120.ticks_to_ms(ticks), windows, AT_120)
 
     assert result.ticks.tolist() == [1200]
-    assert (result.beats[0].start, result.beats[0].end) == (960, 1200)
+    ((bar, beat, start),) = [(beat.bar, beat.beat, beat.start) for beat in result.beats]
+    assert (bar, beat, start) == (1, 0, 1200)
 
 
 def test_ambiguous_bars_are_one_compact_request() -> None:
