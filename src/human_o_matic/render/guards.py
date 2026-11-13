@@ -652,8 +652,10 @@ def hold_velocity(
     base_drums = [None if slot.added else slot.drum for slot in slots]
     pitch_bit = _boundary_bits(slots, [slot.base for slot in slots])
     drum_bit = _boundary_bits(slots, base_drums)
-    pitch_bit.update(_edge_bits(slots, [slot.key for slot in slots], pitch_bit))
-    drum_bit.update(_edge_bits(slots, [slot.drum for slot in slots], drum_bit))
+    pitch_bit.update(
+        _edge_bits(slots, [slot.key for slot in slots], [slot.base for slot in slots], pitch_bit)
+    )
+    drum_bit.update(_edge_bits(slots, [slot.drum for slot in slots], base_drums, drum_bit))
     kept_after = _kept_after(slots, [slot.key for slot in slots])
     kept_after.update(
         (position, kept_after.get(position, ()) + after)
@@ -709,13 +711,17 @@ def _boundary_bits(slots: Sequence[Slot], keys: Sequence[object | None]) -> dict
 
 
 def _edge_bits(
-    slots: Sequence[Slot], keys: Sequence[object], bits: dict[int, int]
+    slots: Sequence[Slot],
+    keys: Sequence[object],
+    counted: Sequence[object | None],
+    bits: dict[int, int],
 ) -> dict[int, int]:
     """For each added note next to a rendered note of another section among the notes of its
     key, the class its section's own note on that side of it has: the first of its section's
     notes on the key after it, when the note before is another section's, or the last before
-    it, when the note after is. That note's neighbour across the boundary, before anything was
-    added, has the other class, and so does anything another section adds there (ADR 0094)."""
+    it, when the note after is, of those `counted` on that key. That note's neighbour across the
+    boundary, before anything was added, has the other class, and so does anything another
+    section adds there (ADR 0094)."""
     found: dict[int, int] = {}
     for sequence in _sequences(keys):
         for number, position in enumerate(sequence):
@@ -736,7 +742,7 @@ def _edge_bits(
                     (
                         place
                         for place in own
-                        if not slots[place].added and slots[place].section == slot.section
+                        if counted[place] == keys[place] and slots[place].section == slot.section
                     ),
                     None,
                 )

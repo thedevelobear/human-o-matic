@@ -111,6 +111,64 @@ def sparse_songs(draw: st.DrawFn) -> list[Hit]:
 SPARSE_CUTS = st.lists(st.integers(1, 11), min_size=1, max_size=5)
 
 
+@st.composite
+def kit_songs(draw: st.DrawFn) -> list[Hit]:
+    """Up to 12 bars for Sleep Token II, which has a rimshot, chokes and two pitches for one
+    tom: backbeats on the snare or its rimshot, few cymbals, and crashes, chokes, toms and soft
+    snare notes here and there, so notes written as rimshots and added notes meet boundaries."""
+    bars = draw(st.integers(2, 12))
+    hits: list[Hit] = []
+    for bar in range(bars):
+        at = bar * BAR
+        backbeat = draw(st.sampled_from((SNARE, RIMSHOT)))
+        hits += [(at, KICK), (at + PPQ, backbeat), (at + 3 * PPQ, SNARE)]
+        hits += [(at + step * PPQ, HAT) for step in range(0, 4, draw(st.sampled_from((2, 4))))]
+        for _ in range(draw(st.integers(0, 3))):
+            step = draw(st.integers(0, 15))
+            pitch = draw(st.sampled_from((CRASH, 57, CHOKE, 48, 50, SNARE, RIMSHOT, 46, 51)))
+            hits.append((at + step * SIXTEENTH, pitch, SOFT if pitch == SNARE else NORMAL))
+    unique = {(hit[0], hit[1]): hit for hit in hits}
+    return list(unique.values())
+
+
+@given(kit_songs(), SPARSE_CUTS, st.data())
+def test_through_a_kit_with_rimshots_and_chokes_every_section_is_independent_and_guarded(
+    hits: list[Hit], cuts: list[int], data: st.DataObject
+) -> None:
+    midi = song(hits)
+    result = normalized(midi, SLEEP_TOKEN)
+    plan = drawn_plan(data, midi, result, cuts)
+    changed = data.draw(st.integers(0, len(plan.sections) - 1), label="section")
+    flipped = plan.model_copy(
+        update={
+            "sections": tuple(
+                section.model_copy(
+                    update={
+                        "controls": section.controls.model_copy(
+                            update={"creative": not section.controls.creative}
+                        )
+                    }
+                )
+                if number == changed
+                else section
+                for number, section in enumerate(plan.sections)
+            )
+        }
+    )
+
+    def out_of(chosen: SessionPlan) -> Rendered:
+        return rendered(midi, chosen, kit=SLEEP_TOKEN, target=SLEEP_TOKEN, result=result)
+
+    out = out_of(plan)
+    assert others(out, changed) == others(out_of(flipped), changed)
+    for key in ("pitch", "drum"):
+        for notes in by_key(out.notes, key).values():
+            for earlier, later in pairwise(notes):
+                assert later.note.start > earlier.note.start or later.tick == earlier.tick
+                if not (earlier.kept and later.kept):
+                    assert earlier.note.velocity != later.note.velocity
+
+
 @given(grooves() | sparse_songs(), CUTS | SPARSE_CUTS, st.data())
 def test_a_section_turned_creative_leaves_every_other_section_as_it_was(
     hits: list[Hit], cuts: list[int], data: st.DataObject
