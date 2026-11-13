@@ -8,6 +8,6 @@
 - **3, engine defaults, no questions:** the engine with nothing asked: the session's sections and seed, the default style, `tight`, no controls, and every section's first take.
 - All three use the session's answers to its requests, the hit types, grids, unmapped notes and substitutions, which the score needs, and none of its controls, style or takes.
 
-**Why:** The plan names the three. 100 is the velocity most piano rolls give a note, so variant 1 sounds as a part programmed at one velocity does. Naive randomization knows nothing of the song, so each draw is independent noise, the kind the research the plan cites finds listeners rate below correlated drift. Variant 3 with the session's sections and seed differs from variant 4 only by what the answers set.
+**Why:** The plan names the three. 100 is a common default note velocity, and it is inside the range of every built-in articulation, all of which take 1 to 127, so variant 1 plays as a part entered at one velocity does, every note on the articulation it was written for. Naive randomization knows nothing of the song, so each draw is independent noise, the kind the research the plan cites finds listeners rate below correlated drift. Variant 3 with the session's sections and seed differs from variant 4 only by what the answers set.
 
 **Consequences:** In variants 1 and 2 soft notes are as loud as the rest. Variant 1 is not matched in loudness to the engine's variants: `--velocity` sets it.

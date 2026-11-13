@@ -91,7 +91,8 @@ PAIRS: tuple[tuple[Variant, Variant], ...] = ((4, 2), (4, 3), (5, 4))
 the timing is worth having."""
 
 FLAT_VELOCITY = 100
-"""Variant 1's one velocity: a piano roll's usual default note velocity."""
+"""Variant 1's one velocity: a common default note velocity, inside the range of every built-in
+articulation."""
 NAIVE_SD_MS = 8.0
 """The spread of variant 2's offsets, in milliseconds (the plan's M4)."""
 NAIVE_VELOCITY = 12
