@@ -621,6 +621,16 @@ def test_a_section_that_plays_rimshots_and_chokes_gets_more_of_them() -> None:
     assert [(note.tick, note.note.pitch) for note in chokes] == [(6 * BAR + PPQ // 2, CHOKE)]
 
 
+def test_a_silent_section_adds_nothing_and_skips_nothing() -> None:
+    midi = song(rock(4, start=4))
+    result = normalized(midi)
+
+    out = rendered(midi, plan_for(midi, result, cuts=[4], controls=ON))
+
+    assert out.creative[0] is not None
+    assert out.creative[0].added == out.creative[0].skipped == {}
+
+
 def test_generic_mode_adds_nothing() -> None:
     midi = song(rock(8))
     result = normalized(midi)

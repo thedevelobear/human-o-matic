@@ -105,8 +105,8 @@ class RenderedNote:
     """One note as rendered, with what measuring it needs."""
 
     position: int
-    """Its position in `Score.notes`, or for a note a creative section added, one past them, in
-    play order."""
+    """Its position in `Score.notes`, or for a note a creative section added, past them, in the
+    order the sections added them."""
     section: int
     kept: bool
     """Played as it came in."""

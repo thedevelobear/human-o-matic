@@ -28,7 +28,8 @@ timing as they give the section's own notes of that role. In the order they are 
   hit of that cymbal follows within a quarter note and the section goes on that long.
 No 16th is added in a beat whose grid is a triplet. A rimshot or a choke the target kit has no
 articulation for, or only one a controller value decides, is `missing`; a fill with neither a
-snare nor a tom, and a crash with no crash-family cymbal, are `unplayed`.
+snare nor a tom, and a crash with no crash-family cymbal, are `unplayed`. A section with no notes
+adds nothing.
 """
 
 from collections import Counter
@@ -60,8 +61,11 @@ TRIPLETS = frozenset({"8th_triplet", "16th_triplet"})
 
 
 def propose(view: SectionView, rng: np.random.Generator) -> Proposal:
-    """What a creative section of drums adds, in the order it is admitted."""
+    """What a creative section of drums adds, in the order it is admitted. A section with no
+    notes adds nothing."""
     pattern = [bool(chosen) for chosen in rng.random(GHOST_SLOTS) < GHOST_CHANCE]
+    if not view.members:
+        return Proposal()
     found: list[Candidate] = []
     skipped: dict[Skip, dict[Addition, int]] = {}
 
