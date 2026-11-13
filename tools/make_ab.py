@@ -19,8 +19,9 @@ song's tempo and meter, holding only those, the drum track's channel messages an
 `trial-NN-x.mid` and written in that order, and the key that says which is which goes beside the
 folder, never in it, with a blank ratings sheet in the folder, where each listener rates each
 file in a copy of it from 1, the worst, to 5, the best (ADR 0105). `make` prints counts and
-paths, never which file is which. It reads the session and never writes it, never writes over the
-input, and refuses a folder or key that exists unless `--overwrite` is given.
+paths, never which file is which. It reads the session and never writes it: neither the folder
+nor the key may be or hold the session's file or its input, even with `--overwrite`, and a folder
+or key that exists is refused unless `--overwrite` is given.
 
 `score` reads the key and one or more filled sheets, one per listener, and prints each variant's
 mean rating and the gate's three comparisons, 4 against 2, 4 against 3 and 5 against 4, per trial
@@ -628,16 +629,20 @@ def _ours(path: Path) -> bool:
     return path.name == SHEET or TRIAL_FILE.fullmatch(path.name) is not None
 
 
-def check_outputs(out: Path, key: Path, source: Path, *, overwrite: bool) -> None:
-    """Raises `OutputError` when the folder or the key would write over the input, the key would
-    go in the folder, a parent folder is missing, or the folder or the key exists without
-    `overwrite`, or exists as something `make` doesn't write."""
-    source = source.resolve()
+def check_outputs(out: Path, key: Path, kept: Mapping[str, Path], *, overwrite: bool) -> None:
+    """Raises `OutputError` when the folder holds, or the key is, a file of `kept`, the files
+    `make` never writes, by what each is, such as the session's file and its input, whatever
+    `overwrite` says; when the key would go in the folder or a parent folder is missing; and when
+    the folder or the key exists without `overwrite`, or exists as something `make` doesn't
+    write."""
     folder = out.resolve()
-    if source.is_relative_to(folder):
-        raise OutputError(f"{out} holds the session's input file, which is never written over")
-    if key.resolve() == source or (key.exists() and source.exists() and key.samefile(source)):
-        raise OutputError(f"{key} is the session's input file, which is never written over")
+    for what, path in kept.items():
+        if path.resolve().is_relative_to(folder):
+            raise OutputError(f"{out} holds {what}, which make_ab never writes")
+        if key.resolve() == path.resolve() or (
+            key.exists() and path.exists() and key.samefile(path)
+        ):
+            raise OutputError(f"{key} is {what}, which make_ab never writes")
     if key.resolve().is_relative_to(folder):
         raise OutputError(f"the key {key} goes beside {out}, never in it, so no listener opens it")
     for path in (out, key):
@@ -702,12 +707,20 @@ def _fill(folder: Path, blind: Blind) -> None:
         os.replace(write_aside(folder, data), folder / name)
 
 
+def session_path(given: str) -> Path:
+    """The file of the session given by an ID, kept in the state directory, or by the path of its
+    JSON file."""
+    if ID_PATTERN.fullmatch(given) is not None and not Path(given).exists():
+        return SessionStore().path(given)
+    return Path(given).expanduser()
+
+
 def read_session(given: str) -> Session:
     """The session of an ID, kept in the state directory, or of the path of its JSON file.
     Raises `SessionError`."""
     if ID_PATTERN.fullmatch(given) is not None and not Path(given).exists():
         return SessionStore().load(given)
-    path = Path(given).expanduser()
+    path = session_path(given)
     try:
         return Session.model_validate_json(path.read_text(encoding="utf-8"))
     except OSError as error:
@@ -936,7 +949,11 @@ def _make(
         return EXIT_USAGE
     try:
         session = read_session(given)
-        check_outputs(out, key, Path(session.midi_path), overwrite=overwrite)
+        kept = {
+            "the session's file": session_path(given),
+            "the session's input file": Path(session.midi_path),
+        }
+        check_outputs(out, key, kept, overwrite=overwrite)
         loaded = load_song(session.model_copy(update={"to_map": kit.ref}))
     except DecisionRequired as asked:
         print(json.dumps({"decisions": [asked.request.model_dump(mode="json")]}))

@@ -3,6 +3,7 @@ the hidden key and the ratings sheet, and the count of the ratings (ADRs 0101 to
 
 import csv
 import json
+import os
 from collections import Counter
 from dataclasses import replace
 from itertools import pairwise
@@ -557,6 +558,36 @@ def test_make_writes_over_neither_the_input_nor_what_exists_without_overwrite(
         assert file_hash((out / entry.file).read_bytes()) == entry.sha256
     assert source.read_bytes() == original
     assert not [path for path in tmp_path.iterdir() if path.name.startswith(".")]
+
+
+def test_make_never_writes_the_session_s_file_even_with_overwrite(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv(STATE_ENV, str(tmp_path / "state"))
+    session = guided(tmp_path, SessionStore(sessions_dir()))
+    held = SessionStore(sessions_dir()).path(session.id)
+    kept = held.read_bytes()
+    link = tmp_path / "link.json"
+    os.link(held, link)
+    common = ["--kit", "gm", "--seed", "1", "--overwrite"]
+    out = str(tmp_path / "ab")
+    elsewhere = str(tmp_path / "key.json")
+
+    for named in (session.id, str(held)):
+        for outputs in (
+            ["--out", out, "--key", str(held)],
+            ["--out", out, "--key", str(link)],
+            ["--out", str(held.parent)],
+            ["--out", str(held.parent.parent), "--key", elsewhere],
+        ):
+            assert main(["make", named, *common, *outputs]) == EXIT_USAGE, (named, outputs)
+            assert "the session's file, which make_ab never writes" in capsys.readouterr().err
+
+    assert held.read_bytes() == kept
+    assert sorted(path.name for path in held.parent.iterdir()) == [held.name]
+    assert not (tmp_path / "ab").exists()
+    assert main(["make", session.id, *common, "--out", out]) == 0
+    assert held.read_bytes() == kept
 
 
 @pytest.mark.parametrize("kit", ["nope", "gm/nope", "sleep-token-ii"])
