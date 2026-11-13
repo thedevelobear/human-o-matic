@@ -32,6 +32,7 @@ DEFAULTS = Controls(
     fill_intensity=0.5,
     ghost_level=0.5,
     skip=False,
+    creative=False,
 )
 """The defaults the vocabulary says every style has."""
 PLAN_ROWS: dict[str, dict[str, float | str]] = {
@@ -235,6 +236,7 @@ def test_a_table_reads_as_each_answer_and_the_controls_it_sets(tmp_path: Path) -
         ('| "fill" | | | | | | | energy: 0.8 [0.7, 1] |', CHANGE, "in its own column"),
         ('| "rise" | | | | | | | arc: rise |', CHANGE, "arc 'rise'"),
         ('| "done" | | | | | | | skip: yes |', CHANGE, "isn't true or false"),
+        ('| "new" | | | | | | | creative: maybe |', CHANGE, "creative 'maybe' isn't true or false"),
         ('| "tidy" | | | | | | | style: neat |', CHANGE, "isn't a built-in style"),
         (GOOD, '| "rise" | | | | | | | arc: build |', "changes numbers only"),
         (GOOD, '| "max" | +0.6 [+0.5, +0.7] | | | | | | |', "less than or equal to 1"),

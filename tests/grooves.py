@@ -207,9 +207,11 @@ ARCS: tuple[Arc, ...] = ("steady", "build", "drop")
 
 
 @st.composite
-def control_vectors(draw: st.DrawFn, skip: bool = True, corners: bool = False) -> ControlVector:
-    """Any controls, each maybe unset, with `skip` drawn only when `skip` is set, and each at
-    its ends often when `corners` is set."""
+def control_vectors(
+    draw: st.DrawFn, skip: bool = True, corners: bool = False, creative: bool = False
+) -> ControlVector:
+    """Any controls, each maybe unset, with `skip` drawn only when `skip` is set, `creative` only
+    when `creative` is set, and each at its ends often when `corners` is set."""
     units = _corners if corners else _units
     feel = st.none() | st.sampled_from((-1.0, 1.0)) | st.floats(-1, 1) if corners else None
     return ControlVector(
@@ -222,4 +224,5 @@ def control_vectors(draw: st.DrawFn, skip: bool = True, corners: bool = False) -
         fill_intensity=draw(units),
         ghost_level=draw(units),
         skip=draw(st.none() | st.booleans()) if skip else None,
+        creative=draw(st.none() | st.booleans()) if creative else None,
     )

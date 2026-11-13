@@ -1,6 +1,6 @@
 # 0088. The skill is installed by a link from `~/.claude/skills/` to `skills/human-o-matic/` in the repository
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-12
 
 - The skill lives in the repository, in `skills/human-o-matic/`. Claude Code finds it through a symbolic link to that folder, `~/.claude/skills/human-o-matic`, made once from the checkout's path:

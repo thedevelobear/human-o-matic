@@ -35,6 +35,7 @@ from human_o_matic.cli import (
     RenderSummary,
     SectionEntry,
     answer_problem,
+    rendered_notes,
     summarize,
 )
 from human_o_matic.controls import MAX_SEED, ControlInput, ControlVector, StyleName, clamp
@@ -46,6 +47,7 @@ from human_o_matic.maps.loader import built_in_maps, find_kit
 from human_o_matic.midi.io import MidiFileError, midi_bytes
 from human_o_matic.midi.tempo import MAX_BPM, MIN_BPM
 from human_o_matic.normalize.answers import AnswerError
+from human_o_matic.render.creative import CreativeReport
 from human_o_matic.render.describe import sound
 from human_o_matic.render.engine import Rendered, RenderedNote
 from human_o_matic.render.measure import section_stats
@@ -87,7 +89,8 @@ human-o-matic re-performs a drum MIDI file section by section, steered by the us
 3. Ask about the song's style and tightness once (set_style), then, per repeat group in song
    order, about its energy and feel, and set the controls the answers give with
    set_section_controls, which says what they give, to echo in plain words. Repeats can take
-   their group's controls.
+   their group's controls. Only when the user asks for notes the song lacks, set creative, which
+   lets a section add ghost notes, cymbals, a fill, flams, rimshots and chokes.
 4. export writes a new MIDI file, never the input, which the user drags into the DAW onto the
    to_map kit's track to listen. render gives the statistics without writing.
 Bars are counted from 0 in arguments and replies, and from 1 in labels and messages. A section
@@ -433,9 +436,12 @@ class Tools:
             Field(
                 description="energy, groove, dynamic_range, tightness, fill_intensity and "
                 "ghost_level from 0 to 1, feel from -1 pushed to +1 laid back, arc steady, build "
-                "or drop, and skip to leave a section as it came in. A control given replaces "
-                "the one held, null unsets it, and one left out stays. A number outside its "
-                "range is clamped to it, and the reply says so."
+                "or drop, skip to leave a section as it came in, and creative to let it add "
+                "notes, only when the user asks: ghost notes, cymbals where it has few, a fill "
+                "into the next section where it has none, flams, rimshots and chokes. skip wins "
+                "over creative. A control given replaces the one held, null unsets it, and one "
+                "left out stays. A number outside its range is clamped to it, and the reply says "
+                "so."
             ),
         ],
         section_ids: SectionIds = None,
@@ -470,7 +476,7 @@ class Tools:
                 "resolved": resolved.model_dump(mode="json"),
             }
             if rendered is not None:
-                entry["expected"] = sound(_of(rendered, number)).says
+                entry["expected"] = sound(_of(rendered, number), rendered.creative[number]).says
             sections.append(entry)
         out: Reply = {"session_id": session.id}
         if section_ids is None:
@@ -521,6 +527,7 @@ class Tools:
                 "notes": _notes(loaded, rendered).model_dump(mode="json"),
                 "guards": rendered.guards.model_dump(mode="json"),
                 "conversion": loaded.placement.report.model_dump(mode="json"),
+                "creative": _creative(CreativeReport.summed(rendered.creative)),
             },
             "sections": _measured(session, rendered, chosen),
             "decisions": [],
@@ -576,6 +583,7 @@ class Tools:
             notes=_notes(loaded, rendered),
             guards=rendered.guards,
             conversion=loaded.placement.report,
+            creative=CreativeReport.summed(rendered.creative),
         ).model_dump(mode="json")
         measured = _measured(session, rendered, set(session.starts))
         written = Export(output=str(output), report=str(report), sha256=file_hash(data))
@@ -639,11 +647,11 @@ def _of(rendered: Rendered, number: int) -> list[RenderedNote]:
 
 
 def _notes(loaded: Loaded, rendered: Rendered) -> RenderedNotes:
-    return RenderedNotes(
-        written=len(rendered.notes),
-        kept=sum(note.kept for note in rendered.notes),
-        dropped=len(loaded.normalized.dropped) + len(loaded.placement.dropped),
-    )
+    return rendered_notes(rendered, loaded.normalized, loaded.placement)
+
+
+def _creative(report: CreativeReport | None) -> JsonValue:
+    return report.model_dump(mode="json") if report is not None else None
 
 
 def _measured(session: Session, rendered: Rendered, chosen: set[int]) -> list[JsonValue]:
@@ -654,6 +662,7 @@ def _measured(session: Session, rendered: Rendered, chosen: set[int]) -> list[Js
         if section.start not in chosen:
             continue
         notes = _of(rendered, number)
+        creative = rendered.creative[number]
         entry = SectionEntry(start=section.start, bars=section.bars, group=section.group)
         row: Reply = entry.model_dump(mode="json")
         row.update(
@@ -661,7 +670,8 @@ def _measured(session: Session, rendered: Rendered, chosen: set[int]) -> list[Js
                 "take": section.take,
                 "skip": section.controls.over(session.controls).resolve(defaults).skip,
                 "stats": section_stats(notes).model_dump(mode="json"),
-                "says": sound(notes).says,
+                "creative": _creative(creative),
+                "says": sound(notes, creative).says,
             }
         )
         out.append(row)

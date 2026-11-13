@@ -40,6 +40,7 @@ The plan's milestones, M0 to M6, are done in order, each in one or more PRs.
 - Maps are built in: this version loads no user-supplied map file ([ADR 0010](docs/decisions/0010-built-in-maps-only.md)).
 - No library is special in the code. Libraries differ only in their map data ([ADR 0008](docs/decisions/0008-library-neutral-drum-maps.md)).
 - Timing never exceeds performed magnitudes by default.
+- Notes are added only by a section's creative mode, off by default, on drums and pitches the section plays, and the skill turns it on only when the user asks ([ADR 0091](docs/decisions/0091-creative-mode-is-a-section-s-control-off-by-default-that-lets-it-add-notes.md), [ADR 0094](docs/decisions/0094-an-added-note-changes-no-other-section.md), [ADR 0096](docs/decisions/0096-the-skill-turns-creative-mode-on-only-when-the-user-asks-for-added-notes.md)).
 - No piano or guitar logic yet.
 
 ## Code

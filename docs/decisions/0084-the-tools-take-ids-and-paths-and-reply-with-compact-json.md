@@ -1,6 +1,6 @@
 # 0084. The tools take IDs and paths, answer each request by the argument it names, and reply with compact JSON
 
-- **Status:** Accepted
+- **Status:** Accepted. The summaries and sections of `render` and `export` are amended by [ADR 0095](0095-an-addition-the-kit-can-t-play-is-skipped-and-the-reports-count-what-was-added.md)
 - **Date:** 2026-11-12
 
 - The tools are the plan's nine, `list_maps`, `open_session`, `get_sections`, `update_sections`, `set_hit_types`, `set_style`, `set_section_controls`, `render` and `export`, and no `preview` ([ADR 0074](0074-a-render-is-heard-from-its-midi-file-in-the-daw-and-there-is-no-live-preview.md)). Each reply is one compact JSON object of counts, bars, facts, controls and statistics, never a note list, with any open requests as `decisions`, as the CLI prints them ([ADR 0015](0015-unclear-input-is-a-decision-request.md)).

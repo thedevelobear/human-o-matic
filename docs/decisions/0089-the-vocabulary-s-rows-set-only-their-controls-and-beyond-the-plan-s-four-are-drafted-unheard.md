@@ -1,6 +1,6 @@
 # 0089. The vocabulary's rows set only their controls, are written for a song at the defaults, and beyond the plan's four are drafted unheard and refined by ear
 
-- **Status:** Proposed
+- **Status:** Accepted. Its count of answers is amended by [ADR 0096](0096-the-skill-turns-creative-mode-on-only-when-the-user-asks-for-added-notes.md)
 - **Date:** 2026-11-12
 
 - A row sets the controls it fills in, and the agent leaves the rest unset, so they come from the song's controls and then the style's defaults. Every style's defaults are 0.5 for `energy`, `groove`, `dynamic_range`, `fill_intensity` and `ghost_level`, 0.75 for `tightness`, 0 for `feel`, `steady` for `arc` and false for `skip`.

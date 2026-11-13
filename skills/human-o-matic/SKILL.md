@@ -21,7 +21,7 @@ and that a new Claude Code session then has the tools. Don't run it unless the u
 - **Bars count from 0** in every argument and reply field, and from 1 in labels and messages, as a DAW shows them. A section's ID is its first bar from 0, its `start`. Talk to the user in labels: "bars 9 to 24".
 - **Read `decisions` in every reply.** Each is an open request, its `message` the question in plain words and its `answer_with` the argument that settles it. `render` and `export` wait until every request is answered. `set_section_controls` gives its `expected` from the guesses while only hit types or grids are unconfirmed, and none while unmapped notes or conversions wait.
 - **A tool error says what was wrong.** Fix the argument and call again.
-- **Nothing is added.** This version never adds notes and keeps each note's hit type: soft, normal or accent. "More ghost notes" means the soft notes the song has, louder. If the user wants notes the song lacks, say this version can't add them.
+- **Nothing is added unless the user asks.** With creative mode off, the default, no note is added and each note keeps its hit type: soft, normal or accent. "More ghost notes" means the soft notes the song has, louder. Only when the user asks for notes the song lacks does a section turn creative (see "Added notes"). Never suggest it, and never ask whether to add notes.
 - **No live preview.** The user hears a render by dragging its exported MIDI file into the DAW, onto the track whose drum instrument is the kit the session writes for.
 
 ## Question policy
@@ -92,8 +92,17 @@ Keep count as you go: one for the kits question when you need it, one for the co
 - Rows are written for a song whose own controls are unset. Where the song has its own value, such as its tightness, move a section from it by the row's difference from the default, and leave a control unset where the row gives the default.
 - "Your call" sets nothing new: use the row for what the section is, when the user named it or confirmed it in the table, and otherwise keep the song's controls, or for a repeat, its group's. Say which.
 - "Leave this alone" or "it's already done" is `skip: true`: the section stays exactly as it came in.
+- A request for notes the song lacks turns creative mode on: see "Added notes".
 - For an answer no row covers, choose from the vocabulary's "In words" table and say it's your reading.
 - The values are starting points that haven't been heard yet. The user's ears decide: when they say something sounds off, refine.
+
+## Added notes
+Creative mode lets a section add notes the song doesn't have. It is off unless the user asks for added notes, in their own words: "make it more creative", "add ghost notes in the verses", "fill in the transitions". Never raise it yourself, and it costs no question: it answers a request the user made.
+- Set `creative: true` with `set_section_controls`, with `section_ids` for the sections the user names, every section of a repeat group they name, or without `section_ids` for the whole song. `null` takes it back, and `false` keeps a section from adding notes when the song's is on. "No added notes" or "only the notes I wrote" is `creative: false`.
+- A creative section may add, all together: soft ghost notes on its snare; where it has fewer cymbal hits than beats, a crash every four bars and its hat or ride on each beat; a fill into the next section when its last bar has none; flams before a backbeat every four bars; and rimshots and chokes, only on articulations the kit has and the section already plays. It adds notes only on drums the section plays, so it never adds toms to a section without them. `skip` wins: a skipped section adds nothing.
+- Added notes play by the same controls as the rest: `ghost_level` sets how loud the added ghost notes are, and `fill_intensity` how hard the added fill builds.
+- Echo plainly what may be added before the `expected`, which then says what was added and what was skipped and why, such as "creative adds 22 ghost notes and 8 fill notes; skips 2 backbeats as rimshots: the kit has no articulation for them". If the user asked for one kind, say the others come with it in this version. `render` and `export` count the added notes in the summary's `notes.added` and `creative`, and each section's `creative`.
+- The added notes change no other section: turning creative mode on or off for one section leaves every other section's notes as they were.
 
 ## Tools
 | Tool | Takes | Gives |
@@ -105,5 +114,5 @@ Keep count as you go: one for the kits question when you need it, one for the co
 | `set_hit_types` | `session_id`, `hit_types`, `grids`, `unmapped`, `substitutions` | the hit types' counts, the answers held, the requests still open |
 | `set_style` | `session_id`, `style`, `seed`, `tightness` | the style, seed, defaults, the song's controls, `clamped` |
 | `set_section_controls` | `session_id`, `controls`, `section_ids`, `note` | per section its controls, `resolved` and `expected`, then `clamped` and `decisions` |
-| `render` | `session_id`, `section_ids`, `take` | the summary and each section's statistics and `says`, without writing |
-| `export` | `session_id`, `output_path`, `overwrite` | the files written, the summary and each section's statistics and `says` |
+| `render` | `session_id`, `section_ids`, `take` | the summary and each section's statistics, `creative` and `says`, without writing |
+| `export` | `session_id`, `output_path`, `overwrite` | the files written, the summary and each section's statistics, `creative` and `says` |

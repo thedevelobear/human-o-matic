@@ -109,6 +109,8 @@ class Placement:
 
     kit: str
     """The target kit, as `library/kit`."""
+    target: DrumKit
+    """The target kit itself, which writes the notes a creative section adds (ADR 0095)."""
     notes: tuple[Placed | None, ...]
     """For each of the score's notes, how it is written, or None when it is left out by a
     substitution or waits for a request."""
@@ -196,6 +198,7 @@ def place_score(
     )
     return Placement(
         kit=target.ref,
+        target=target,
         notes=tuple(placed),
         dropped=tuple(dropped),
         decisions=decisions,
@@ -265,6 +268,12 @@ def _kept(note: ScoreNote, kit: DrumKit) -> Placed:
 
 
 def _written(note: ScoreNote, name: str, kit: DrumKit) -> Placed:
+    return written(name, kit, note.source.channel)
+
+
+def written(name: str, kit: DrumKit, channel: int) -> Placed:
+    """How an articulation of the kit is written: its binding's note and velocity range, and its
+    channel, or else the kit's, or else `channel`."""
     output = kit.write(name)
     canonical = kit.canonical(name)
     return Placed(
@@ -272,7 +281,7 @@ def _written(note: ScoreNote, name: str, kit: DrumKit) -> Placed:
         family=canonical.family,
         piece=canonical.piece,
         pitch=output.pitch,
-        channel=output.channel if output.channel is not None else note.source.channel,
+        channel=output.channel if output.channel is not None else channel,
         velocity=output.velocity,
         controllers=None,
     )

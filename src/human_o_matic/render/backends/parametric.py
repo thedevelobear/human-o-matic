@@ -14,21 +14,39 @@ seldom reflected and the gap holds at full energy (ADR 0077). A soft-typed note 
 the soft center instead, whatever its role. Its offset is its limb's, the onset's shared
 offset and its own jitter, cut to the clip. A grace's offset is left at 0, since the guards give
 it its main note's. The song's drifts and the guards come after (`render/engine.py`,
-`render/guards.py`), so they hold for every backend."""
+`render/guards.py`), so they hold for every backend.
 
-from collections.abc import Sequence
+The notes a creative section adds are drawn the same way from a stream of their own, after the
+section's own draw (ADR 0093). An added note on an onset the section already plays takes that
+onset's shared offset, so the hits of one onset stay together."""
+
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from typing import Protocol
 
 import numpy as np
 import numpy.typing as npt
 
-from human_o_matic.normalize.score import ScoreNote
+from human_o_matic.normalize.hit_types import HitType
 from human_o_matic.render.compiler import Params
 from human_o_matic.render.guards import MAX_VELOCITY
 from human_o_matic.render.parts import Part
 
 type FloatArray = npt.NDArray[np.float64]
 type BoolArray = npt.NDArray[np.bool_]
+
+
+class Hit(Protocol):
+    """What a draw reads of a note: a score note, or a note a creative section adds."""
+
+    @property
+    def tick(self) -> int: ...
+
+    @property
+    def grace_of(self) -> int | None: ...
+
+    @property
+    def hit_type(self) -> HitType: ...
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -43,21 +61,28 @@ class Draw:
     """Before the song's timing drift and the guards."""
     strong: BoolArray
     """Whether an alternating rider hit was drawn strong. False for every other note."""
+    shared: dict[int, float]
+    """The normal value each onset's hits share, by its tick."""
 
 
 def sample(
-    notes: Sequence[ScoreNote],
+    notes: Sequence[Hit],
     parts: Sequence[Part],
     places: Sequence[float],
     params: Params,
     rng: np.random.Generator,
+    *,
+    shared: Mapping[int, float] | None = None,
 ) -> Draw:
     """Draw one section's notes, given with their parts and their places in the section, from 0
-    at its start to 1 at its end."""
+    at its start to 1 at its end. An onset in `shared` takes the value given there in place of
+    its own draw, which is drawn all the same, so the draws never depend on it."""
     count = len(notes)
     onsets = sorted({note.tick for note in notes if note.grace_of is None})
     onset_of = {tick: number for number, tick in enumerate(onsets)}
-    shared = rng.standard_normal(len(onsets))
+    drawn = rng.standard_normal(len(onsets))
+    given = shared or {}
+    together = {tick: given.get(tick, float(drawn[number])) for tick, number in onset_of.items()}
     jitter = rng.standard_normal(count)
     noise = rng.standard_normal(count)
     swaps = rng.random(count)
@@ -97,7 +122,9 @@ def sample(
             own = params.jitter_sd * jitter[position]
             offsets[position] = (
                 params.limb_ms[part.limb]
-                + params.shared_sd * shared[onset_of[note.tick]]
+                + params.shared_sd * together[note.tick]
                 + min(max(own, -params.jitter_clip), params.jitter_clip)
             )
-    return Draw(velocities=velocities, floors=floors, offsets_ms=offsets, strong=strong)
+    return Draw(
+        velocities=velocities, floors=floors, offsets_ms=offsets, strong=strong, shared=together
+    )

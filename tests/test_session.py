@@ -96,6 +96,23 @@ def test_a_session_round_trips_through_its_file(tmp_path: Path) -> None:
     }
 
 
+def test_a_session_from_before_creative_mode_loads_with_it_off(tmp_path: Path) -> None:
+    store = SessionStore(tmp_path / "sessions")
+    session = open_in(store, song_file(tmp_path))
+    creative = with_controls(session, [0], ControlVector(creative=True, energy=0.6))
+    store.save(creative)
+    text = store.path(creative.id).read_text()
+    older = json.loads(text)
+    older["sections"][0]["controls"].pop("creative")
+
+    assert json.loads(text)["sections"][0]["controls"] == {"energy": 0.6, "creative": True}
+    assert store.load(creative.id) == creative
+    assert Session.model_validate_json(json.dumps(older)).sections[0].controls == ControlVector(
+        energy=0.6
+    )
+    assert Session.model_validate_json(json.dumps(older)).sections[0].controls.creative is None
+
+
 def test_a_session_holds_no_notes(tmp_path: Path) -> None:
     store = SessionStore(tmp_path)
     session = open_in(store, song_file(tmp_path, bars=64))

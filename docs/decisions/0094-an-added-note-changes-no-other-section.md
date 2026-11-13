@@ -1,0 +1,13 @@
+# 0094. An added note changes no other section: it goes only on a drum and pitch its section plays, where the worst around it leaves room
+
+- **Status:** Proposed
+- **Date:** 2026-11-13
+
+`render/creative.py` admits a candidate only where it changes no other section, and counts the rest:
+- **Unplayed.** The section must have a note on the added note's pitch and on its drum, as written in the target kit. A note written as another articulation, a rimshot, must have its section's notes before and after it on both the pitch it was on and the one it is written on.
+- **Crowded.** When the note before or after an added note on its pitch is another section's, the latest that note can start and end and the earliest it can start, at the cap or its controller window's edge, or where it came in when it is played as it came in, and the earliest anything that section adds can start, its first tick less the cap, must leave the added note the guards' 60% gap within the cap, wherever both are drawn, with 2 ticks for rounding. An added note followed on its pitch by another section's note ends by the earliest that note or anything that section adds can start.
+- The guards ([ADR 0050](0050-guards-hold-every-backend-and-keep-each-section-independent.md)) count every rule at a boundary on the score's own notes, on the pitch and drum they were placed on, as if nothing were added: each side of a gap, each class, and each note's end. An added note keeps the in-section rules, and next to a rendered note of another section on its pitch or drum takes the class its section's own note has there, the first after it or the last before it. That note's neighbour across the boundary has the other class, and so does anything that section adds next to it.
+
+**Why:** Every rule at a boundary comes from the score alone, so a section turned creative, or rendered again with any controls, leaves every other section's notes as they were, the one exception still being `skip`'s. A note on a drum its section doesn't play could sit between two other sections' notes whose velocities it can't know without reading their draws, and could meet another section's added note there, so it can't be kept off both their velocities.
+
+**Consequences:** A section without toms gets a fill on its snare alone, and rimshots and chokes are added only where the section already plays them, which is rare. Letting a section add on drums it doesn't play would need an exception to independence like `skip`'s, the owner's to choose. The plan's independence and note count properties are tested with creative sections, by `hypothesis`.
