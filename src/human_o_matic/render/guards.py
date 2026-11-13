@@ -47,6 +47,13 @@ A velocity range too narrow for a rule wins over it, and the count says so.
 
 Notes played as they came in (`skip`) keep their ticks, lengths and velocities, the velocity
 moved into the target's range, and the guards work around them.
+
+Notes a creative section added (ADR 0094) never change a rule of another section: every rule at a
+boundary, each side of a gap, each class and each note's end, is found from the score's own notes
+on the pitch or drum they were read on, as if nothing were added. An added note keeps the in-section
+rules, ends by `Slot.end_by` when the next note of its pitch is in another section, and next to a
+rendered note of another section takes the class its section's own note on that pitch or drum has
+there. The engine adds a note only where the worst the notes around it can do leaves it room.
 """
 
 from collections.abc import Iterator, Sequence
@@ -109,10 +116,23 @@ class Slot:
     window: tuple[int, int] | None = None
     """For a note a controller value decides or shapes, the earliest and latest tick its note-on
     may take."""
+    added: bool = False
+    """A note a creative section added, which no rule of another section reads."""
+    was: Key | None = None
+    """For a note a creative section writes as another articulation, the channel and pitch it was
+    placed on, where the rules of the other sections still count it."""
+    end_by: int | None = None
+    """For an added note, the latest tick it may end on when the next note of its pitch is in
+    another section."""
 
     @property
     def key(self) -> Key:
         return self.channel, self.pitch
+
+    @property
+    def base(self) -> Key | None:
+        """The channel and pitch the boundary rules count it on: None for an added note."""
+        return None if self.added else (self.was or self.key)
 
 
 class GuardCounts(BaseModel):
@@ -165,11 +185,12 @@ class Timed:
     """Each note-off's order, lower than the next note-on's of its pitch where they meet."""
 
 
-def _sequences(keys: Sequence[object]) -> Iterator[list[int]]:
-    """The positions of each key's slots, in order."""
+def _sequences(keys: Sequence[object | None]) -> Iterator[list[int]]:
+    """The positions of each key's slots, in order, leaving out those whose key is None."""
     found: dict[object, list[int]] = {}
     for position, key in enumerate(keys):
-        found.setdefault(key, []).append(position)
+        if key is not None:
+            found.setdefault(key, []).append(position)
     yield from found.values()
 
 
@@ -188,7 +209,9 @@ def hold_timing(
 
     low = np.full(count, -MAX_OFFSET_MS)
     high = np.full(count, MAX_OFFSET_MS)
-    for sequence in _sequences([slot.key for slot in slots]):
+    counted_on = [slot.base for slot in slots]
+    """The pitch each note's boundary rules count it on, as if nothing were added."""
+    for sequence in _sequences(counted_on):
         for earlier, later in pairwise(sequence):
             a, b = slots[earlier], slots[later]
             if a.kept or b.kept or a.section == b.section:
@@ -201,7 +224,7 @@ def hold_timing(
     for position, unit in enumerate(unit_of):
         members.setdefault(unit, []).append(position)
     previous = _previous(slots, unit_of)
-    side_low, side_high = _sides(slots, places, grid_ms, previous, tempos)
+    side_low, side_high = _sides(slots, counted_on, places, grid_ms, previous, tempos)
     lowest = np.full(count, -MAX_OFFSET_MS)
     for unit, held in members.items():
         if slots[unit].kept:
@@ -375,6 +398,12 @@ def hold_timing(
 
     ends = np.zeros(count, dtype=np.int64)
     off_orders = [slot.off_order for slot in slots]
+    base_next = {
+        earlier: later
+        for sequence in _sequences(counted_on)
+        for earlier, later in pairwise(sequence)
+    }
+    """Each note's next on the pitch the boundary rules count it on, as if nothing were added."""
     for sequence in _sequences([slot.key for slot in slots]):
         for number, position in enumerate(sequence):
             slot = slots[position]
@@ -382,16 +411,27 @@ def hold_timing(
                 ends[position] = slot.source.end
                 continue
             end = int(starts[position]) + max(slot.source.end - slot.source.start, 1)
-            if number + 1 < len(sequence):
-                after = sequence[number + 1]
+            limit: int | None = None
+            order: int | None = None
+            after = sequence[number + 1] if number + 1 < len(sequence) else None
+            if after is not None and (slots[after].kept or slots[after].section == slot.section):
+                limit, order = int(starts[after]), slots[after].order
+            elif slot.added:
+                limit = slot.end_by
+            elif after is not None:
+                # A note of another section: the one the note had before anything was added, so
+                # its end never depends on what another section adds.
+                after = base_next.get(position, after)
                 limit = (
                     int(starts[after])
-                    if slots[after].kept or slots[after].section == slot.section
+                    if slots[after].kept
                     else _earliest(slots[after], int(earliest[after]))
                 )
-                if end >= limit:
-                    end = limit
-                    off_orders[position] = min(off_orders[position], slots[after].order)
+                order = slots[after].order
+            if limit is not None and end >= limit:
+                end = limit
+                if order is not None:
+                    off_orders[position] = min(off_orders[position], order)
             ends[position] = max(end, int(starts[position]) + 1)
     return Timed(starts=starts, ends=ends, off_orders=tuple(off_orders))
 
@@ -421,6 +461,7 @@ def _previous(slots: Sequence[Slot], unit_of: Sequence[int]) -> list[int | None]
 
 def _sides(
     slots: Sequence[Slot],
+    base: Sequence[Key | None],
     places: FloatArray,
     grid_ms: FloatArray,
     previous: Sequence[int | None],
@@ -430,13 +471,14 @@ def _sides(
     from the note before can't move it past: its side of its grid gap to the note of another
     section on its pitch, rounded to a tick, and on one grid point the later a tick or more after
     the earlier. A latest tick is carried back through the notes before it in its section, each
-    by the gap it keeps to the next."""
+    by the gap it keeps to the next. The pairs are those of `base`, the pitches as if nothing were
+    added."""
     count = len(slots)
     late, early = np.zeros(count), np.zeros(count)
     """How far late each note may go before the next on its pitch, and how far early after the
     one before, in milliseconds, at a boundary."""
     pairs: list[tuple[int, int]] = []
-    for sequence in _sequences([slot.key for slot in slots]):
+    for sequence in _sequences(base):
         for earlier, later in pairwise(sequence):
             a, b = slots[earlier], slots[later]
             if a.kept or b.kept or a.section == b.section:
@@ -607,8 +649,11 @@ def hold_velocity(
         out[position] = min(max(int(out[position]), low), high)
         bounds.append((low, high))
 
-    pitch_bit = _boundary_bits(slots, [slot.key for slot in slots])
-    drum_bit = _boundary_bits(slots, [slot.drum for slot in slots])
+    base_drums = [None if slot.added else slot.drum for slot in slots]
+    pitch_bit = _boundary_bits(slots, [slot.base for slot in slots])
+    drum_bit = _boundary_bits(slots, base_drums)
+    pitch_bit.update(_edge_bits(slots, [slot.key for slot in slots], pitch_bit))
+    drum_bit.update(_edge_bits(slots, [slot.drum for slot in slots], drum_bit))
     kept_after = _kept_after(slots, [slot.key for slot in slots])
     kept_after.update(
         (position, kept_after.get(position, ()) + after)
@@ -645,9 +690,10 @@ def hold_velocity(
     return out
 
 
-def _boundary_bits(slots: Sequence[Slot], keys: Sequence[object]) -> dict[int, int]:
+def _boundary_bits(slots: Sequence[Slot], keys: Sequence[object | None]) -> dict[int, int]:
     """For each rendered note next to a rendered note of another section among the notes of
-    its key, its place among them modulo 2."""
+    its key, its place among them modulo 2. Notes whose key is None, the added ones, are left
+    out, so they never move another's place."""
     bits: dict[int, int] = {}
     for sequence in _sequences(keys):
         for number, position in enumerate(sequence):
@@ -660,6 +706,43 @@ def _boundary_bits(slots: Sequence[Slot], keys: Sequence[object]) -> dict[int, i
                     if not other.kept and other.section != slot.section:
                         bits[position] = number % 2
     return bits
+
+
+def _edge_bits(
+    slots: Sequence[Slot], keys: Sequence[object], bits: dict[int, int]
+) -> dict[int, int]:
+    """For each added note next to a rendered note of another section among the notes of its
+    key, the class its section's own note on that side of it has: the first of its section's
+    notes on the key after it, when the note before is another section's, or the last before
+    it, when the note after is. That note's neighbour across the boundary, before anything was
+    added, has the other class, and so does anything another section adds there (ADR 0094)."""
+    found: dict[int, int] = {}
+    for sequence in _sequences(keys):
+        for number, position in enumerate(sequence):
+            slot = slots[position]
+            if not slot.added:
+                continue
+            sides: list[tuple[int, list[int]]] = [
+                (number - 1, sequence[number + 1 :]),
+                (number + 1, sequence[:number][::-1]),
+            ]
+            for neighbour, own in sides:
+                if not 0 <= neighbour < len(sequence):
+                    continue
+                other = slots[sequence[neighbour]]
+                if other.kept or other.section == slot.section:
+                    continue
+                anchor = next(
+                    (
+                        place
+                        for place in own
+                        if not slots[place].added and slots[place].section == slot.section
+                    ),
+                    None,
+                )
+                if anchor is not None and anchor in bits:
+                    found[position] = bits[anchor]
+    return found
 
 
 def _kept_after(slots: Sequence[Slot], keys: Sequence[object]) -> dict[int, tuple[int, ...]]:
