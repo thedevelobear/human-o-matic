@@ -333,6 +333,31 @@ def test_set_section_controls_stores_them_and_says_what_they_give(
         tools.set_section_controls(session_id, ControlInput(energy=0.1), [5])
 
 
+def test_a_creative_section_says_what_it_adds_and_counts_it_leaving_the_others_alone(
+    tools: Tools, tmp_path: Path
+) -> None:
+    session_id = ready(tools, tmp_path)
+    before: Json = tools.render(session_id)
+
+    reply: Json = tools.set_section_controls(session_id, ControlInput(creative=True), [0])
+    after: Json = tools.render(session_id)
+
+    (section,) = reply["sections"]
+    assert section["controls"] == {"creative": True}
+    assert "creative adds " in section["expected"]
+    assert (
+        "skips 1 backbeat as a rimshot: the kit has no articulation for them"
+        in (section["expected"])
+    )
+    verse = after["sections"][0]
+    added = sum(verse["creative"]["added"].values())
+    assert verse["stats"]["notes"] == before["sections"][0]["stats"]["notes"] + added
+    assert after["summary"]["creative"] == verse["creative"]
+    assert after["summary"]["notes"]["added"] == added
+    assert after["sections"][1:] == before["sections"][1:]
+    assert all(row["creative"] is None for row in after["sections"][1:])
+
+
 def test_a_render_that_fails_stores_neither_controls_nor_a_take(
     tools: Tools, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -375,7 +400,8 @@ def test_render_waits_for_the_requests_then_measures_each_section(
 
     assert list(waiting) == ["sections", "decisions"]
     assert kinds(waiting) == ["hit_types"]
-    assert reply["summary"]["notes"] == {"written": 136, "kept": 0, "dropped": 0}
+    assert reply["summary"]["notes"] == {"written": 136, "kept": 0, "dropped": 0, "added": 0}
+    assert reply["summary"]["creative"] is None
     assert [section["start"] for section in reply["sections"]] == [0, 4, 8]
     assert reply["sections"][1]["stats"] == chorus["sections"][0]["stats"]
     assert reply["sections"][1]["says"] == chorus["sections"][0]["says"]

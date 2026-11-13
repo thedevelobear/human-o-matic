@@ -3,8 +3,9 @@
 The notes are a section's as rendered, so the words say what its controls give in this take, not
 what a model of the engine expects: each role's velocities from the 5th to the 95th percentile,
 the riders' strong hits against their weak ones, the timing spread and how far the snare and the
-riders sit behind the other notes. `set_section_controls` says these after storing a section's
-controls, and `render` beside its statistics. Notes played as they came in aren't described.
+riders sit behind the other notes, and for a creative section, what it added and couldn't add
+(ADR 0095). `set_section_controls` says these after storing a section's controls, and `render`
+beside its statistics. Notes played as they came in aren't described.
 """
 
 from collections.abc import Sequence
@@ -12,6 +13,7 @@ from collections.abc import Sequence
 import numpy as np
 from pydantic import BaseModel, ConfigDict
 
+from human_o_matic.render.creative import Addition, CreativeReport, Skip
 from human_o_matic.render.engine import RenderedNote
 from human_o_matic.render.measure import rider_gap, timing_spread
 from human_o_matic.render.parts import Role
@@ -31,6 +33,21 @@ LOW, HIGH = 5, 95
 """The percentiles a role's velocities are given between."""
 FEW = 5
 """With fewer notes than this a role's range is its lowest to its highest."""
+NAMES: dict[Addition, tuple[str, str]] = {
+    "ghost": ("ghost note", "ghost notes"),
+    "cymbal": ("cymbal hit", "cymbal hits"),
+    "fill": ("fill note", "fill notes"),
+    "flam": ("flam", "flams"),
+    "rimshot": ("backbeat as a rimshot", "backbeats as rimshots"),
+    "choke": ("choke", "chokes"),
+}
+"""Each addition in words, one and many."""
+WHY: dict[Skip, str] = {
+    "missing": "the kit has no articulation for them",
+    "unplayed": "the section doesn't play their pitch or drum",
+    "crowded": "no room beside another section's notes",
+}
+"""Why notes were skipped, in words."""
 
 
 class Span(BaseModel):
@@ -67,8 +84,8 @@ def _span(velocities: Sequence[int]) -> Span:
     return Span(notes=int(values.size), low=round(float(low)), high=round(float(high)))
 
 
-def sound(notes: Sequence[RenderedNote]) -> Sound:
-    """How a section's rendered notes came out."""
+def sound(notes: Sequence[RenderedNote], creative: CreativeReport | None = None) -> Sound:
+    """How a section's rendered notes came out, with what creative mode added when it is on."""
     played = [note for note in notes if not note.kept]
     spans: dict[str, Span] = {}
     names: dict[str, str] = {}
@@ -94,8 +111,21 @@ def sound(notes: Sequence[RenderedNote]) -> Sound:
         rider_gap=round(gap, 1) if gap is not None else None,
         timing_spread_ms=round(spread, 1) if spread is not None else None,
         behind_ms=round(behind, 1) if behind is not None else None,
-        says=_says(notes, spans, names, gap, spread, behind),
+        says=_says(notes, spans, names, gap, spread, behind)
+        + (f"; {creative_words(creative)}" if creative is not None else ""),
     )
+
+
+def _counted(counts: dict[Addition, int]) -> str:
+    named = [f"{count} {NAMES[kind][count > 1]}" for kind, count in counts.items()]
+    return f"{', '.join(named[:-1])} and {named[-1]}" if len(named) > 1 else "".join(named)
+
+
+def creative_words(report: CreativeReport) -> str:
+    """What creative mode added to a section, and what it skipped and why, in words."""
+    words = [f"creative adds {_counted(report.added)}" if report.added else "creative adds nothing"]
+    words += [f"skips {_counted(kinds)}: {WHY[reason]}" for reason, kinds in report.skipped.items()]
+    return "; ".join(words)
 
 
 def _behind(notes: Sequence[RenderedNote]) -> float | None:

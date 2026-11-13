@@ -94,7 +94,8 @@ def test_a_clean_render_writes_the_file_and_prints_its_summary(tmp_path: Path) -
     summary = out["summary"]
     assert summary["kit"] == summary["to_kit"] == "gm/default"
     assert (summary["style"], summary["placeholder"], summary["seed"]) == ("tight", False, 7)
-    assert summary["notes"] == {"written": 96, "kept": 0, "dropped": 0}
+    assert summary["notes"] == {"written": 96, "kept": 0, "dropped": 0, "added": 0}
+    assert summary["creative"] is None
     assert set(summary["guards"]) >= {"capped", "tick_zero", "gap", "nudged", "unmet"}
     (section,) = out["sections"]
     assert (section["start"], section["bars"], section["group"], section["skip"]) == (
@@ -310,6 +311,26 @@ def test_a_plan_sets_the_song_s_controls_and_a_section_s_by_its_first_bar(tmp_pa
     out = output(result)
     assert [section["skip"] for section in out["sections"]] == [True, False]
     assert out["summary"]["notes"]["kept"] == out["sections"][0]["stats"]["notes"]
+
+
+def test_a_creative_plan_counts_what_it_added_and_skipped_in_the_summary_and_sections(
+    tmp_path: Path,
+) -> None:
+    plan = json_file(tmp_path, "plan.json", {"controls": {"creative": True}})
+
+    result = render(*clean_args(tmp_path, "--plan", plan))
+
+    assert result.exit_code == 0, result.output
+    out = output(result)
+    summary, (section,) = out["summary"], out["sections"]
+    added = summary["notes"]["added"]
+    assert added > 0
+    assert summary["notes"]["written"] == 96 + added
+    assert section["stats"]["notes"] == 96 + added
+    assert section["creative"] == summary["creative"]
+    assert sum(section["creative"]["added"].values()) == added
+    assert section["creative"]["skipped"] == {"missing": {"rimshot": 2}}
+    assert len(read_midi(tmp_path / "out.mid").notes) == 96 + added
 
 
 @pytest.mark.parametrize(

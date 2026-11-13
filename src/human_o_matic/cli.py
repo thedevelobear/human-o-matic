@@ -54,11 +54,12 @@ from human_o_matic.normalize.grid import GRIDS, Grid
 from human_o_matic.normalize.hit_types import HitTypeBounds
 from human_o_matic.normalize.pipeline import normalize
 from human_o_matic.normalize.score import Normalized
-from human_o_matic.render.engine import render
+from human_o_matic.render.creative import CreativeReport
+from human_o_matic.render.engine import Rendered, render
 from human_o_matic.render.guards import GuardCounts
 from human_o_matic.render.measure import SectionStats, section_stats
 from human_o_matic.render.style import STYLE_NAMES, built_in_styles
-from human_o_matic.render.target import ConversionReport, place_score
+from human_o_matic.render.target import ConversionReport, Placement, place_score
 
 EXIT_OPEN = 3
 """The exit code when a decision request is open."""
@@ -503,6 +504,8 @@ class RenderedNotes(BaseModel):
     """Of those, the notes of sections played as they came in."""
     dropped: int
     """Drum notes an `unmapped` or `substitutions` answer left out."""
+    added: int
+    """Of those written, the notes creative sections added (ADR 0091)."""
 
 
 class RenderSummary(BaseModel):
@@ -525,6 +528,21 @@ class RenderSummary(BaseModel):
     conversion: ConversionReport
     """How the notes were placed in `to_kit`: the articulations written as another, the drums
     that land on one pitch, and the names read or written at `low` confidence (ADR 0075)."""
+    creative: CreativeReport | None
+    """What the creative sections added and couldn't, together, or None when none is
+    (ADR 0095)."""
+
+
+def rendered_notes(
+    rendered: Rendered, normalized: Normalized, placement: Placement
+) -> RenderedNotes:
+    """How many drum notes a render wrote, kept, left out and added."""
+    return RenderedNotes(
+        written=len(rendered.notes),
+        kept=sum(note.kept for note in rendered.notes),
+        dropped=len(normalized.dropped) + len(placement.dropped),
+        added=sum(report.notes for report in rendered.creative if report is not None),
+    )
 
 
 class RenderedSection(BaseModel):
@@ -538,6 +556,8 @@ class RenderedSection(BaseModel):
     skip: bool
     """Played as it came in."""
     stats: SectionStats
+    creative: CreativeReport | None = None
+    """What creative mode added to it and couldn't, when it is on."""
 
 
 def render_report(
@@ -771,13 +791,10 @@ def render_song(
         style=chosen,
         placeholder=built_in_styles()[chosen].placeholder,
         seed=seed,
-        notes=RenderedNotes(
-            written=len(rendered.notes),
-            kept=sum(note.kept for note in rendered.notes),
-            dropped=len(normalized.dropped) + len(placement.dropped),
-        ),
+        notes=rendered_notes(rendered, normalized, placement),
         guards=rendered.guards,
         conversion=placement.report,
+        creative=CreativeReport.summed(rendered.creative),
     )
     sections = [
         RenderedSection(
@@ -786,6 +803,7 @@ def render_song(
             group=section.group,
             skip=session.controls_of(section, defaults).skip,
             stats=section_stats([note for note in rendered.notes if note.section == number]),
+            creative=rendered.creative[number],
         )
         for number, section in enumerate(session.sections)
     ]

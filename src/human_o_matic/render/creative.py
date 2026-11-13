@@ -20,6 +20,7 @@ asked about, and no addition changes a hit's family.
 """
 
 import bisect
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Literal
@@ -41,6 +42,7 @@ ADDITIONS: tuple[Addition, ...] = ("ghost", "cymbal", "fill", "flam", "rimshot",
 type Skip = Literal["missing", "unplayed", "crowded"]
 """Why a note wasn't added: the target kit lacks its articulation, the section doesn't play its
 pitch or drum, or another note leaves it no room."""
+SKIPS: tuple[Skip, ...] = ("missing", "unplayed", "crowded")
 SLACK = 2
 """Ticks the worst cases allow for going to a tick, either way."""
 
@@ -130,6 +132,27 @@ class CreativeReport(BaseModel):
     def notes(self) -> int:
         """The notes added, without the notes written as rimshots."""
         return sum(count for kind, count in self.added.items() if kind != "rimshot")
+
+    @classmethod
+    def summed(cls, reports: Sequence["CreativeReport | None"]) -> "CreativeReport | None":
+        """The reports of the creative sections added together, or None when none is creative."""
+        given = [report for report in reports if report is not None]
+        if not given:
+            return None
+        added: Counter[Addition] = Counter()
+        skipped: dict[Skip, Counter[Addition]] = {}
+        for report in given:
+            added.update(report.added)
+            for reason, kinds in report.skipped.items():
+                skipped.setdefault(reason, Counter()).update(kinds)
+        return cls(
+            added={kind: added[kind] for kind in ADDITIONS if added[kind]},
+            skipped={
+                reason: {kind: skipped[reason][kind] for kind in ADDITIONS if skipped[reason][kind]}
+                for reason in SKIPS
+                if reason in skipped
+            },
+        )
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -291,7 +314,7 @@ def admit(number: int, proposal: Proposal, around: Neighbours) -> Admitted:
         added={kind: counts[kind] for kind in ADDITIONS if counts.get(kind)},
         skipped={
             reason: {kind: skipped[reason][kind] for kind in ADDITIONS if skipped[reason].get(kind)}
-            for reason in ("missing", "unplayed", "crowded")
+            for reason in SKIPS
             if reason in skipped and any(skipped[reason].values())
         },
     )
