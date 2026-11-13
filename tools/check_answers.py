@@ -64,7 +64,9 @@ NUMBER = r"[+-]?\d+(?:\.\d+)?"
 SPAN = re.compile(rf"({NUMBER}) \[({NUMBER}), ({NUMBER})\]")
 ENTRY = re.compile(r"([a-z_]+): (.+)")
 CHOICES = {"true": True, "false": False}
-"""How `skip` is written."""
+"""How `skip` and `creative` are written."""
+SWITCHES = ("skip", "creative")
+"""The controls that are true or false."""
 EPSILON = 1e-9
 EXIT_MISSES = 1
 EXIT_USAGE = 2
@@ -105,6 +107,10 @@ CHECKS: tuple[tuple[str, str], ...] = (
     ("Overall, as tight as it gets, almost on the grid.", "machine tight, nearly quantized"),
     ("Whatever you think is best.", "your call"),
     ("Don't touch this one, I already finished it.", "leave this alone, it's finished"),
+    ("Be more inventive with it, add some touches of your own.", "make it more creative"),
+    ("Put some ghost notes into the verses.", "add ghost notes"),
+    ("Add a fill wherever one section goes into the next.", "fill in the transitions"),
+    ("Don't add anything, only play the notes I wrote.", "no added notes, keep what's there"),
     ("Hit a little harder than that.", "a bit harder"),
     ("Ease off slightly.", "a little softer"),
     ("Tighten the timing up a little.", "a touch tighter"),
@@ -243,9 +249,9 @@ def _row(cells: Sequence[str], *, change: bool) -> Row:
 def _expected(name: str, text: str) -> Expected:
     if name in (STYLE, "arc"):
         return text
-    if name == "skip":
+    if name in SWITCHES:
         if text not in CHOICES:
-            raise VocabularyError(f"skip {text!r} isn't true or false")
+            raise VocabularyError(f"{name} {text!r} isn't true or false")
         return CHOICES[text]
     return _span(name, text)
 

@@ -6,12 +6,12 @@ What a producer's answers mean as human-o-matic's controls. Each row is an answe
 
 ## How to read a row
 
-- A row sets the controls it fills in, and only those. Leave the others unset, so they come from the song's controls and then the style's defaults: `energy`, `groove`, `dynamic_range`, `fill_intensity` and `ghost_level` 0.5, `tightness` 0.75, `feel` 0, `arc` `steady`, `skip` false. Every style has these defaults.
+- A row sets the controls it fills in, and only those. Leave the others unset, so they come from the song's controls and then the style's defaults: `energy`, `groove`, `dynamic_range`, `fill_intensity` and `ghost_level` 0.5, `tightness` 0.75, `feel` 0, `arc` `steady`, `skip` false, `creative` false. Every style has these defaults.
 - Rows are written for a song whose own controls are unset. Where the user has set a control for the whole song, such as its tightness, move a section from the song's value by the row's difference from the default, and leave it unset where the row gives the default. A bridge at tightness 0.6 is 0.15 looser than the song, so in a song at 0.9 it is 0.75.
 - `style` and the song's `tightness` go to `set_style`. Every other control goes to `set_section_controls`, with `section_ids` for the sections the answer is about, or without them for the whole song.
 - Blend rows when an answer mixes them: "chorus, but laid back" is the chorus row with the laid-back row's `feel`. Move within a range for the user's emphasis: "really full power" is the top of it.
 - A section's name is not a control: "the drop" is a big section, not `arc: drop`, which only makes the energy fall across a section.
-- Nothing adds notes. "More ghost notes" plays the soft notes the song has louder, which is `ghost_level`.
+- Nothing adds notes but `creative`. "More ghost notes" or "bring the ghost notes up" plays the soft notes the song has louder, which is `ghost_level`. Only a request for notes the song doesn't have, such as "add ghost notes" or "put fills in", is `creative: true`, for the sections it names, or for the whole song without `section_ids`. Never set it unless the user asks for added notes.
 - "Your call" sets nothing new: use the row for what the section is, when the user named it or confirmed it in the section table, and otherwise keep the song's controls, or for a repeat, its group's. Say which.
 
 ## In words
@@ -29,6 +29,7 @@ What each control does, and the words to echo it with.
 | `fill_intensity`, 0 to 1 | fills stay down | fills build hard |
 | `ghost_level`, 0 to 1 | soft notes tucked away | soft notes present |
 | `skip` | | `true`: the section stays exactly as it came in |
+| `creative` | `false`, the default: no note is added | `true`: the section may add ghost notes, cymbals where it has few, a fill into the next section where it has none, flams, and rimshots and chokes on articulations it already plays; `skip` wins over it |
 
 The styles are `tight`, the default, `medium` and `loose`. They differ in how far the timing spreads and how far `feel` moves the snare and riders, and play the same velocities.
 
@@ -66,8 +67,14 @@ The styles are `tight`, the default, `medium` and `loose`. They differ in how fa
 | "machine tight, nearly quantized" | | | | 1 [0.9, 1] | | | style: tight |
 | "your call" | | | | | | | |
 | "leave this alone, it's finished" | | | | | | | skip: true |
+| "make it more creative" | | | | | | | creative: true |
+| "add ghost notes" | | | | | | | creative: true |
+| "fill in the transitions" | | | | | | | creative: true |
+| "no added notes, keep what's there" | | | | | | | creative: false |
 
 The four answers about the drummer, from "tight, modern metal" on, are song-wide: `set_style` takes their `style` and `tightness`.
+
+The four answers about added notes, from "make it more creative" on, turn creative mode on or off for the sections the user names, or for the whole song when they name none. Creative mode adds all it can, not only what was asked for: echo what each section's `expected` says it adds and skips, and if the user wanted only some of it, say this version adds them together.
 
 ## Refinements
 
