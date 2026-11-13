@@ -35,7 +35,7 @@ Agent:  Taking that as maximum energy, tight, little light and shade: kick about
 - **Repeatable.** The same session and seed always give the same file. Another seed plays another take of the song, and another take of a section leaves the other sections as they were.
 - **Creative mode, off by default.** It lets a section add ghost notes, cymbals where it has few, a fill into the next section where it has none, flams, rimshots and chokes, only on drums the section plays. The agent turns it on only when you ask for notes the song lacks. Otherwise no note is added.
 
-Not in this version: a DAW bridge, a web UI or a built-in LLM. The connected agent asks the questions, so the server needs no API key. There is no live preview: you listen by dragging the exported MIDI file into the DAW. No piano or guitar yet.
+Not included: a DAW bridge, a web UI or a built-in LLM. The connected agent asks the questions, so the server needs no API key. There is no live preview: you listen by dragging the exported MIDI file into the DAW. No piano or guitar.
 
 ## Install
 Needs [uv](https://docs.astral.sh/uv/), which provides Python 3.12, and Claude Code. The commands assume the checkout is at `~/Projects/human-o-matic`.
