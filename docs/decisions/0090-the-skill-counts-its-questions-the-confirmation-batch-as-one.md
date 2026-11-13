@@ -1,6 +1,6 @@
 # 0090. The skill counts its questions, the confirmation batch as one, and tells the user the count
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-12
 
 - The agent counts the questions it asks: one for the kits, when it has to ask which they are before opening the song, one for the confirmation batch, and one for each other question. The echo of an interpretation, with its "sound right?", doesn't count.
