@@ -25,9 +25,12 @@ Appendix A calls beats. Graces take their main note's part. In turn:
 from collections.abc import Sequence
 from itertools import pairwise
 
+import numpy as np
+
 from human_o_matic.controls import Controls
 from human_o_matic.normalize.score import Score, ScoreNote
 from human_o_matic.render.compiler import Params, compile_section
+from human_o_matic.render.creative import Proposal, SectionView
 from human_o_matic.render.parts import Limb, Part, RiderShape, Role, play_key
 from human_o_matic.render.style import Style
 
@@ -55,6 +58,12 @@ class Drums:
 
     def compile(self, controls: Controls, style: Style, bpm: float) -> Params:
         return compile_section(controls, style, bpm)
+
+    def additions(self, view: SectionView, rng: np.random.Generator) -> Proposal:
+        # The additions read the roles this module gives, so they import it, and it them here.
+        from human_o_matic.instruments.additions import propose
+
+        return propose(view, rng)
 
 
 DRUMS = Drums()
@@ -90,7 +99,7 @@ def drum_parts(score: Score) -> tuple[Part, ...]:
         else:
             role = "other"
         limb: Limb = "snare" if note.family == "snare" else "rider" if role == "rider" else "other"
-        metric, hand, crescendo = fills.get(position, (_metric_level(score, note.tick), 0, 0.0))
+        metric, hand, crescendo = fills.get(position, (metric_level(score, note.tick), 0, 0.0))
         shape, strong = riders.get(position, ("center", False))
         parts[note.source_index] = Part(
             role=role,
@@ -132,7 +141,7 @@ def _bar_offset(score: Score, tick: int) -> int:
     return tick - score.signatures.bar_start(score.signatures.bar_at(tick))
 
 
-def _metric_level(score: Score, tick: int) -> int:
+def metric_level(score: Score, tick: int) -> int:
     """0 on a quarter note, 1 on an 8th, 2 on a 16th, and 3 elsewhere, counted from the bar."""
     offset = _bar_offset(score, tick)
     for level, per_quarter in enumerate((1, 2, 4)):
@@ -171,7 +180,7 @@ def _fills(score: Score, mains: Sequence[int]) -> dict[int, tuple[int, int, floa
         rise = max(first, last - round(CRESCENDO_QUARTERS * score.ppq))
         for number, (position, tick) in enumerate(zip(run, ticks, strict=True)):
             into = (tick - rise) / (last - rise) if last > rise and tick >= rise else 0.0
-            found[position] = (_metric_level(score, tick), 1 if number % 2 == 0 else -1, into)
+            found[position] = (metric_level(score, tick), 1 if number % 2 == 0 else -1, into)
     return found
 
 
@@ -203,7 +212,7 @@ def _accent_cymbals(score: Score, mains: Sequence[int]) -> set[int]:
     return accents
 
 
-def _is_pedal(note: ScoreNote) -> bool:
+def is_pedal(note: ScoreNote) -> bool:
     return "pedal" in note.articulation.split("|")[0].split(".")
 
 
@@ -216,7 +225,7 @@ def _riders(
     candidates = [
         position
         for position in mains
-        if (notes[position].family in RIDER_FAMILIES and not _is_pedal(notes[position]))
+        if (notes[position].family in RIDER_FAMILIES and not is_pedal(notes[position]))
         or (notes[position].family in CRASH_FAMILIES and position not in accents)
     ]
     snare = {notes[position].tick for position in mains if notes[position].family == "snare"}
