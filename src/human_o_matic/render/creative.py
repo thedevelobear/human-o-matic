@@ -7,7 +7,7 @@ written, or one of the section's notes written as another articulation, and the 
 add because the target kit lacks their articulation or the section plays nothing to add them on.
 `admit` keeps a candidate only where it changes no other section, and counts the rest:
 - no note of its drum, or of its pitch, is on its grid point, in the score or added before it;
-  otherwise it is `crowded`;
+  otherwise it is `played`, as the instrument counts those it leaves out itself;
 - its section plays its pitch and its drum, so a class it takes next to another section comes
   from its own section's note there (`render/guards.py`), and a note written as another
   articulation has its section's notes before and after it on both pitches; otherwise it is
@@ -39,10 +39,11 @@ type Addition = Literal["ghost", "cymbal", "fill", "flam", "rimshot", "choke"]
 few cymbals, a fill into the next section, a flam's grace, and a choke after a cymbal. A rimshot
 is one of its own snare notes written as the kit's rimshot."""
 ADDITIONS: tuple[Addition, ...] = ("ghost", "cymbal", "fill", "flam", "rimshot", "choke")
-type Skip = Literal["missing", "unplayed", "crowded"]
+type Skip = Literal["missing", "unplayed", "played", "crowded"]
 """Why a note wasn't added: the target kit lacks its articulation, the section doesn't play its
-pitch or drum, or another note leaves it no room."""
-SKIPS: tuple[Skip, ...] = ("missing", "unplayed", "crowded")
+pitch or drum, its drum or pitch already has a note on its grid point, or another section's notes
+leave it no room."""
+SKIPS: tuple[Skip, ...] = ("missing", "unplayed", "played", "crowded")
 SLACK = 2
 """Ticks the worst cases allow for going to a tick, either way."""
 
@@ -291,7 +292,7 @@ def admit(number: int, proposal: Proposal, around: Neighbours) -> Admitted:
         if (candidate.key, tick) in taken or (
             candidate.replaces is None and (candidate.drum, tick) in taken
         ):
-            skip("crowded", candidate.kind)
+            skip("played", candidate.kind)
             continue
         if candidate.replaces is not None:
             if not _between_own(around, number, candidate):

@@ -45,6 +45,7 @@ NAMES: dict[Addition, tuple[str, str]] = {
 WHY: dict[Skip, str] = {
     "missing": "the kit has no articulation for them",
     "unplayed": "the section doesn't play their pitch or drum",
+    "played": "their drum already plays there",
     "crowded": "no room beside another section's notes",
 }
 """Why notes were skipped, in words."""

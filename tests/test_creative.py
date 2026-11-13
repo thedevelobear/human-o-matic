@@ -460,9 +460,14 @@ def test_a_fill_leads_into_the_next_section_where_there_is_none_but_not_after_th
     fills = [note for note in out.notes if note.added == "fill"]
     assert fills
     assert all(note.section == 0 for note in fills)
-    assert {note.tick for note in fills} <= set(range(3 * BAR + 2 * PPQ, 4 * BAR, SIXTEENTH))
+    span = set(range(3 * BAR + 2 * PPQ, 4 * BAR, SIXTEENTH))
+    # The section's own backbeat is on one of the fill's 16ths, so that one is played already.
+    assert {note.tick for note in fills} == span - {3 * BAR + 3 * PPQ}
     assert all(note.part.role == "fill" and note.family == "snare" for note in fills)
     assert kinds(out, 1)["fill"] == 0
+    report = out.creative[0]
+    assert report is not None
+    assert report.skipped["played"] == {"fill": 1}
 
 
 def test_a_section_with_a_fill_of_its_own_gets_none() -> None:

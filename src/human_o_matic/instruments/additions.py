@@ -28,8 +28,9 @@ timing as they give the section's own notes of that role. In the order they are 
   hit of that cymbal follows within a quarter note and the section goes on that long.
 No 16th is added in a beat whose grid is a triplet. A rimshot or a choke the target kit has no
 articulation for, or only one a controller value decides, is `missing`; a fill with neither a
-snare nor a tom, and a crash with no crash-family cymbal, are `unplayed`. A section with no notes
-adds nothing.
+snare nor a tom, and a crash with no crash-family cymbal, are `unplayed`, and an addition on a
+tick where its drum or its pitch already has a note, of the score or added before it, is
+`played`. A section with no notes adds nothing.
 """
 
 from collections import Counter
@@ -82,12 +83,14 @@ def propose(view: SectionView, rng: np.random.Generator) -> Proposal:
     found += _flams(view)
     found += _rimshots(view, skip)
     found += _chokes(view, skip)
-    return Proposal(candidates=_unstacked(view, found), skipped=skipped)
+    return Proposal(candidates=_unstacked(view, found, skip), skipped=skipped)
 
 
-def _unstacked(view: SectionView, found: Sequence[Candidate]) -> tuple[Candidate, ...]:
+def _unstacked(
+    view: SectionView, found: Sequence[Candidate], skip: Callable[[Skip, Addition, int], None]
+) -> tuple[Candidate, ...]:
     """The candidates, but an added note on a tick where its drum or its pitch already has a
-    note, of the score or added before it: there it is played already."""
+    note, of the score or added before it, which is counted as `played`."""
     taken: set[tuple[object, int]] = set()
     for placed, note in zip(view.placement.notes, view.score.notes, strict=True):
         if placed is not None:
@@ -96,6 +99,7 @@ def _unstacked(view: SectionView, found: Sequence[Candidate]) -> tuple[Candidate
     for candidate in found:
         places = ((candidate.drum, candidate.tick), (candidate.key, candidate.tick))
         if candidate.replaces is None and any(place in taken for place in places):
+            skip("played", candidate.kind, 1)
             continue
         taken.update(places)
         kept.append(candidate)
