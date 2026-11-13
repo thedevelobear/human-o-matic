@@ -1,6 +1,6 @@
 # 0078. M4 is three PRs, the MCP server, the skill and the blind test, and its gate follows the third
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-12
 
 - M4 lands in three PRs, in this order, each a branch from `main` after the one before it has merged ([ADR 0003](0003-branches-off-main-merged-without-squashing.md)):

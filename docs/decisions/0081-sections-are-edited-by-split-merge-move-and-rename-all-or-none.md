@@ -1,6 +1,6 @@
 # 0081. Sections are edited by split, merge, move and rename, applied in turn, all or none
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-12
 
 - `update_sections` takes a list of ops, each with its bars counted from 0:

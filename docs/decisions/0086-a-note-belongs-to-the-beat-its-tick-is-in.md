@@ -1,6 +1,6 @@
 # 0086. A note belongs to the beat its tick is in, and each beat's grid is chosen from the onsets that end up in it
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-12
 
 - `grid.snap` scores each onset in the beat it was played in ([ADR 0026](0026-a-grid-per-beat-by-timing-error-and-complexity.md)). An onset put on that beat's end, the next beat's start, then belongs to the next beat, and both beats are scored again. That moves no point: the start is a point of every grid, and without the onset the grid that placed it stays the best of the beat it left.
