@@ -1,6 +1,6 @@
 # 0094. An added note changes no other section: it goes only on a drum and pitch its section plays, where the worst around it leaves room
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 `render/creative.py` admits a candidate only where it changes no other section, and counts the rest:

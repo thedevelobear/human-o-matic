@@ -1,6 +1,6 @@
 # 0093. Added notes draw from a stream of their own, through their section's parameters
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 - A creative section's additions draw from a stream keyed `(2, start, take)`, beside the section's own `(1, start, take)` ([ADR 0049](0049-each-section-draws-from-its-own-seeded-stream.md)). It first picks what to add, the ghost notes' pattern, then draws the admitted notes, in play order, with the parametric backend and the section's own compiled parameters, after the section's own draw. With creative mode off it is never drawn, and no other stream moves when it is.

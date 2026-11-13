@@ -1,6 +1,6 @@
 # 0096. The skill turns creative mode on only when the user asks for added notes
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 - `SKILL.md` never suggests creative mode and never asks whether to add notes. A request for notes the song lacks, such as "make it more creative", "add ghost notes in the verses" or "fill in the transitions", sets `creative: true` on the sections it names, or for the whole song without `section_ids`, and costs no question in the count of [ADR 0090](0090-the-skill-counts-its-questions-the-confirmation-batch-as-one.md). "More ghost notes" alone is still `ghost_level`, the soft notes the song has.

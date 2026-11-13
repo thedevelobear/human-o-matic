@@ -1,6 +1,6 @@
 # 0092. A creative section adds by rules read from its own score: a fill where it has none, cymbals where it has few, ghost notes, flams, rimshots and chokes
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 `instruments/additions.py` proposes a creative section's additions from canonical families, the drums' parts ([ADR 0047](0047-roles-come-from-canonical-families-and-the-score.md)), ticks, grids and hit types, never from a pitch, a library, a velocity or a note's timing. Each copies how one of the section's notes is written, the most played of the kind it needs, but rimshots and chokes, which the target kit writes by name. Each has the part a note of its kind would have, so the style and the compiler play it as the section's own notes of that role. In turn:
