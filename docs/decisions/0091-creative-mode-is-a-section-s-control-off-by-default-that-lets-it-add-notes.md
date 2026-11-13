@@ -9,6 +9,6 @@
 - The instrument seam gains `additions(view, rng)`, what a creative section adds, which `render()` calls. `drums` proposes the additions in `instruments/additions.py`, and `generic`, which knows no drums, adds nothing.
 - The plan's "Version 1 never adds notes" and its property "note count is unchanged apart from notes the user chose to drop" hold for every section that isn't creative. A render writes the score's notes, less those left out, and the notes the creative sections add, which its report counts.
 
-**Why:** Added notes are the plan's M6, asked for now. An opt-in per section leaves every render without it byte for byte as before, and the M4 blind test's variants unaffected, while a song-wide request is still one call without `section_ids`.
+**Why:** The plan's M6 makes added notes opt-in. A control per section leaves every render without it byte for byte as before, and the M4 blind test's variants unaffected, while a song-wide request is still one call without `section_ids`.
 
 **Consequences:** [ADR 0046](0046-controls-are-layered-pydantic-models-with-a-json-round-trip.md)'s nine controls are ten, and [ADR 0045](0045-the-engine-is-render-modules-behind-a-small-instrument-seam.md)'s seam has a third method.

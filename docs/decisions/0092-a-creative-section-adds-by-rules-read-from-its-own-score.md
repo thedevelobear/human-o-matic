@@ -10,8 +10,8 @@
 - **Flams.** The last backbeat of every fourth bar from the section's start gets a soft grace 25 ms before it on its own articulation, the gap of [ADR 0027](0027-hits-on-one-drum-under-45-ms-apart-are-a-grace-and-its-main.md), when the note before it on its pitch is the section's, an 8th or more before it, and it has no grace.
 - **Rimshots.** The first backbeat of every 4 bars from the section's start is written as the kit's rimshot of its snare.
 - **Chokes.** The section's last crash-family accent gets the kit's choke of that cymbal an 8th after it, when no hit of that cymbal follows within a quarter note and the section lasts that long.
-- No 16th goes in a beat whose grid is a triplet, and no added note goes where its drum or its pitch already has a note. A section with no notes adds nothing. Nothing is removed: a fill plays over the groove under it.
+- No 16th goes in a beat whose grid is a triplet, and no added note goes where its drum or its pitch already has a note, of the score or added before it: such a note is skipped as `played` ([ADR 0095](0095-an-addition-the-kit-can-t-play-is-skipped-and-the-reports-count-what-was-added.md)). A section with no notes adds nothing. Nothing is removed: a fill plays over the groove under it.
 
-**Why:** Each rule reads only the score and the section's own stream, so it is deterministic given the session and seed, and the fill and sparseness tests reuse what the drums' parts and the facts already count. Energy isn't read for sparseness, since density alone answers "has few cymbals" and the user has asked for the additions.
+**Why:** Each rule reads only the score and the section's own stream, so it is deterministic given the session and seed, and the fill and sparseness tests reuse what the drums' parts and the facts already count. Energy isn't read for sparseness, since density alone answers "has few cymbals".
 
 **Consequences:** The numbers, 0.3, 25 ms, every 4 bars, two quarter notes, are drafted unheard, for the owner to refine by ear. A score that types no backbeat gets no flam or rimshot.
