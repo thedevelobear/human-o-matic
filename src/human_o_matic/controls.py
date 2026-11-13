@@ -57,6 +57,9 @@ class Controls(BaseModel):
     """The velocity of notes typed soft."""
     skip: bool
     """Leave the section as it came in."""
+    creative: bool
+    """Let the section add notes: ghost notes, cymbals when it has few, a fill into the next
+    section when it has none, flams, rimshots and chokes (ADR 0091). `skip` wins over it."""
 
 
 class ControlVector(BaseModel):
@@ -73,6 +76,7 @@ class ControlVector(BaseModel):
     fill_intensity: Unit | None = None
     ghost_level: Unit | None = None
     skip: bool | None = None
+    creative: bool | None = None
 
     def over(self, base: "ControlVector") -> "ControlVector":
         """These controls, with `base`'s wherever these are unset."""
@@ -107,6 +111,7 @@ class ControlInput(BaseModel):
     fill_intensity: Number | None = None
     ghost_level: Number | None = None
     skip: bool | None = None
+    creative: bool | None = None
 
 
 class Clamped(BaseModel):

@@ -174,6 +174,7 @@ PLACEHOLDER = Style(
         fill_intensity=0.5,
         ghost_level=0.5,
         skip=False,
+        creative=False,
     ),
     velocity={
         "kick": Anchors(full=122, half=104, low=85, band=6),

@@ -27,6 +27,7 @@ DEFAULTS = Controls(
     fill_intensity=0.5,
     ghost_level=0.5,
     skip=False,
+    creative=False,
 )
 
 
@@ -94,6 +95,7 @@ def _vectors(draw: st.DrawFn) -> ControlVector:
         fill_intensity=draw(_units),
         ghost_level=draw(_units),
         skip=draw(st.none() | st.booleans()),
+        creative=draw(st.none() | st.booleans()),
     )
 
 
