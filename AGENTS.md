@@ -17,11 +17,11 @@ Every change is a branch made from `main`, merged into it through a PR ([ADR 000
 3. When the work is done, stop and report to the owner. Open a PR only when the owner asks, once the branch is pushed.
 
 ## Work milestone by milestone
-The plan's milestones, M0 to M6, are done in order, each in one or more PRs.
+The plan's milestones, M0 to M7, are done in order, each in one or more PRs.
 1. Find the first milestone in the plan's progress table that isn't merged, and start or continue its branch as above.
 2. Before writing code, ask the owner what the plan leaves open for this milestone. Record each answer as an ADR.
 3. **Stop at each gate.** Check the milestone's exit criteria and report them. The next milestone starts only when the owner says so. No agent can hear the output, so every listening decision, such as the M4 blind test and the M5 comparison, belongs to the owner.
-4. Some inputs only the owner can supply: the hand-labelled drum tracks for M2, the listening tests, and the call on M6's priority. Ask for them, and don't work around them.
+4. Some inputs only the owner can supply: the hand-labelled drum tracks for M2, the listening tests, the call on M6's priority, and for M7 the logo, the host and its account, and the site's end-to-end checks. Ask for them, and don't work around them.
 5. When the milestone's PR is done, set its status to "In review".
 
 ## While you work
@@ -33,7 +33,7 @@ The plan's milestones, M0 to M6, are done in order, each in one or more PRs.
 - Dependencies use exact versions, and `uv add` writes them that way ([ADR 0004](docs/decisions/0004-exact-dependency-versions.md)).
 
 ## Rules from the plan
-- No DAW bridge, web UI or built-in LLM in this version.
+- No DAW bridge or built-in LLM in this version. The one web UI is M7's site, a thin page over the same engine that asks the questions itself ([ADR 0097](docs/decisions/0097-a-website-is-milestone-m7-a-thin-page-over-the-same-engine-that-asks-the-questions-itself.md)).
 - Never pass note arrays through MCP tools: pass IDs and file paths, and return compact JSON.
 - Don't train a model before M4 exists.
 - Never commit anything in `private/`, copy anything out of it into the repo, or redistribute it ([ADR 0007](docs/decisions/0007-local-only-files-live-in-private.md)).
