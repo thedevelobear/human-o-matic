@@ -1,0 +1,17 @@
+# 0092. A creative section adds by rules read from its own score: a fill where it has none, cymbals where it has few, ghost notes, flams, rimshots and chokes
+
+- **Status:** Proposed
+- **Date:** 2026-11-13
+
+`instruments/additions.py` proposes a creative section's additions from canonical families, the drums' parts ([ADR 0047](0047-roles-come-from-canonical-families-and-the-score.md)), ticks, grids and hit types, never from a pitch, a library, a velocity or a note's timing. Each copies how one of the section's notes is written, the most played of the kind it needs, but rimshots and chokes, which the target kit writes by name. Each has the part a note of its kind would have, so the style and the compiler play it as the section's own notes of that role. In turn:
+- **Fill.** A section has a fill when a note in its last bar has the drums' `fill` role, the run `analyze/facts.py` counts as a fill bar. A section with notes in its last bar and no fill, followed by a section with notes, gets a run of 16ths over that bar's last two quarter notes, or the whole bar when it is shorter, on its snare and the toms it plays, from the snare down the toms in even shares, each a fill note with its metric level, a hand by turns and its place in the crescendo. The last section gets none.
+- **Cymbals.** A section is sparse in cymbals when its crash, china, splash, stack, ride and hat hits, the hat pedal aside, number fewer than its beats. A sparse section gets a crash on the first tick of every 4 bars from its start, on the crash-family articulation it plays most, where no crash-family cymbal or ride hits, and its most played rider on each beat between that rider's first and last hits where no cymbal hits.
+- **Ghost notes.** The section's stream picks, once for the section, each 16th between 8ths of a bar with the chance 0.3, and the section gets a soft note on its most played snare articulation there in every bar, between its first and last notes on it and before its fill. `ghost_level` sets their velocity, as it does every soft note's.
+- **Flams.** The last backbeat of every fourth bar from the section's start gets a soft grace 25 ms before it on its own articulation, the gap of [ADR 0027](0027-hits-on-one-drum-under-45-ms-apart-are-a-grace-and-its-main.md), when the note before it on its pitch is the section's, an 8th or more before it, and it has no grace.
+- **Rimshots.** The first backbeat of every 4 bars from the section's start is written as the kit's rimshot of its snare.
+- **Chokes.** The section's last crash-family accent gets the kit's choke of that cymbal an 8th after it, when no hit of that cymbal follows within a quarter note and the section lasts that long.
+- No 16th goes in a beat whose grid is a triplet, and no added note goes where its drum or its pitch already has a note. Nothing is removed: a fill plays over the groove under it.
+
+**Why:** Each rule reads only the score and the section's own stream, so it is deterministic given the session and seed, and the fill and sparseness tests reuse what the drums' parts and the facts already count. Energy isn't read for sparseness, since density alone answers "has few cymbals" and the user has asked for the additions.
+
+**Consequences:** The numbers, 0.3, 25 ms, every 4 bars, two quarter notes, are drafted unheard, for the owner to refine by ear. A score that types no backbeat gets no flam or rimshot.

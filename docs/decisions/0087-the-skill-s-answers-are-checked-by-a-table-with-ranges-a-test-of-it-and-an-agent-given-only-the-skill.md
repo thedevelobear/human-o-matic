@@ -1,6 +1,6 @@
 # 0087. The skill's answers are checked by a table of answers with ranges, a test of it, and an agent given only the skill
 
-- **Status:** Accepted
+- **Status:** Accepted. Its `Also` column is amended by [ADR 0096](0096-the-skill-turns-creative-mode-on-only-when-the-user-asks-for-added-notes.md)
 - **Date:** 2026-11-12
 
 - `skills/human-o-matic/references/vocabulary.md` holds two tables, `Answers` and `Refinements`, a row per answer: the answer in double quotes, a column each for `energy`, `groove`, `dynamic_range`, `tightness`, `feel` and `ghost_level`, and `Also` for `fill_intensity`, `arc`, `skip` and `set_style`'s `style`, as `name: value` entries separated by `; `. A number is a starting point and its range, `0.95 [0.85, 1]`, the values that still read the answer the same way, and a blank cell a control the answer leaves unset. A refinement's numbers are changes to a control's current value.

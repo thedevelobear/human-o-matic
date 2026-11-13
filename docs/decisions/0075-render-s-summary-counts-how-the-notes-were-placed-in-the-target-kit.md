@@ -1,6 +1,6 @@
 # 0075. `human-o-matic render`'s summary counts how the notes were placed in the target kit
 
-- **Status:** Accepted
+- **Status:** Accepted. Its summary is amended by [ADR 0095](0095-an-addition-the-kit-can-t-play-is-skipped-and-the-reports-count-what-was-added.md)
 - **Date:** 2026-11-11
 
 - `human-o-matic render`'s summary gains `conversion`: conversion's own report ([ADR 0021](0021-conversion-falls-back-within-a-family.md)) of how the score's notes were placed in the target kit ([ADR 0048](0048-a-render-writes-the-score-through-the-target-kit-into-the-drum-track.md)), as counts and names, never notes.

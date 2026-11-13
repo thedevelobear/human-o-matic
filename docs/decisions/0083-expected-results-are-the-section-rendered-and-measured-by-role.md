@@ -1,6 +1,6 @@
 # 0083. A section's expected results are the section rendered with its controls and measured by role
 
-- **Status:** Accepted
+- **Status:** Accepted. Its words are amended by [ADR 0095](0095-an-addition-the-kit-can-t-play-is-skipped-and-the-reports-count-what-was-added.md)
 - **Date:** 2026-11-12
 
 - After storing controls, `set_section_controls` renders the session in memory, with its stored controls, seed and takes, and gives each section it set an `expected` in plain words, from `render/describe.py`. They name, in order, each group of roles that plays, kick with double kick, backbeats, other snare, the riders by their families, the accent cymbals by theirs, fills and other drums, and the notes typed soft as a group of their own, each from its 5th to its 95th percentile velocity, or from its lowest to its highest under 5 notes. Then the riders' strong hits above their weak ones, the timing spread, and how far the snare and the riders sit behind the other notes.
