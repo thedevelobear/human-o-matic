@@ -1,6 +1,6 @@
 # 0095. An addition the target kit can't play is skipped, and the reports count what was added and skipped
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 - A rimshot or a choke is written by its canonical name, `snare.rimshot` or `crash.1.choke` for the piece of the note it follows, through the target kit, which the placement carries. When the kit lacks that articulation, or decides it by a controller value, the addition is skipped as `missing`. It is never a decision request, never a substitute from another family or a fallback within one, and never changes a hit's family ([ADR 0021](0021-conversion-falls-back-within-a-family.md)).

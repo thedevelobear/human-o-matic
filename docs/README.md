@@ -33,6 +33,7 @@ What was decided, specifically enough to check the code against.
 | Plan | Status |
 |---|---|
 | [2026-11-08-human-o-matic](plans/2026-11-08-human-o-matic.md) | Active. The app, milestone by milestone. |
+| [2026-11-13-website](plans/2026-11-13-website.md) | Planned. M7, the website, built after M4's gate. |
 
 ### Research
 | Page | Compares |
@@ -133,9 +134,13 @@ What was decided, specifically enough to check the code against.
 | [0088](decisions/0088-the-skill-is-installed-by-a-link-from-claude-skills-to-the-repository.md) | The skill is installed by a link from `~/.claude/skills/` to `skills/human-o-matic/` in the repository | Accepted |
 | [0089](decisions/0089-the-vocabulary-s-rows-set-only-their-controls-and-beyond-the-plan-s-four-are-drafted-unheard.md) | The vocabulary's rows set only their controls, are written for a song at the defaults, and beyond the plan's four are drafted unheard and refined by ear | Accepted. Its count of answers is amended by [ADR 0096](decisions/0096-the-skill-turns-creative-mode-on-only-when-the-user-asks-for-added-notes.md) |
 | [0090](decisions/0090-the-skill-counts-its-questions-the-confirmation-batch-as-one.md) | The skill counts its questions, the confirmation batch as one, and tells the user the count | Accepted |
-| [0091](decisions/0091-creative-mode-is-a-section-s-control-off-by-default-that-lets-it-add-notes.md) | A section's `creative` control, off by default, lets it add notes, and the rule that no note is added holds for every section without it | Proposed |
-| [0092](decisions/0092-a-creative-section-adds-by-rules-read-from-its-own-score.md) | A creative section adds by rules read from its own score: a fill where it has none, cymbals where it has fewer than its beats, ghost notes, flams, rimshots and chokes | Proposed |
-| [0093](decisions/0093-added-notes-draw-from-a-stream-of-their-own-through-their-section-s-parameters.md) | Added notes draw from a stream of their own, through their section's parameters, with the onsets' shared offsets and the drifts between the score's ticks | Proposed |
-| [0094](decisions/0094-an-added-note-changes-no-other-section.md) | An added note goes only on a drum and pitch its section plays, where the worst around it leaves room, and every rule at a boundary is counted on the score's own notes | Proposed |
-| [0095](decisions/0095-an-addition-the-kit-can-t-play-is-skipped-and-the-reports-count-what-was-added.md) | An addition the target kit can't play is skipped, never asked about, and the reports count what was added and skipped, and say it | Proposed |
-| [0096](decisions/0096-the-skill-turns-creative-mode-on-only-when-the-user-asks-for-added-notes.md) | The skill turns creative mode on only when the user asks for added notes, with four vocabulary rows and no question of its own | Proposed |
+| [0091](decisions/0091-creative-mode-is-a-section-s-control-off-by-default-that-lets-it-add-notes.md) | A section's `creative` control, off by default, lets it add notes, and the rule that no note is added holds for every section without it | Accepted |
+| [0092](decisions/0092-a-creative-section-adds-by-rules-read-from-its-own-score.md) | A creative section adds by rules read from its own score: a fill where it has none, cymbals where it has fewer than its beats, ghost notes, flams, rimshots and chokes | Accepted |
+| [0093](decisions/0093-added-notes-draw-from-a-stream-of-their-own-through-their-section-s-parameters.md) | Added notes draw from a stream of their own, through their section's parameters, with the onsets' shared offsets and the drifts between the score's ticks | Accepted |
+| [0094](decisions/0094-an-added-note-changes-no-other-section.md) | An added note goes only on a drum and pitch its section plays, where the worst around it leaves room, and every rule at a boundary is counted on the score's own notes | Accepted |
+| [0095](decisions/0095-an-addition-the-kit-can-t-play-is-skipped-and-the-reports-count-what-was-added.md) | An addition the target kit can't play is skipped, never asked about, and the reports count what was added and skipped, and say it | Accepted |
+| [0096](decisions/0096-the-skill-turns-creative-mode-on-only-when-the-user-asks-for-added-notes.md) | The skill turns creative mode on only when the user asks for added notes, with four vocabulary rows and no question of its own | Accepted |
+| [0097](decisions/0097-a-website-is-milestone-m7-a-thin-page-over-the-same-engine-that-asks-the-questions-itself.md) | A website is milestone M7, a thin page over the same engine that asks the questions itself, with no LLM and no accounts, built after M4's gate | Proposed |
+| [0098](decisions/0098-the-site-is-open-to-anyone-with-its-link-held-by-limits-and-keeps-no-user-s-midi.md) | The site is open to anyone with its link, held by limits, and keeps no user's MIDI | Proposed |
+| [0099](decisions/0099-the-site-s-feedback-form-keeps-text-and-settings-never-midi.md) | The site's feedback form keeps text and the render's settings, never MIDI, its name or a note | Proposed |
+| [0100](decisions/0100-the-site-runs-the-engine-in-the-browser-under-pyodide-from-static-files.md) | The site runs the engine in the browser under Pyodide, pinned and checked by a fixed hash, from static files | Proposed |

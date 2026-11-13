@@ -1,6 +1,6 @@
 # 0091. Creative mode is a section's control, off by default, that lets it add notes
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 - `creative` is a boolean control of `ControlVector`, `ControlInput` and `Controls` (`controls.py`), false in every style's defaults and in the placeholder's. A session or plan from before it reads as unset, so it renders as before.
