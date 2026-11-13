@@ -4,7 +4,7 @@
 - **Date:** 2026-11-13
 
 - After a download the page offers a short form: a rating, a comment and an optional contact.
-- The page sends what the user wrote with the settings the render used, in the fields the site plan names, and nothing else: the kits read and written, the style, the seed, the song's bars, the number of sections and each section's controls.
+- The page sends what the user wrote with the settings the render used, in the fields the site plan names, and nothing else: the kits read and written, the style, the seed, the song's bars, the number of sections, the song's controls and each section's controls.
 - The page never sends the file, its name, its hash, a note, a section's words or a session ID, and no code of the site's stores the client's address. A host's form service stores whatever a client posts, within its own size limit, so this is the page's guarantee. A server of the site's own reads the form into a pydantic model that refuses unknown fields. Where the store is a host's form service that records the sender's address itself, the privacy notice says so.
 - Feedback is kept until the owner deletes it, in the store the site plan names.
 
