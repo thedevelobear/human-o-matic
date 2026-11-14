@@ -137,6 +137,29 @@ def test_controls_unlike_the_answer_are_misses_saying_why() -> None:
     )
 
 
+def test_a_ramp_is_read_in_whole_bars_and_none_leaves_it_at_its_default() -> None:
+    results = points(VOCABULARY)
+    two, four, none = (
+        phrase_of(answer)
+        for answer in ("build into it over 2 bars", "a 4-bar ramp", "no ramp, straight in")
+    )
+    assert compare(VOCABULARY, results) == []
+    results[two] = {"ramp": 2}
+    results[none] = {}
+    assert compare(VOCABULARY, results) == []
+
+    results[two] = {"ramp": 3}
+    results[four] = {"ramp": 2, "energy": 0.9}
+    results[none] = {"ramp": 1}
+
+    assert compare(VOCABULARY, results) == [
+        Miss(two, "ramp 3 is outside 2 to 2"),
+        Miss(four, "energy 0.9 is set, where the answer leaves it at its default, 0.5"),
+        Miss(four, "ramp 2 is outside 4 to 4"),
+        Miss(none, "ramp 1 is outside 0 to 0"),
+    ]
+
+
 def test_a_control_of_the_wrong_kind_or_none_is_a_miss() -> None:
     results = points(VOCABULARY)
     full, done = phrase_of("full power"), phrase_of("leave this alone, it's finished")

@@ -6,7 +6,7 @@ What a producer's answers mean as human-o-matic's controls. Each row is an answe
 
 ## How to read a row
 
-- A row sets the controls it fills in, and only those. Leave the others unset, so they come from the song's controls and then the style's defaults: `energy`, `groove`, `dynamic_range`, `fill_intensity` and `ghost_level` 0.5, `tightness` 0.75, `feel` 0, `arc` `steady`, `skip` false, `creative` false. Every style has these defaults.
+- A row sets the controls it fills in, and only those. Leave the others unset, so they come from the song's controls and then the style's defaults: `energy`, `groove`, `dynamic_range`, `fill_intensity` and `ghost_level` 0.5, `tightness` 0.75, `feel` 0, `arc` `steady`, `skip` false, `creative` false, `ramp` 0. Every style has these defaults.
 - Rows are written for a song whose own controls are unset. Where the user has set a control for the whole song, such as its tightness, move a section from the song's value by the row's difference from the default, and leave it unset where the row gives the default. A bridge at tightness 0.6 is 0.15 looser than the song, so in a song at 0.9 it is 0.75.
 - `style` and the song's `tightness` go to `set_style`. Every other control goes to `set_section_controls`, with `section_ids` for the sections the answer is about, or without them for the whole song.
 - Blend rows when an answer mixes them: "chorus, but laid back" is the chorus row with the laid-back row's `feel`. Move within a range for the user's emphasis: "really full power" is the top of it.
@@ -30,6 +30,7 @@ What each control does, and the words to echo it with.
 | `ghost_level`, 0 to 1 | soft notes tucked away | soft notes present |
 | `skip` | | `true`: the section stays exactly as it came in |
 | `creative` | `false`, the default: no note is added | `true`: the section may add ghost notes, cymbals where it has few, a fill into the next section where it has none, flams, and rimshots and chokes on articulations it already plays; `skip` wins over it |
+| `ramp`, 0 to 8 bars | 0, the default: no build, straight into the next section | its last bars build, each a little harder, into a louder next section, starting slowly and pushing hardest just before it, with the next section's first beat the peak; its fills build with it; at most half the section's bars |
 
 The styles are `tight`, the default, `medium` and `loose`. They differ in how far the timing spreads and how far `feel` moves the snare and riders, and play the same velocities.
 
@@ -71,10 +72,15 @@ The styles are `tight`, the default, `medium` and `loose`. They differ in how fa
 | "add ghost notes" | | | | | | | creative: true |
 | "fill in the transitions" | | | | | | | creative: true |
 | "no added notes, keep what's there" | | | | | | | creative: false |
+| "build into it over 2 bars" | | | | | | | ramp: 2 [2, 2] |
+| "a 4-bar ramp" | | | | | | | ramp: 4 [4, 4] |
+| "no ramp, straight in" | | | | | | | ramp: 0 [0, 0] |
 
 The four answers about the drummer, from "tight, modern metal" on, are song-wide: `set_style` takes their `style` and `tightness`.
 
 The four answers about added notes, from "make it more creative" on, turn creative mode on or off for the sections the user names, or for the whole song when they name none. Creative mode adds all it can, not only what was asked for: echo what each section's `expected` says it adds and skips, and if the user wanted only some of it, say this version adds them together.
+
+The three answers about a ramp, from "build into it over 2 bars" on, answer the ramp question, and set `ramp` on the sections that lead into the louder one, never on the louder one. The number is the bars the user names, and "no", "none" or "your call" is 0, the default, set so the question isn't asked again.
 
 ## Refinements
 
