@@ -1,6 +1,6 @@
 # 0109. A velocity repeats on a pitch or a drum only where the soft notes' floor leaves a note no velocity that keeps the other rules
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-14
 
 - The guards of [ADR 0050](0050-guards-hold-every-backend-and-keep-each-section-independent.md) keep a note's velocity unlike its neighbours' on its pitch and its drum, except at a note where these three rules can't all hold:

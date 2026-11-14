@@ -1,6 +1,6 @@
 # 0108. The skill's budget is about 20 questions, with a third per group only to ask about a ramp into a section 0.2 or more louder
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-14
 
 - The question policy's budget is about 20 questions for a typical song, where it was about 12. They are counted as [ADR 0090](0090-the-skill-counts-its-questions-the-confirmation-batch-as-one.md) sets: the kits question when asked, the confirmation batch as one, each other question as one, and the echo's "sound right?" not at all.
