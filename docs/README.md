@@ -33,6 +33,7 @@ What was decided, specifically enough to check the code against.
 | Plan | Status |
 |---|---|
 | [2026-11-08-human-o-matic](plans/2026-11-08-human-o-matic.md) | Active. The app, milestone by milestone. |
+| [2026-11-13-website](plans/2026-11-13-website.md) | Planned. M7, the website, built after M4's gate. |
 
 ### Research
 | Page | Compares |
@@ -139,6 +140,10 @@ What was decided, specifically enough to check the code against.
 | [0094](decisions/0094-an-added-note-changes-no-other-section.md) | An added note goes only on a drum and pitch its section plays, where the worst around it leaves room, and every rule at a boundary is counted on the score's own notes | Accepted |
 | [0095](decisions/0095-an-addition-the-kit-can-t-play-is-skipped-and-the-reports-count-what-was-added.md) | An addition the target kit can't play is skipped, never asked about, and the reports count what was added and skipped, and say it | Accepted |
 | [0096](decisions/0096-the-skill-turns-creative-mode-on-only-when-the-user-asks-for-added-notes.md) | The skill turns creative mode on only when the user asks for added notes, with four vocabulary rows and no question of its own | Accepted |
+| [0097](decisions/0097-a-website-is-milestone-m7-a-thin-page-over-the-same-engine-that-asks-the-questions-itself.md) | A website is milestone M7, a thin page over the same engine that asks the questions itself, with no LLM and no accounts, built after M4's gate | Proposed |
+| [0098](decisions/0098-the-site-is-open-to-anyone-with-its-link-held-by-limits-and-keeps-no-user-s-midi.md) | The site is open to anyone with its link, held by limits, and keeps no user's MIDI | Proposed |
+| [0099](decisions/0099-the-site-s-feedback-form-keeps-text-and-settings-never-midi.md) | The site's feedback form keeps text and the render's settings, never MIDI, its name or a note | Proposed |
+| [0100](decisions/0100-the-site-runs-the-engine-in-the-browser-under-pyodide-from-static-files.md) | The site runs the engine in the browser under Pyodide, pinned and checked by a fixed hash, from static files | Proposed |
 | [0101](decisions/0101-the-blind-test-renders-the-owner-s-saved-session-of-one-song-through-one-built-in-kit.md) | The blind test renders the owner's saved session of one song through one built-in kit, each section with notes a trial, with creative mode off | Proposed |
 | [0102](decisions/0102-variants-1-to-3-are-the-score-at-one-velocity-naive-randomization-of-it-and-the-engine-at-its-defaults.md) | Variants 1 to 3 are the score at one velocity, 100 by default, naive randomization of it, 8 ms and ±12 drawn for each note, and the engine at its defaults with the session's seed | Proposed |
 | [0103](decisions/0103-variant-5-is-variant-4-s-plan-rendered-with-its-style-s-timing-set-to-nothing.md) | Variant 5 is variant 4's plan rendered with its style's timing set to nothing, through a style `render()` takes in place of the plan's | Proposed |
