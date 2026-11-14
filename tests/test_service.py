@@ -629,7 +629,7 @@ def test_a_changed_input_file_is_refused(tools: Tools, tmp_path: Path) -> None:
         tools.render(session_id)
 
 
-def _notes_in(value: object, notes: int) -> list[str]:
+def notes_in(value: object, notes: int) -> list[str]:
     """Where a reply holds something like a note list: an object with a pitch or tick and a
     velocity, or a list as long as the song's notes."""
     found: list[str] = []
@@ -638,12 +638,12 @@ def _notes_in(value: object, notes: int) -> list[str]:
         if "velocity" in keys and keys & {"pitch", "tick", "start_tick"}:
             found.append(f"a note-like object {sorted(keys)}")
         for item in value.values():  # pyright: ignore[reportUnknownVariableType]
-            found.extend(_notes_in(item, notes))
+            found.extend(notes_in(item, notes))
     elif isinstance(value, list):
         if len(value) >= notes // 4:  # pyright: ignore[reportUnknownArgumentType]
             found.append(f"a list of {len(value)}")  # pyright: ignore[reportUnknownArgumentType]
         for item in value:  # pyright: ignore[reportUnknownVariableType]
-            found.extend(_notes_in(item, notes))
+            found.extend(notes_in(item, notes))
     return found
 
 
@@ -666,7 +666,7 @@ def test_no_reply_holds_a_note_list(tools: Tools, tmp_path: Path) -> None:
 
     assert notes > 1000
     for reply in replies:
-        assert _notes_in(reply, notes) == []
+        assert notes_in(reply, notes) == []
         assert len(json.dumps(reply)) < 40_000
 
 
