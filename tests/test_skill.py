@@ -1,24 +1,26 @@
 """The skill: its files and frontmatter, the tools it names, and its vocabulary's tables, read by
-`tools/check_answers.py` (ADRs 0087 and 0089)."""
+`presets` (ADRs 0087 and 0089)."""
 
 import re
 from pathlib import Path
+from typing import Any
 
 import anyio
 import pytest
 
-from check_answers import (
-    SKILL,
-    SKILL_DIR,
+from check_answers import SKILL, SKILL_DIR
+from human_o_matic.controls import Controls, ControlVector
+from human_o_matic.mcp_server import build_server
+from human_o_matic.presets import (
     VOCABULARY,
     Row,
     Span,
     VocabularyError,
     read_vocabulary,
+    starting_points,
 )
-from human_o_matic.controls import Controls, ControlVector
-from human_o_matic.mcp_server import build_server
 from human_o_matic.render.style import STYLE_NAMES, built_in_styles
+from human_o_matic.resources import skill_dir
 from human_o_matic.session import SessionStore
 
 VOCABULARY_ROWS = read_vocabulary()
@@ -92,6 +94,7 @@ def frontmatter(text: str) -> dict[str, str]:
 
 def test_the_skill_and_its_vocabulary_are_in_the_repository() -> None:
     assert Path(__file__).resolve().parents[1] / "skills" / "human-o-matic" == SKILL_DIR
+    assert skill_dir() == SKILL_DIR
     assert SKILL.is_file()
     assert VOCABULARY.is_file()
     assert "(references/vocabulary.md)" in SKILL.read_text(encoding="utf-8")
@@ -211,6 +214,20 @@ def write(tmp_path: Path, answers: str = GOOD, refinements: str = CHANGE) -> Pat
     path = tmp_path / "vocabulary.md"
     path.write_text(TABLE.format(answers=answers, refinements=refinements), encoding="utf-8")
     return path
+
+
+def test_the_presets_are_each_row_at_its_starting_points() -> None:
+    found: dict[str, Any] = starting_points(VOCABULARY_ROWS)
+    answers = {row["answer"]: row["controls"] for row in found["answers"]}
+
+    assert [row["answer"] for row in found["answers"]] == [
+        row.answer for row in VOCABULARY_ROWS.answers
+    ]
+    assert len(found["refinements"]) == len(VOCABULARY_ROWS.refinements)
+    assert answers["breakdown, full power"] == PLAN_ROWS["breakdown, full power"]
+    assert answers["verse, holding back, building"]["arc"] == "build"
+    assert answers["a 4-bar ramp"] == {"ramp": 4}
+    assert answers["leave this alone, it's finished"] == {"skip": True}
 
 
 def test_a_table_reads_as_each_answer_and_the_controls_it_sets(tmp_path: Path) -> None:
