@@ -1,6 +1,6 @@
 # 0050. The guards hold every backend's draws, and never make a section depend on another's
 
-- **Status:** Accepted. Its same-pitch gap is amended by [ADR 0073](0073-the-gap-is-counted-in-milliseconds-through-the-tempo-map.md), its rules at a boundary, counted on the score's own notes, by [ADR 0094](0094-an-added-note-changes-no-other-section.md), and its section independence by [ADR 0107](0107-a-section-s-ramp-climbs-its-last-bars-toward-the-energy-the-next-section-starts-at.md)
+- **Status:** Accepted. Its same-pitch gap is amended by [ADR 0073](0073-the-gap-is-counted-in-milliseconds-through-the-tempo-map.md), its rules at a boundary, counted on the score's own notes, by [ADR 0094](0094-an-added-note-changes-no-other-section.md), its section independence by [ADR 0107](0107-a-section-s-ramp-climbs-its-last-bars-toward-the-energy-the-next-section-starts-at.md), and its no-repeat rule and what `unmet` counts by [ADR 0109](0109-a-velocity-repeats-only-where-the-soft-notes-floor-leaves-a-note-no-velocity-that-keeps-the-other-rules.md)
 - **Date:** 2026-11-09
 
 - `render/guards.py` runs after the song's drifts, on every backend's draws. **Timing**, in turn:
