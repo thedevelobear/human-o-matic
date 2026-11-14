@@ -15,9 +15,11 @@ each control moves its statistic measure:
 | `arc` | `velocity_trend`: `drop` below `steady` below `build` |
 | `fill_intensity` | the fills' `mean_velocity` and `fill_rise` |
 | `ghost_level` | the soft notes' `mean_velocity` |
+| `ramp` | `bar_velocities` over its bars, rising bar by bar |
 """
 
 from collections.abc import Sequence
+from itertools import pairwise
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict
@@ -133,6 +135,15 @@ def velocity_trend(notes: Sequence[RenderedNote]) -> float | None:
     velocities = np.array([note.note.velocity for note in chosen], dtype=np.float64)
     slope = float(np.polyfit(ticks, velocities, 1)[0])
     return slope * float(ticks.max() - ticks.min())
+
+
+def bar_velocities(notes: Sequence[RenderedNote], ticks: Sequence[int]) -> list[float | None]:
+    """The mean velocity of the normal-typed notes of each bar between `ticks`, by their grid
+    points, which a ramp raises bar by bar."""
+    return [
+        mean_velocity([note for note in notes if start <= note.tick < end])
+        for start, end in pairwise(ticks)
+    ]
 
 
 def fill_rise(notes: Sequence[RenderedNote]) -> float | None:

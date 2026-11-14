@@ -1,6 +1,6 @@
 # 0046. The controls are layered pydantic models with a JSON round trip
 
-- **Status:** Accepted. Its `tight`-only style is amended by [ADR 0070](0070-the-engine-reads-the-styles-from-data-styles.md), and its nine controls by [ADR 0091](0091-creative-mode-is-a-section-s-control-off-by-default-that-lets-it-add-notes.md)
+- **Status:** Accepted. Its `tight`-only style is amended by [ADR 0070](0070-the-engine-reads-the-styles-from-data-styles.md), and its nine controls by [ADR 0091](0091-creative-mode-is-a-section-s-control-off-by-default-that-lets-it-add-notes.md) and [ADR 0107](0107-a-section-s-ramp-climbs-its-last-bars-toward-the-energy-the-next-section-starts-at.md)
 - **Date:** 2026-11-09
 
 - `human_o_matic/controls.py` holds frozen, strict pydantic models that take no unknown field, so a string or a boolean is never read as a number:

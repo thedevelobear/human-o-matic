@@ -1,6 +1,6 @@
 # 0099. The site's feedback form keeps text and settings, never MIDI
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 - After a download the page offers a short form: a rating, a comment and an optional contact.

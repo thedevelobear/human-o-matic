@@ -33,6 +33,7 @@ DEFAULTS = Controls(
     ghost_level=0.5,
     skip=False,
     creative=False,
+    ramp=0,
 )
 """The defaults the vocabulary says every style has."""
 PLAN_ROWS: dict[str, dict[str, float | str]] = {
@@ -162,6 +163,11 @@ def test_every_value_is_one_its_control_takes_and_lies_in_its_range(row: Row) ->
         else:
             assert not row.change, name
         for value in values:
+            if name == "ramp":
+                # The tables write a ramp's bars as numbers, which read as floats.
+                assert isinstance(value, float)
+                assert value.is_integer(), value
+                value = int(value)
             ControlVector.model_validate({name: value})
 
 

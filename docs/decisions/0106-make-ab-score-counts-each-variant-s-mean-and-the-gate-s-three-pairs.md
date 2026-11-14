@@ -1,6 +1,6 @@
 # 0106. `make_ab.py score` counts each variant's mean and the gate's three pairs, per trial and overall
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 - `uv run python tools/make_ab.py score KEY SHEET [SHEET ...]` reads the key and one or more filled sheets, one per listener, and prints JSON:

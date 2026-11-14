@@ -6,14 +6,21 @@ from itertools import pairwise
 from hypothesis import strategies as st
 
 from human_o_matic.analyze.sections import drum_bars
-from human_o_matic.controls import Arc, ControlVector, SectionPlan, SessionPlan, StyleName
+from human_o_matic.controls import (
+    MAX_RAMP,
+    Arc,
+    ControlVector,
+    SectionPlan,
+    SessionPlan,
+    StyleName,
+)
 from human_o_matic.maps.kit import DrumKit
 from human_o_matic.maps.loader import find_kit
 from human_o_matic.midi.io import MidiSong, parse_midi
 from human_o_matic.normalize.hit_types import HitTypeBounds
 from human_o_matic.normalize.pipeline import normalize
 from human_o_matic.normalize.score import Normalized
-from human_o_matic.render.engine import Rendered, render
+from human_o_matic.render.engine import Rendered, RenderedNote, render
 from human_o_matic.render.target import place_score
 from midi_files import MidoMessage, build, end, name, off, on, signature, tempo, track
 
@@ -139,6 +146,39 @@ def rendered(
     return render(midi, result, placement, plan)
 
 
+def only_unmet_repeats(out: Rendered) -> None:
+    """No two notes in a row on a pitch, or on a drum, not both played as they came in, share a
+    velocity, but where ADR 0109 allows one: at a note the guards count `unmet`, rendered and not
+    soft, whose drum has a soft note in its section, so the soft notes' floor narrows its
+    velocities. The guards count `unmet` per note, timing's too, and no more such notes repeat."""
+    soft = {
+        (note.section, note.family, note.piece)
+        for note in out.notes
+        if not note.kept and note.hit_type == "soft"
+    }
+    stuck: set[int] = set()
+    for key in ("pitch", "drum"):
+        groups: dict[tuple[object, int], list[RenderedNote]] = {}
+        for note in out.notes:
+            group = (
+                (note.note.channel, note.note.pitch)
+                if key == "pitch"
+                else (note.family, note.piece)
+            )
+            groups.setdefault(group, []).append(note)
+        for notes in groups.values():
+            for earlier, later in pairwise(notes):
+                if earlier.note.velocity != later.note.velocity or (earlier.kept and later.kept):
+                    continue
+                # A note avoids a kept note after it, so either side may be the one held.
+                held = earlier if later.kept else later
+                assert not held.kept, (earlier, later)
+                assert held.hit_type != "soft", (earlier, later)
+                assert (held.section, held.family, held.piece) in soft, (earlier, later)
+                stuck.add(held.position)
+    assert len(stuck) <= out.guards.unmet
+
+
 PITCHES = (KICK, SNARE, SIDESTICK, HAT, PEDAL, OPEN_HAT, RIDE, BELL, CRASH, CHINA, TOM_1, TOM_2)
 
 
@@ -208,10 +248,15 @@ ARCS: tuple[Arc, ...] = ("steady", "build", "drop")
 
 @st.composite
 def control_vectors(
-    draw: st.DrawFn, skip: bool = True, corners: bool = False, creative: bool = False
+    draw: st.DrawFn,
+    skip: bool = True,
+    corners: bool = False,
+    creative: bool = False,
+    ramp: bool = False,
 ) -> ControlVector:
     """Any controls, each maybe unset, with `skip` drawn only when `skip` is set, `creative` only
-    when `creative` is set, and each at its ends often when `corners` is set."""
+    when `creative` is set, `ramp` only when `ramp` is set, and each at its ends often when
+    `corners` is set."""
     units = _corners if corners else _units
     feel = st.none() | st.sampled_from((-1.0, 1.0)) | st.floats(-1, 1) if corners else None
     return ControlVector(
@@ -225,4 +270,5 @@ def control_vectors(
         ghost_level=draw(units),
         skip=draw(st.none() | st.booleans()) if skip else None,
         creative=draw(st.none() | st.booleans()) if creative else None,
+        ramp=draw(st.none() | st.integers(0, MAX_RAMP)) if ramp else None,
     )

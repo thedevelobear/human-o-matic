@@ -27,7 +27,7 @@ from mcp.server.mcpserver.exceptions import ToolError
 from mcp_types import ToolAnnotations
 from pydantic import Field, JsonValue, ValidationError
 
-from human_o_matic.analyze.facts import label, song_facts
+from human_o_matic.analyze.facts import SectionFacts, label, song_facts
 from human_o_matic.analyze.sections import Section, find_sections
 from human_o_matic.cli import (
     HitTypeCounts,
@@ -38,7 +38,15 @@ from human_o_matic.cli import (
     rendered_notes,
     summarize,
 )
-from human_o_matic.controls import MAX_SEED, ControlInput, ControlVector, StyleName, clamp
+from human_o_matic.controls import (
+    MAX_RAMP,
+    MAX_SEED,
+    ControlInput,
+    ControlVector,
+    StyleName,
+    clamp,
+    ramp_bars,
+)
 from human_o_matic.decisions import DecisionRequest, DecisionRequired
 from human_o_matic.files import name_new, write_aside
 from human_o_matic.instruments.drums import DRUMS
@@ -77,6 +85,9 @@ type Reply = dict[str, JsonValue]
 MIDI_SUFFIXES = (".mid", ".midi")
 REPORT_SUFFIX = ".report.json"
 """The report is written beside the MIDI file, as `<name>.report.json`."""
+RAMP_STEP = 0.2
+"""How much higher the next section's energy is than a section's when `get_sections` suggests
+asking whether the section builds into it (ADR 0108)."""
 
 INSTRUCTIONS = """\
 human-o-matic re-performs a drum MIDI file section by section, steered by the user's answers.
@@ -89,8 +100,10 @@ human-o-matic re-performs a drum MIDI file section by section, steered by the us
 3. Ask about the song's style and tightness once (set_style), then, per repeat group in song
    order, about its energy and feel, and set the controls the answers give with
    set_section_controls, which says what they give, to echo in plain words. Repeats can take
-   their group's controls. Only when the user asks for notes the song lacks, set creative, which
-   lets a section add ghost notes, cymbals, a fill, flams, rimshots and chokes.
+   their group's controls. When a section leads into a clearly louder one, get_sections suggests
+   asking over how many bars it builds into it, set as ramp, 0 for none. Only when the user asks
+   for notes the song lacks, set creative, which lets a section add ghost notes, cymbals, a fill,
+   flams, rimshots and chokes.
 4. export writes a new MIDI file, never the input, which the user drags into the DAW onto the
    to_map kit's track to listen. render gives the statistics without writing.
 Bars are counted from 0 in arguments and replies, and from 1 in labels and messages. A section
@@ -263,8 +276,11 @@ class Tools:
         score = loaded.normalized.score
         facts = song_facts(score, DRUMS.parts(score), _sections(session), session.bars)
         sections: list[JsonValue] = []
-        for section, found in zip(session.sections, facts, strict=True):
+        for number, (section, found) in enumerate(zip(session.sections, facts, strict=True)):
             entry = found.model_dump(mode="json")
+            asked = _ramp_question(session, facts, number)
+            if asked is not None:
+                entry["questions"] = [*found.questions, asked]
             entry.update(
                 {
                     "name": section.name,
@@ -436,12 +452,13 @@ class Tools:
             Field(
                 description="energy, groove, dynamic_range, tightness, fill_intensity and "
                 "ghost_level from 0 to 1, feel from -1 pushed to +1 laid back, arc steady, build "
-                "or drop, skip to leave a section as it came in, and creative to let it add "
-                "notes, only when the user asks: ghost notes, cymbals where it has few, a fill "
-                "into the next section where it has none, flams, rimshots and chokes. skip wins "
-                "over creative. A control given replaces the one held, null unsets it, and one "
-                "left out stays. A number outside its range is clamped to it, and the reply says "
-                "so."
+                "or drop, skip to leave a section as it came in, creative to let it add notes, "
+                "only when the user asks: ghost notes, cymbals where it has few, a fill into the "
+                "next section where it has none, flams, rimshots and chokes, and ramp, how many "
+                "of its last bars build, bar by bar, into the next section when that one is "
+                "louder: 0, none, the default, to 8 and at most half its bars. skip wins over "
+                "creative. A control given replaces the one held, null unsets it, and one left "
+                "out stays. A number outside its range is clamped to it, and the reply says so."
             ),
         ],
         section_ids: SectionIds = None,
@@ -465,10 +482,23 @@ class Tools:
         defaults = built_in_styles()[session.style].defaults
         chosen = set(section_ids if section_ids is not None else session.starts)
         sections: list[JsonValue] = []
+        clamped: list[JsonValue] = [entry.model_dump(mode="json") for entry in moved]
         for number, section in enumerate(session.sections):
             if section.start not in chosen:
                 continue
             resolved = section.controls.over(session.controls).resolve(defaults)
+            used = ramp_bars(resolved.ramp, section.bars)
+            if used != resolved.ramp:
+                if "ramp" in patch.model_fields_set:
+                    clamped.append(
+                        {
+                            "control": "ramp",
+                            "given": resolved.ramp,
+                            "used": used,
+                            "section": section.start,
+                        }
+                    )
+                resolved = resolved.model_copy(update={"ramp": used})
             entry: Reply = {
                 "start": section.start,
                 "label": label(section.start, section.bars),
@@ -476,13 +506,15 @@ class Tools:
                 "resolved": resolved.model_dump(mode="json"),
             }
             if rendered is not None:
-                entry["expected"] = sound(_of(rendered, number), rendered.creative[number]).says
+                entry["expected"] = sound(
+                    _of(rendered, number), rendered.creative[number], rendered.ramps[number]
+                ).says
             sections.append(entry)
         out: Reply = {"session_id": session.id}
         if section_ids is None:
             out["song"] = {"controls": _vector(session.controls), "note": session.note}
         out["sections"] = sections
-        out["clamped"] = [entry.model_dump(mode="json") for entry in moved]
+        out["clamped"] = clamped
         out["decisions"] = _decisions(loaded.decisions)
         return out
 
@@ -671,11 +703,39 @@ def _measured(session: Session, rendered: Rendered, chosen: set[int]) -> list[Js
                 "skip": section.controls.over(session.controls).resolve(defaults).skip,
                 "stats": section_stats(notes).model_dump(mode="json"),
                 "creative": _creative(creative),
-                "says": sound(notes, creative).says,
+                "says": sound(notes, creative, rendered.ramps[number]).says,
             }
         )
         out.append(row)
     return out
+
+
+def _ramp_question(session: Session, facts: Sequence[SectionFacts], number: int) -> str | None:
+    """Whether the section at `number` builds into the next, asked while its ramp is unset when
+    both play, neither is skipped, and the next one's energy is `RAMP_STEP` or more above it
+    (ADR 0108)."""
+    if (
+        number + 1 >= len(session.sections)
+        or not facts[number].notes
+        or not facts[number + 1].notes
+    ):
+        return None
+    section, after = session.sections[number], session.sections[number + 1]
+    defaults = built_in_styles()[session.style].defaults
+    own = section.controls.over(session.controls)
+    now = own.resolve(defaults)
+    then = after.controls.over(session.controls).resolve(defaults)
+    most = ramp_bars(MAX_RAMP, section.bars)
+    if own.ramp is not None or now.skip or then.skip or not most:
+        return None
+    # Rounded, so 0.7 against 0.5 counts as the step it is.
+    if round(then.energy - now.energy, 6) < RAMP_STEP:
+        return None
+    return (
+        f"Build up into {label(after.start, after.bars)} over the last bars of "
+        f"{label(section.start, section.bars)}, each a little harder, or go straight in? "
+        f"How many bars, up to {most}?"
+    )
 
 
 def _problems(error: ValidationError) -> str:

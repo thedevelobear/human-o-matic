@@ -1,6 +1,6 @@
 # 0052. Each control is tested against the statistic it mainly drives, and the plan's properties have exact definitions
 
-- **Status:** Accepted. Its `feel` row's smaller pushed side is amended by [ADR 0071](0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md), its same-pitch and cap properties by [ADR 0073](0073-the-gap-is-counted-in-milliseconds-through-the-tempo-map.md), and its gate after the preview PR by [ADR 0074](0074-a-render-is-heard-from-its-midi-file-in-the-daw-and-there-is-no-live-preview.md)
+- **Status:** Accepted. Its `feel` row's smaller pushed side is amended by [ADR 0071](0071-the-fit-is-the-default-and-research-fills-what-a-performance-can-t-give.md), its same-pitch and cap properties by [ADR 0073](0073-the-gap-is-counted-in-milliseconds-through-the-tempo-map.md), its gate after the preview PR by [ADR 0074](0074-a-render-is-heard-from-its-midi-file-in-the-daw-and-there-is-no-live-preview.md), its property of one section rendered again by [ADR 0107](0107-a-section-s-ramp-climbs-its-last-bars-toward-the-energy-the-next-section-starts-at.md), and its velocity property by [ADR 0109](0109-a-velocity-repeats-only-where-the-soft-notes-floor-leaves-a-note-no-velocity-that-keeps-the-other-rules.md)
 - **Date:** 2026-11-09
 
 - `render/measure.py` measures a render's notes, leaving out notes played as they came in. Each control is tested against what the plan's control table says it mainly drives:

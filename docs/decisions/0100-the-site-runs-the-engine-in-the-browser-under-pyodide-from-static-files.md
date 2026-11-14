@@ -1,6 +1,6 @@
 # 0100. The site runs the engine in the browser under Pyodide, from static files
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 - The page's Web Worker loads Pyodide and runs the same `Tools` over a `SessionStore` in the worker's in-memory file system. The user's file is read there and the download is made there, so the MIDI never leaves the user's machine.

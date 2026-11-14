@@ -1,6 +1,6 @@
 # 0094. An added note changes no other section: it goes only on a drum and pitch its section plays, where the worst around it leaves room
 
-- **Status:** Accepted
+- **Status:** Accepted. Its one exception to independence, `skip`'s, is amended by [ADR 0107](0107-a-section-s-ramp-climbs-its-last-bars-toward-the-energy-the-next-section-starts-at.md)
 - **Date:** 2026-11-13
 
 `render/creative.py` admits a candidate only where it changes no other section, and counts the rest:

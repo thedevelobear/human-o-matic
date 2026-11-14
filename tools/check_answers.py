@@ -67,6 +67,8 @@ CHOICES = {"true": True, "false": False}
 """How `skip` and `creative` are written."""
 SWITCHES = ("skip", "creative")
 """The controls that are true or false."""
+WHOLE = ("ramp",)
+"""The controls that are whole numbers, which the tables write as numbers like any other."""
 EPSILON = 1e-9
 EXIT_MISSES = 1
 EXIT_USAGE = 2
@@ -111,6 +113,9 @@ CHECKS: tuple[tuple[str, str], ...] = (
     ("Put some ghost notes into the verses.", "add ghost notes"),
     ("Add a fill wherever one section goes into the next.", "fill in the transitions"),
     ("Don't add anything, only play the notes I wrote.", "no added notes, keep what's there"),
+    ("Push into the chorus across the last two bars.", "build into it over 2 bars"),
+    ("Give it four bars to climb.", "a 4-bar ramp"),
+    ("No build-up, just hit the chorus.", "no ramp, straight in"),
     ("Hit a little harder than that.", "a bit harder"),
     ("Ease off slightly.", "a little softer"),
     ("Tighten the timing up a little.", "a touch tighter"),
@@ -289,6 +294,8 @@ def _check(row: Row) -> None:
         else:
             values = (expected,)
         for value in values:
+            if name in WHOLE and isinstance(value, float) and value.is_integer():
+                value = int(value)
             try:
                 ControlVector.model_validate({name: value})
             except ValidationError as error:

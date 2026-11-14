@@ -6,6 +6,7 @@ from hypothesis import strategies as st
 from pydantic import ValidationError
 
 from human_o_matic.controls import (
+    MAX_RAMP,
     MAX_SEED,
     Arc,
     Clamped,
@@ -28,6 +29,7 @@ DEFAULTS = Controls(
     ghost_level=0.5,
     skip=False,
     creative=False,
+    ramp=0,
 )
 
 
@@ -56,6 +58,10 @@ def test_a_section_s_controls_win_over_the_song_s_and_the_song_s_over_the_defaul
         '{"skip": 1}',
         '{"arc": "rise"}',
         '{"tempo": 120}',
+        '{"ramp": 9}',
+        '{"ramp": -1}',
+        '{"ramp": 2.5}',
+        '{"ramp": "2"}',
     ],
 )
 def test_a_control_out_of_range_of_the_wrong_type_or_unknown_is_refused(text: str) -> None:
@@ -96,6 +102,7 @@ def _vectors(draw: st.DrawFn) -> ControlVector:
         ghost_level=draw(_units),
         skip=draw(st.none() | st.booleans()),
         creative=draw(st.none() | st.booleans()),
+        ramp=draw(st.none() | st.integers(0, MAX_RAMP)),
     )
 
 

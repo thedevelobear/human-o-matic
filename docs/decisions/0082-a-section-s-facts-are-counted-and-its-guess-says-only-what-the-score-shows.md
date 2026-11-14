@@ -1,6 +1,6 @@
 # 0082. A section's facts are counted from the score, its pattern is its most typical bar, and its guess says only what the score shows
 
-- **Status:** Accepted
+- **Status:** Accepted. Its questions are amended by [ADR 0108](0108-the-skill-s-budget-is-about-20-questions-with-a-third-per-group-only-for-a-ramp.md)
 - **Date:** 2026-11-12
 
 - `analyze/facts.py` gives each section, from the score and the parts the drums give its notes ([ADR 0047](0047-roles-come-from-canonical-families-and-the-score.md)):
