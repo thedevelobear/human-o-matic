@@ -35,13 +35,13 @@ from grooves import (
     song,
 )
 from human_o_matic.analyze.sections import find_sections
-from human_o_matic.cli import RenderAnswers
 from human_o_matic.controls import ControlVector, SectionPlan, SessionPlan, StyleName
 from human_o_matic.midi.io import META, MidiSong, Note, parse_midi
 from human_o_matic.midi.tempo import META_TEMPO, META_TIME_SIGNATURE
 from human_o_matic.render.engine import Rendered, render
 from human_o_matic.render.style import STYLE_NAMES, built_in_styles
 from human_o_matic.render.target import place_score
+from human_o_matic.reports import RenderAnswers
 from human_o_matic.session import (
     STATE_ENV,
     Loaded,

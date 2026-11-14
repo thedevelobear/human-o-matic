@@ -4,6 +4,8 @@ never in the user's state directory."""
 import json
 import os
 import re
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -666,3 +668,16 @@ def test_no_reply_holds_a_note_list(tools: Tools, tmp_path: Path) -> None:
     for reply in replies:
         assert _notes_in(reply, notes) == []
         assert len(json.dumps(reply)) < 40_000
+
+
+def test_the_tools_import_neither_the_mcp_sdk_nor_the_command_line() -> None:
+    """The site's engine runs `service` under Pyodide, where the SDK doesn't exist and `typer`
+    and `rich` would be wheels to download for nothing (ADR 0100)."""
+    code = "import sys, human_o_matic.service\nprint(sorted(sys.modules))"
+
+    loaded = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True, check=True
+    ).stdout
+
+    for module in ("mcp", "mcp_types", "typer", "rich", "human_o_matic.cli"):
+        assert f"'{module}'" not in loaded

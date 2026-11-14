@@ -3,7 +3,6 @@ in `tmp_path`, never in the user's state directory."""
 
 import json
 import os
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -104,15 +103,3 @@ def test_the_console_script_serves_the_tools_over_stdio(tmp_path: Path) -> None:
 
     assert listed == PLAN_TOOLS
     assert (tmp_path / "stdio" / "sessions" / f"{reply['session_id']}.json").is_file()
-
-
-def test_the_tools_import_no_mcp_sdk() -> None:
-    """The site's engine runs `service` where the SDK doesn't exist (ADR 0100)."""
-    code = "import sys, human_o_matic.service\nprint(sorted(sys.modules))"
-
-    loaded = subprocess.run(
-        [sys.executable, "-c", code], capture_output=True, text=True, check=True
-    ).stdout
-
-    assert "'mcp'" not in loaded
-    assert "'mcp_types'" not in loaded

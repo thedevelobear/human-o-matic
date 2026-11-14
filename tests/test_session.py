@@ -13,11 +13,11 @@ from hypothesis import strategies as st
 
 from grooves import BAR, CRASH, GM, TYPED, midi_file, rock
 from human_o_matic.analyze.sections import find_sections
-from human_o_matic.cli import RenderAnswers
 from human_o_matic.controls import ControlVector
 from human_o_matic.maps.loader import find_kit
 from human_o_matic.midi.io import midi_bytes
 from human_o_matic.normalize.hit_types import HitTypeBounds
+from human_o_matic.reports import RenderAnswers
 from human_o_matic.session import (
     STATE_ENV,
     AnswersPatch,

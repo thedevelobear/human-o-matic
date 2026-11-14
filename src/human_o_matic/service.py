@@ -24,15 +24,6 @@ from pydantic import Field, JsonValue, ValidationError
 
 from human_o_matic.analyze.facts import SectionFacts, label, song_facts
 from human_o_matic.analyze.sections import Section, find_sections
-from human_o_matic.cli import (
-    HitTypeCounts,
-    RenderedNotes,
-    RenderSummary,
-    SectionEntry,
-    answer_problem,
-    rendered_notes,
-    summarize,
-)
 from human_o_matic.controls import (
     MAX_RAMP,
     MAX_SEED,
@@ -55,6 +46,15 @@ from human_o_matic.render.describe import sound
 from human_o_matic.render.engine import Rendered, RenderedNote
 from human_o_matic.render.measure import section_stats
 from human_o_matic.render.style import built_in_styles
+from human_o_matic.reports import (
+    HitTypeCounts,
+    RenderedNotes,
+    RenderSummary,
+    SectionEntry,
+    answer_problem,
+    rendered_notes,
+    summarize,
+)
 from human_o_matic.session import (
     AnswersPatch,
     Export,

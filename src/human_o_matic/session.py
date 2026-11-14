@@ -31,7 +31,6 @@ from typing import Annotated, Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from human_o_matic.analyze.sections import Sections
-from human_o_matic.cli import BeatKey, Pitch, RenderAnswers
 from human_o_matic.controls import (
     ControlVector,
     SectionPlan,
@@ -53,6 +52,7 @@ from human_o_matic.normalize.pipeline import normalize
 from human_o_matic.normalize.score import Normalized
 from human_o_matic.render.engine import Rendered, render
 from human_o_matic.render.target import Placement, place_score
+from human_o_matic.reports import BeatKey, Pitch, RenderAnswers
 
 SESSION_VERSION = 1
 """The version of the session file's format."""
