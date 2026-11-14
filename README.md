@@ -6,7 +6,7 @@ Programmed drum MIDI sounds robotic, and existing tools mostly fix that with bli
 ## How it works
 1. The agent opens your file through the kit it was made for. The server finds its sections, its repeats, its soft notes and any bars whose grid is unclear.
 2. The agent confirms the kits, the section table, the soft notes and the unclear bars with you in one message.
-3. It asks once about the whole song: what kind of drummer, tight and modern or looser. Then, for each repeat group in song order, it asks at most two questions, about energy and feel. Repeats take their group's answers, and the agent asks about one only when it probably differs, such as a bigger last chorus. "Your call" is always an answer. The skill aims for about 12 questions for a typical song.
+3. It asks once about the whole song: what kind of drummer, tight and modern or looser. Then, for each repeat group in song order, it asks at most two questions, about energy and feel, and where a section leads into a clearly louder one, a third: over how many bars it should build into it, or none. Repeats take their group's answers, and the agent asks about one only when it probably differs, such as a bigger last chorus. "Your call" is always an answer. The skill aims for about 20 questions for a typical song.
 4. Each answer becomes controls. The agent echoes them in plain words with what they give, and exports a new MIDI file for you to drag into the DAW. A refinement such as "a bit more laid back" is a small change to what is already set.
 
 For example (the words and numbers depend on the song):
@@ -30,7 +30,7 @@ Agent:  Taking that as maximum energy, tight, little light and shade: kick about
 ## Features
 - **Built-in kits.** 15 libraries with 17 kits: General MIDI and 14 drum libraries. A file made for one kit can be written for another. A note the target kit can't play falls back within its family, or the agent asks about it. Maps are built in, and no map file of your own can be loaded.
 - **Styles.** `tight`, the default, `medium` and `loose`, fitted from performed drum MIDI, with the song's tightness tuned within the style.
-- **Per section.** Energy, groove, dynamic range, feel from pushed to laid back, an arc that holds steady, builds or drops, fill intensity and ghost level. `skip` leaves a section exactly as it came in.
+- **Per section.** Energy, groove, dynamic range, feel from pushed to laid back, an arc that holds steady, builds or drops, fill intensity and ghost level. A ramp builds a section's last bars, each a little harder, its fills with them, into a louder next section, so that section's first beat is the peak, and none is the default. `skip` leaves a section exactly as it came in.
 - **A performance, not noise.** Outside a skipped section, only the notes and their hit types, soft, normal or accent, are kept from the input. Velocities and timing are performed anew, never the same velocity twice in a row on one drum. Timing stays within what drummers play, and drifts rather than jitters.
 - **Repeatable.** The same session and seed always give the same file. Another seed plays another take of the song, and another take of a section leaves the other sections as they were.
 - **Creative mode, off by default.** It lets a section add ghost notes, cymbals where it has few, a fill into the next section where it has none, flams, rimshots and chokes, only on drums the section plays. The agent turns it on only when you ask for notes the song lacks. Otherwise no note is added.
