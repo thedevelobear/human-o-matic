@@ -59,6 +59,8 @@ The plan's milestones, M0 to M7, are done in order, each in one or more PRs.
 | `uv run pyright` | Type-check `src/` strictly and `tests/` in standard mode. |
 | `uv run pytest` | All tests. The private ones skip when `private/` is missing. |
 | `uv run pytest -m "not private"` | The tests CI runs. |
+| `uv run python tools/build_site.py build` | The site in `dist/site/`, gitignored: Pyodide and the wheels of `tools/build_site.toml`, downloaded into `build/site-downloads/` and each checked by its SHA-256, the app's source and data, and the page ([ADR 0100](docs/decisions/0100-the-site-runs-the-engine-in-the-browser-under-pyodide-from-static-files.md)). `serve` serves it on this machine with the site's headers, for the browser check of `check.html`. |
+| `node --test tests/web/` | The Node tests, CI's last step, after the build: the engine under Pyodide gives the fixed hash of `tests/web/flow.json`. Node is the version in `.nvmrc`, through nvm, with no npm package ([ADR 0112](docs/decisions/0112-node-with-no-npm-package-runs-the-pyodide-test-and-the-page-s-pure-module-tests.md)). |
 | `HYPOTHESIS_PROFILE=ci uv run pytest` | The property tests with CI's example count. |
 | `uv run python tools/infer_map.py` | Pitch statistics for each folder of performed MIDI in `private/midi/`, read through its kit ([ADR 0057](docs/decisions/0057-each-folder-s-kit-is-in-a-gitignored-file-under-private-data.md)). `--map LIBRARY[/KIT]` reads through another. |
 | `uv run python tools/calibrate.py measure` | Each groove's statistics in the assigned folders, its timing spread, and the bands some cuts would make ([ADR 0059](docs/decisions/0059-calibration-measures-files-in-windows-of-at-most-16-bars.md)). `--excluded` adds the left-out folders' timing, apart. |

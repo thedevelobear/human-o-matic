@@ -30,3 +30,9 @@ jobs:
       - run: uv run pyright
       # The private tests need local-only files that CI doesn't have (ADR 0007).
       - run: uv run pytest -m "not private"
+      # The Node tests load the Pyodide and wheels the build downloads and checks (ADR 0112).
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: uv run python tools/build_site.py build
+      - run: node --test tests/web/
