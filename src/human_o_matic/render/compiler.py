@@ -6,10 +6,17 @@ velocity center, its accent and its soft center, is worked out per note from the
 gives its place in the section. The timing is the style's for the tempo band of the section's
 tempo. `roles=False` is `generic` mode: no limb takes an offset of its own, and `feel` moves every
 note.
+
+A section with a ramp (ADR 0107) plays its last bars at energies of their own, from where the arc
+leaves the section toward the energy the next section starts at: bar `k` of `n` goes
+`(k / (n + 1)) ** RAMP_POWER` of the way, so the climb starts slowly and speeds up, and the next
+section's downbeat is its last step. The engine gives the ramp with `ramped`, since it knows the
+section's bars and the next section, and a ramp adds no draw.
 """
 
-from collections.abc import Mapping
-from dataclasses import dataclass
+import bisect
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, replace
 from math import sqrt
 
 from human_o_matic.controls import Controls
@@ -17,6 +24,30 @@ from human_o_matic.render.parts import LIMBS, Limb, Role
 from human_o_matic.render.style import Anchors, Style
 
 ARC_SIGN = {"steady": 0.0, "build": 1.0, "drop": -1.0}
+RAMP_POWER = 2.0
+"""How a ramp climbs: bar `k` of `n` goes `(k / (n + 1)) ** RAMP_POWER` of the way."""
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class Ramp:
+    """A section's last bars climbing toward the next section's energy, bar by bar."""
+
+    bar: int
+    """Its first bar, from 0."""
+    ticks: tuple[int, ...]
+    """Where each of its bars starts, then where the section ends."""
+    places: tuple[float, ...]
+    """Where each of its bars starts, as a place in the section from 0 to 1."""
+    energies: tuple[float, ...]
+    """The energy each of its bars plays at."""
+    target: float
+    """The energy the next section starts at."""
+
+
+def arc_energy(energy: float, arc: str, span: float, place: float) -> float:
+    """The energy at a place in a section, from 0 at its start to 1 at its end, that its arc
+    gives."""
+    return energy + ARC_SIGN[arc] * span * (2 * place - 1)
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -51,11 +82,14 @@ class Params:
     jitter_clip: float
     limb_ms: Mapping[Limb, float]
     """Each limb's offset, `feel` included."""
+    ramp: Ramp | None = None
 
     def energy_at(self, place: float) -> float:
-        """The energy at a place in the section, from 0 at its start to 1 at its end."""
-        sign = ARC_SIGN[self.controls.arc]
-        return self.controls.energy + sign * self.arc_span * (2 * place - 1)
+        """The energy at a place in the section, from 0 at its start to 1 at its end: its ramp
+        bar's, or the arc's."""
+        if self.ramp is not None and place >= self.ramp.places[0]:
+            return self.ramp.energies[bisect.bisect_right(self.ramp.places, place) - 1]
+        return arc_energy(self.controls.energy, self.controls.arc, self.arc_span, place)
 
     def center(self, role: Role, energy: float) -> float:
         return self.velocity[role].at(energy)
@@ -74,6 +108,23 @@ class Params:
         mix = ghost * self.controls.ghost_level + by_energy * energy
         mix += by_groove * self.controls.groove
         return self.soft[0] + self.soft[1] * min(max(mix, 0.0), 1.0)
+
+
+def ramped(
+    params: Params, bar: int, ticks: Sequence[int], places: Sequence[float], target: float
+) -> Params:
+    """`params` with a ramp over the bars from `bar`, starting at `ticks` and `places`, then the
+    section's end tick, toward `target`. A ramp only climbs, so `params` stay as they are when
+    `target` isn't above the energy where the ramp starts."""
+    begin = params.energy_at(places[0])
+    if target <= begin:
+        return params
+    count = len(places)
+    energies = tuple(
+        begin + (target - begin) * ((step + 1) / (count + 1)) ** RAMP_POWER for step in range(count)
+    )
+    ramp = Ramp(bar=bar, ticks=tuple(ticks), places=tuple(places), energies=energies, target=target)
+    return replace(params, ramp=ramp)
 
 
 def swap_chance(flip: float) -> float:

@@ -205,13 +205,13 @@ def at_corners(
     *,
     loose: bool = False,
 ) -> SessionPlan:
-    """A plan in a drawn style whose sections' controls are drawn at their ends often, where
-    the guards bind. `loose` sets the song's tightness to 0 and its feel to -1 or +1, under the
-    sections'."""
+    """A plan in a drawn style whose sections' controls, ramps among them, are drawn at their
+    ends often, where the guards bind. `loose` sets the song's tightness to 0 and its feel to -1
+    or +1, under the sections'."""
     style = data.draw(STYLES, label="style")
     count = len(plan_for(midi, result, cuts=cuts).sections)
     controls = {
-        number: data.draw(control_vectors(corners=True), label=f"section {number}")
+        number: data.draw(control_vectors(corners=True, ramp=True), label=f"section {number}")
         for number in range(count)
     }
     song_controls = None

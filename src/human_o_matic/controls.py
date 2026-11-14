@@ -12,9 +12,9 @@ read as a number. Their JSON is `model_dump(mode="json", exclude_none=True)`, wh
 controls out, and `model_validate_json` reads it back to an equal model.
 
 A `ControlInput` is controls as an agent gives them, each number in any range, and `clamp` moves
-each into its control's range, saying which it moved. `ControlVector.patched` applies one layer
-over another as a merge patch: a control given replaces the one held, a control given as null
-unsets it, and a control left out keeps it.
+each into its control's range, `ramp` to the nearest whole number of bars, saying which it moved.
+`ControlVector.patched` applies one layer over another as a merge patch: a control given replaces
+the one held, a control given as null unsets it, and a control left out keeps it.
 """
 
 from typing import Annotated, Literal, Self
@@ -31,6 +31,9 @@ type Arc = Literal["steady", "build", "drop"]
 type StyleName = Literal["tight", "medium", "loose"]
 """The built-in styles, from the tightest (ADR 0044)."""
 type Seed = Annotated[int, Field(ge=0, le=MAX_SEED)]
+MAX_RAMP = 8
+"""The most bars a ramp climbs over (ADR 0107)."""
+type Ramp = Annotated[int, Field(ge=0, le=MAX_RAMP)]
 
 _STRICT = ConfigDict(frozen=True, extra="forbid", strict=True)
 
@@ -60,6 +63,9 @@ class Controls(BaseModel):
     creative: bool
     """Let the section add notes: ghost notes, cymbals when it has few, a fill into the next
     section when it has none, flams, rimshots and chokes (ADR 0091). `skip` wins over it."""
+    ramp: Ramp
+    """How many of the section's last bars climb, bar by bar, toward the energy the next section
+    starts at, when it is higher (ADR 0107). 0 is none, and at most half its bars are used."""
 
 
 class ControlVector(BaseModel):
@@ -77,6 +83,7 @@ class ControlVector(BaseModel):
     ghost_level: Unit | None = None
     skip: bool | None = None
     creative: bool | None = None
+    ramp: Ramp | None = None
 
     def over(self, base: "ControlVector") -> "ControlVector":
         """These controls, with `base`'s wherever these are unset."""
@@ -112,6 +119,7 @@ class ControlInput(BaseModel):
     ghost_level: Number | None = None
     skip: bool | None = None
     creative: bool | None = None
+    ramp: Number | None = None
 
 
 class Clamped(BaseModel):
@@ -134,7 +142,12 @@ def clamp(given: ControlInput) -> tuple[ControlVector, tuple[Clamped, ...]]:
         if name not in given.model_fields_set:
             continue
         value = getattr(given, name)
-        if isinstance(value, float):
+        if name == "ramp" and value is not None:
+            used = min(max(round(value), 0), MAX_RAMP)
+            if used != value:
+                moved.append(Clamped(control=name, given=value, used=used))
+            value = used
+        elif isinstance(value, float):
             # `feel` is from -1 to 1, and every other number from 0 to 1.
             low = -1.0 if name == "feel" else 0.0
             used = min(max(value, low), 1.0)
@@ -199,3 +212,8 @@ class SessionPlan(BaseModel):
     def controls_of(self, section: SectionPlan, defaults: Controls) -> Controls:
         """A section's controls over the song's, over `defaults`."""
         return section.controls.over(self.controls).resolve(defaults)
+
+
+def ramp_bars(ramp: int, bars: int) -> int:
+    """The bars a ramp of `ramp` climbs over in a section of `bars`: at most half of them."""
+    return min(ramp, bars // 2)

@@ -33,6 +33,7 @@ DEFAULTS = Controls(
     ghost_level=0.5,
     skip=False,
     creative=False,
+    ramp=0,
 )
 """The defaults the vocabulary says every style has."""
 PLAN_ROWS: dict[str, dict[str, float | str]] = {

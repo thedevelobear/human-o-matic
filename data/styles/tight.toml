@@ -40,6 +40,7 @@ fill_intensity = 0.5
 ghost_level = 0.5
 skip = false
 creative = false
+ramp = 0
 
 [velocity]
 

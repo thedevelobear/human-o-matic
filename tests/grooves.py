@@ -6,7 +6,14 @@ from itertools import pairwise
 from hypothesis import strategies as st
 
 from human_o_matic.analyze.sections import drum_bars
-from human_o_matic.controls import Arc, ControlVector, SectionPlan, SessionPlan, StyleName
+from human_o_matic.controls import (
+    MAX_RAMP,
+    Arc,
+    ControlVector,
+    SectionPlan,
+    SessionPlan,
+    StyleName,
+)
 from human_o_matic.maps.kit import DrumKit
 from human_o_matic.maps.loader import find_kit
 from human_o_matic.midi.io import MidiSong, parse_midi
@@ -208,10 +215,15 @@ ARCS: tuple[Arc, ...] = ("steady", "build", "drop")
 
 @st.composite
 def control_vectors(
-    draw: st.DrawFn, skip: bool = True, corners: bool = False, creative: bool = False
+    draw: st.DrawFn,
+    skip: bool = True,
+    corners: bool = False,
+    creative: bool = False,
+    ramp: bool = False,
 ) -> ControlVector:
     """Any controls, each maybe unset, with `skip` drawn only when `skip` is set, `creative` only
-    when `creative` is set, and each at its ends often when `corners` is set."""
+    when `creative` is set, `ramp` only when `ramp` is set, and each at its ends often when
+    `corners` is set."""
     units = _corners if corners else _units
     feel = st.none() | st.sampled_from((-1.0, 1.0)) | st.floats(-1, 1) if corners else None
     return ControlVector(
@@ -225,4 +237,5 @@ def control_vectors(
         ghost_level=draw(units),
         skip=draw(st.none() | st.booleans()) if skip else None,
         creative=draw(st.none() | st.booleans()) if creative else None,
+        ramp=draw(st.none() | st.integers(0, MAX_RAMP)) if ramp else None,
     )

@@ -3,9 +3,10 @@
 The notes are a section's as rendered, so the words say what its controls give in this take, not
 what a model of the engine expects: each role's velocities from the 5th to the 95th percentile,
 the riders' strong hits against their weak ones, the timing spread and how far the snare and the
-riders sit behind the other notes, and for a creative section, what it added and couldn't add
-(ADR 0095). `set_section_controls` says these after storing a section's controls, and `render`
-beside its statistics. Notes played as they came in aren't described.
+riders sit behind the other notes, how a ramp climbs bar by bar (ADR 0107), and for a creative
+section, what it added and couldn't add (ADR 0095). `set_section_controls` says these after
+storing a section's controls, and `render` beside its statistics. Notes played as they came in
+aren't described.
 """
 
 from collections.abc import Sequence
@@ -13,9 +14,11 @@ from collections.abc import Sequence
 import numpy as np
 from pydantic import BaseModel, ConfigDict
 
+from human_o_matic.analyze.facts import label
+from human_o_matic.render.compiler import Ramp
 from human_o_matic.render.creative import Addition, CreativeReport, Skip
 from human_o_matic.render.engine import RenderedNote
-from human_o_matic.render.measure import rider_gap, timing_spread
+from human_o_matic.render.measure import bar_velocities, rider_gap, timing_spread
 from human_o_matic.render.parts import Role
 
 GROUPS: tuple[tuple[str, tuple[Role, ...]], ...] = (
@@ -85,8 +88,13 @@ def _span(velocities: Sequence[int]) -> Span:
     return Span(notes=int(values.size), low=round(float(low)), high=round(float(high)))
 
 
-def sound(notes: Sequence[RenderedNote], creative: CreativeReport | None = None) -> Sound:
-    """How a section's rendered notes came out, with what creative mode added when it is on."""
+def sound(
+    notes: Sequence[RenderedNote],
+    creative: CreativeReport | None = None,
+    ramp: Ramp | None = None,
+) -> Sound:
+    """How a section's rendered notes came out, with how its ramp climbs when it plays one, and
+    what creative mode added when it is on."""
     played = [note for note in notes if not note.kept]
     spans: dict[str, Span] = {}
     names: dict[str, str] = {}
@@ -113,6 +121,7 @@ def sound(notes: Sequence[RenderedNote], creative: CreativeReport | None = None)
         timing_spread_ms=round(spread, 1) if spread is not None else None,
         behind_ms=round(behind, 1) if behind is not None else None,
         says=_says(notes, spans, names, gap, spread, behind)
+        + (f"; {ramp_words(notes, ramp)}" if ramp is not None else "")
         + (f"; {creative_words(creative)}" if creative is not None else ""),
     )
 
@@ -120,6 +129,16 @@ def sound(notes: Sequence[RenderedNote], creative: CreativeReport | None = None)
 def _counted(counts: dict[Addition, int]) -> str:
     named = [f"{count} {NAMES[kind][count > 1]}" for kind, count in counts.items()]
     return f"{', '.join(named[:-1])} and {named[-1]}" if len(named) > 1 else "".join(named)
+
+
+def ramp_words(notes: Sequence[RenderedNote], ramp: Ramp) -> str:
+    """Where a ramp climbs, and its normal hits' mean velocity in each of its bars, in words."""
+    means = [round(mean) for mean in bar_velocities(notes, ramp.ticks) if mean is not None]
+    words = f"builds over {label(ramp.bar, len(ramp.places))}"
+    if not means:
+        return words
+    listed = ", ".join(str(mean) for mean in means[:-1])
+    return f"{words}, its hits about {f'{listed} and ' if listed else ''}{means[-1]} bar by bar"
 
 
 def creative_words(report: CreativeReport) -> str:

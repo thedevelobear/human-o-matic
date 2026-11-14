@@ -13,6 +13,12 @@ velocities and offsets with the section's parameters (ADR 0093). The song's drif
 their ticks, read between the score's ticks. Only what changes no other section is added
 (`render/creative.py`, ADR 0094), so with creative mode off nothing is drawn or added, and a
 section turned creative leaves every other section's notes as they were.
+
+A section with a `ramp` plays its last bars at energies climbing toward the energy the next
+section starts at, when that is higher, and the next section plays and isn't skipped (ADR 0107).
+It draws nothing more, so every stream stays as it was, and with `ramp` 0 a render is as it was
+without the control. It makes the section depend on the next section's `energy`, `arc` and
+`skip`, the one way a section's controls reach another's notes besides `skip`'s.
 """
 
 import bisect
@@ -23,7 +29,7 @@ from math import exp, sqrt
 import numpy as np
 
 from human_o_matic.analyze.sections import drum_bars
-from human_o_matic.controls import SessionPlan
+from human_o_matic.controls import SessionPlan, ramp_bars
 from human_o_matic.instruments.base import Instrument
 from human_o_matic.instruments.drums import DRUMS
 from human_o_matic.midi.io import DEFAULT_RELEASE, MidiSong, Note
@@ -31,7 +37,7 @@ from human_o_matic.midi.tempo import FloatArray
 from human_o_matic.normalize.hit_types import HitType
 from human_o_matic.normalize.score import Normalized
 from human_o_matic.render.backends.parametric import sample
-from human_o_matic.render.compiler import Params
+from human_o_matic.render.compiler import Params, Ramp, arc_energy, ramped
 from human_o_matic.render.controllers import windows
 from human_o_matic.render.creative import (
     Addition,
@@ -137,6 +143,8 @@ class Rendered:
     guards: GuardCounts
     creative: tuple[CreativeReport | None, ...] = ()
     """For each section, what creative mode added and couldn't, or None when it is off."""
+    ramps: tuple[Ramp | None, ...] = ()
+    """For each section, the ramp it played, or None."""
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -211,6 +219,8 @@ def render(
     kept = [False] * count
     creative: list[tuple[int, Params, dict[int, float]]] = []
     """Each creative section's number, parameters and onsets' shared values."""
+    ramps: list[Ramp | None] = [None] * len(plan.sections)
+    playing = {section_of[position] for position in order}
     for number, section in enumerate(plan.sections):
         controls = plan.controls_of(section, style.defaults)
         members = [position for position in order if section_of[position] == number]
@@ -222,6 +232,16 @@ def render(
         length = max(score.signatures.bar_start(section.end) - first, 1)
         notes = [score.notes[position] for position in members]
         params = instrument.compile(controls, style, score.tempos.bpm(first))
+        bars = ramp_bars(controls.ramp, section.bars)
+        if bars and number + 1 in playing:
+            then = plan.controls_of(plan.sections[number + 1], style.defaults)
+            if not then.skip:
+                bar = section.end - bars
+                ticks = [score.signatures.bar_start(each) for each in range(bar, section.end + 1)]
+                places = [(tick - first) / length for tick in ticks[:-1]]
+                target = arc_energy(then.energy, then.arc, style.arc_span, 0.0)
+                params = ramped(params, bar, ticks, places, target)
+        ramps[number] = params.ramp
         draw = sample(
             notes,
             [parts[position] for position in members],
@@ -422,6 +442,7 @@ def render(
         notes=tuple(out),
         guards=tally.frozen(),
         creative=tuple(reports),
+        ramps=tuple(ramps),
     )
 
 
