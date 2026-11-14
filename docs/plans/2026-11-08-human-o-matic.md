@@ -221,7 +221,7 @@ Per section, all optional, with defaults supplied by the song style:
 
 ### Question policy (in `SKILL.md`)
 1. **Confirm before asking about feel:** kit maps, section table, soft notes and ambiguous bars, as one batch.
-2. **One song-wide question round,** at most three: the overall style or tightness, plus anything else that applies everywhere.
+2. **One song-wide question round:** the overall style or tightness, plus anything else that applies everywhere.
 3. **Per repeat group, in song order, every question `get_sections` suggests for it,** among them whether it builds into a louder section after it, as a `ramp` ([ADR 0113](../decisions/0113-there-is-no-question-budget-questions-are-asked-as-the-engine-suggests-them-counted-and-never-limited.md)). Always accept "your call".
 4. **Repeats inherit.** Ask only if a repeat probably differs, such as a bigger last chorus.
 5. **Ask only when plausible answers would change the controls audibly.** Otherwise assume, and state the assumption.

@@ -26,7 +26,7 @@ and that a new Claude Code session then has the tools. Don't run it unless the u
 
 ## Question policy
 1. **Confirm before asking about feel:** kit maps, section table, soft notes and ambiguous bars, as one batch.
-2. **One song-wide question round,** at most three: the overall style or tightness, plus anything else that applies everywhere.
+2. **One song-wide question round:** the overall style or tightness, plus anything else that applies everywhere.
 3. **Per repeat group, in song order, at most two questions, and a third only to ask whether it builds into a louder section after it** (see "Ramps"). Always accept "your call".
 4. **Repeats inherit.** Ask only if a repeat probably differs, such as a bigger last chorus.
 5. **Ask only when plausible answers would change the controls audibly.** Otherwise assume, and state the assumption.
@@ -60,7 +60,7 @@ Then settle what the user said:
   Each answer replaces the one held for its key, `null` takes one back, and the reply lists the requests still open.
 
 ### 3. The song-wide round (rule 2)
-At most three questions, for what holds everywhere: always what kind of drummer, tight and modern or looser, and anything else the user wants for the whole song, such as laid back throughout.
+Ask about what holds everywhere: always what kind of drummer, tight and modern or looser, and anything else the user wants for the whole song, such as laid back throughout.
 - `set_style(session_id, style, tightness)`: `style` is `tight`, the default, `medium` or `loose`, and sets how far the timing spreads. `tightness` tunes it within the style, 1 the tightest. The reply gives the style's defaults, which every control left unset takes.
 - Any other control for the whole song: `set_section_controls(session_id, controls)` without `section_ids`. Each section's own controls sit over the song's.
 
