@@ -17,7 +17,7 @@ Every change is a branch made from `main`, merged into it through a PR ([ADR 000
 3. When the work is done, stop and report to the owner. Open a PR only when the owner asks, once the branch is pushed.
 
 ## Work milestone by milestone
-The plan's milestones, M0 to M7, are done in order, each in one or more PRs.
+The plan's milestones, M0 to M7, are done in order, each in one or more PRs, except M7, which is built before M5 ([ADR 0117](docs/decisions/0117-m7-is-built-before-m5.md)).
 1. Find the first milestone in the plan's progress table that isn't merged, and start or continue its branch as above.
 2. Before writing code, ask the owner what the plan leaves open for this milestone. Record each answer as an ADR.
 3. **Stop at each gate.** Check the milestone's exit criteria and report them. The next milestone starts only when the owner says so. No agent can hear the output, so every listening decision, such as the M4 blind test and the M5 comparison, belongs to the owner.
