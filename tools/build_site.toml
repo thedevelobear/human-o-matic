@@ -1,0 +1,71 @@
+# What tools/build_site.py downloads for the site's engine, each at an exact version and checked
+# by its SHA-256 before it is used (ADRs 0004 and 0100). The browser loads them from the site's
+# own origin, never from where they were downloaded. Upgrade Pyodide and numpy together, and the
+# fixed hash of tests/web/flow.json tells whether the bytes still match (ADR 0100).
+
+# Pyodide's core release, from its GitHub release, whose SHA-256 GitHub publishes as the asset's
+# digest. The build takes the runtime's files from it.
+[pyodide]
+version = "314.0.7"
+url = "https://github.com/pyodide/pyodide/releases/download/314.0.7/pyodide-core-314.0.7.tar.bz2"
+sha256 = "2abdcc2e35208af406e07724cffa85bc582ced97e9028383ecf5462541393f95"
+files = [
+  "pyodide.mjs",
+  "pyodide.asm.mjs",
+  "pyodide.asm.wasm",
+  "python_stdlib.zip",
+  "pyodide-lock.json",
+]
+
+# Pyodide's own numpy, from its CDN, whose SHA-256 the release's pyodide-lock.json also gives.
+# It sits beside pyodide-lock.json, where Pyodide loads it by name and checks it again.
+[[packages]]
+name = "numpy"
+version = "2.4.6"
+url = "https://cdn.jsdelivr.net/pyodide/v314.0.7/full/numpy-2.4.6-cp314-cp314-pyemscripten_2026_0_wasm32.whl"
+sha256 = "a292c1f5d7d8a2208cd5e94fc467604c131cabcd2fc14fed6eefde121e7fabdf"
+
+# The other wheels, from PyPI, at uv.lock's versions, with the SHA-256s PyPI publishes:
+# pydantic-core's WebAssembly wheel for Pyodide's ABI, and pure Python wheels.
+[[wheels]]
+name = "pydantic-core"
+version = "2.50.4"
+url = "https://files.pythonhosted.org/packages/c6/07/a7d8615b8677bf69e24666bbce431299850c95a7b084649342582a1c3210/pydantic_core-2.50.4-cp314-cp314-pyemscripten_2026_0_wasm32.whl"
+sha256 = "e6da138a1ecc1341c8b788a5ee822670b03788e1f5decf7af9d461de6e508b8e"
+
+[[wheels]]
+name = "pydantic"
+version = "2.14.3"
+url = "https://files.pythonhosted.org/packages/72/b8/b864503789ef5c58597d2a7b4adbee62c26440ab1e682581fc6838df8947/pydantic-2.14.3-py3-none-any.whl"
+sha256 = "3f7b347782ab7e4cf4c798496ae3a82787d9f21ec12676a9c564355eeef8daa8"
+
+[[wheels]]
+name = "annotated-types"
+version = "0.8.0"
+url = "https://files.pythonhosted.org/packages/99/91/8acff4f5e50511b911bbccb72b8628a49c68ce14148cd9f6431094859a90/annotated_types-0.8.0-py3-none-any.whl"
+sha256 = "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0"
+
+[[wheels]]
+name = "typing-extensions"
+version = "4.16.0"
+url = "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl"
+sha256 = "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8"
+
+[[wheels]]
+name = "typing-inspection"
+version = "0.4.5"
+url = "https://files.pythonhosted.org/packages/de/0c/ea2544850a7c135e15033a5c7a8e7211136184b7ae63e2239d557c2b3019/typing_inspection-0.4.5-py3-none-any.whl"
+sha256 = "bc210535442b39e1bf2805e0c7a17dfd6a4ace760c84c7f7d16245d23a6b1c39"
+
+[[wheels]]
+name = "mido"
+version = "1.3.3"
+url = "https://files.pythonhosted.org/packages/fd/28/45deb15c11859d2f10702b32e71de9328a9fa494f989626916db39a9617f/mido-1.3.3-py3-none-any.whl"
+sha256 = "01033c9b10b049e4436fca2762194ca839b09a4334091dd3c34e7f4ae674fd8a"
+
+# mido imports packaging for its version.
+[[wheels]]
+name = "packaging"
+version = "26.3"
+url = "https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl"
+sha256 = "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"
