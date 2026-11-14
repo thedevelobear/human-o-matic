@@ -33,7 +33,7 @@ What was decided, specifically enough to check the code against.
 | Plan | Status |
 |---|---|
 | [2026-11-08-human-o-matic](plans/2026-11-08-human-o-matic.md) | Active. The app, milestone by milestone. |
-| [2026-11-13-website](plans/2026-11-13-website.md) | Active. M7, the website, built after M4's gate and before M5: PR 1 merged, PR 2 in progress. |
+| [2026-11-13-website](plans/2026-11-13-website.md) | Active. M7, the website, built after M4's gate and before M5: PR 1 merged, PR 2 in review. |
 
 ### Research
 | Page | Compares |
@@ -162,3 +162,4 @@ What was decided, specifically enough to check the code against.
 | [0116](decisions/0116-the-engine-check-is-check-html-running-tests-web-flow-json-served-by-build-site-py-serve.md) | The engine check is `check.html`, which runs `tests/web/flow.json`'s calls on a song built in code, served by `build_site.py serve` with the site's headers | Accepted |
 | [0117](decisions/0117-m7-is-built-before-m5.md) | M7 is built before M5 | Accepted |
 | [0118](decisions/0118-the-page-s-components-use-one-vendored-file-htm-s-build-of-preact-with-no-build-step-and-no-npm.md) | The page's components use one vendored file, htm 3.1.1's build of Preact, pinned by SHA-256 with its licences beside it, with no build step and no npm | Proposed |
+| [0119](decisions/0119-the-build-writes-netlify-s-headers-with-hsts-for-a-year-and-fails-on-a-file-of-10-mb-or-more.md) | The build writes Netlify's `_headers`, the CSP and headers with HSTS for a year on every path, each `.wasm` file's type and immutable caching of the versioned folders, and fails on a file of 10 MB or more | Proposed |
