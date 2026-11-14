@@ -1,6 +1,6 @@
 # 0117. M7 is built before M5
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-14
 
 M7, the website, is built now, after M4's gate and before M5, the trained model experiment. M5 stays not started.

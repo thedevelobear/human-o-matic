@@ -1,6 +1,6 @@
 # 0114. The worker API takes the file's bytes and its display name beside `open_session`, and answers an error as `{"error": why}`
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-14
 
 - `web/worker.py`'s `handle(request, data)` takes `{"call": name, "args": {...}}` as JSON text, with the chosen file's bytes as `data` beside an `open_session`, and returns compact JSON text, or a `download`'s MIDI bytes. Each tool's arguments are the MCP server's, checked against the same signature by pydantic's `validate_call`; `open_session` takes `name`, the file's display name, in place of `midi_path`, which it refuses.

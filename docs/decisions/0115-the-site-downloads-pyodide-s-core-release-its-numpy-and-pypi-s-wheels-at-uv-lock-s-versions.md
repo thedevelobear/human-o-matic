@@ -1,6 +1,6 @@
 # 0115. The site downloads Pyodide's core release, its numpy, and PyPI's wheels at `uv.lock`'s versions, pinned in `tools/build_site.toml`
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-14
 
 - `tools/build_site.toml` is the committed list of what the build downloads, each by an exact version, its URL and its SHA-256:

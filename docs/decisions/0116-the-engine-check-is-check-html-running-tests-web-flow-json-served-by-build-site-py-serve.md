@@ -1,6 +1,6 @@
 # 0116. The engine check is `check.html`, which runs `tests/web/flow.json`'s calls on a song built in code, served by `build_site.py serve` with the site's headers
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-14
 
 - `tests/web/flow.json` holds the calls of one whole session, from `open_session` to `download`, and the SHA-256 of the file they give. The same calls run natively in `tests/test_web_site.py`, under Pyodide in Node in `tests/web/engine.test.mjs`, and in a browser in `check.html`, all on `check-song.mid`, a 304-bar song that `tools/build_site.py`'s `built_song` makes in code at build time, with no randomness.

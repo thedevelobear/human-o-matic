@@ -33,7 +33,7 @@ What was decided, specifically enough to check the code against.
 | Plan | Status |
 |---|---|
 | [2026-11-08-human-o-matic](plans/2026-11-08-human-o-matic.md) | Active. The app, milestone by milestone. |
-| [2026-11-13-website](plans/2026-11-13-website.md) | Active. M7, the website, built after M4's gate and before M5: PR 1 in review. |
+| [2026-11-13-website](plans/2026-11-13-website.md) | Active. M7, the website, built after M4's gate and before M5: PR 1 merged, PR 2 in progress. |
 
 ### Research
 | Page | Compares |
@@ -157,7 +157,7 @@ What was decided, specifically enough to check the code against.
 | [0111](decisions/0111-the-page-asks-its-questions-in-tabs-as-claude-code-does.md) | The page asks each round of questions in tabs, as Claude Code does, with the vocabulary's rows as answers and "Set it by hand" in place of a typed answer | Accepted |
 | [0112](decisions/0112-node-with-no-npm-package-runs-the-pyodide-test-and-the-page-s-pure-module-tests.md) | Node, at an exact version and with no npm package, runs the Pyodide test and the page's pure-module tests, in CI and locally, and no headless browser is used for now | Accepted |
 | [0113](decisions/0113-there-is-no-question-budget-questions-are-asked-as-the-engine-suggests-them-counted-and-never-limited.md) | There is no question budget: the skill and the page ask every question `get_sections` suggests, counted and shown, never limited | Accepted |
-| [0114](decisions/0114-the-worker-api-takes-the-file-s-bytes-and-display-name-and-answers-an-error-as-error.md) | The worker API takes the file's bytes and its display name beside `open_session`, and answers an error as `{"error": why}` | Proposed |
-| [0115](decisions/0115-the-site-downloads-pyodide-s-core-release-its-numpy-and-pypi-s-wheels-at-uv-lock-s-versions.md) | The site downloads Pyodide's core release, its numpy, and PyPI's wheels at `uv.lock`'s versions, pinned in `tools/build_site.toml` | Proposed |
-| [0116](decisions/0116-the-engine-check-is-check-html-running-tests-web-flow-json-served-by-build-site-py-serve.md) | The engine check is `check.html`, which runs `tests/web/flow.json`'s calls on a song built in code, served by `build_site.py serve` with the site's headers | Proposed |
-| [0117](decisions/0117-m7-is-built-before-m5.md) | M7 is built before M5 | Proposed |
+| [0114](decisions/0114-the-worker-api-takes-the-file-s-bytes-and-display-name-and-answers-an-error-as-error.md) | The worker API takes the file's bytes and its display name beside `open_session`, and answers an error as `{"error": why}` | Accepted |
+| [0115](decisions/0115-the-site-downloads-pyodide-s-core-release-its-numpy-and-pypi-s-wheels-at-uv-lock-s-versions.md) | The site downloads Pyodide's core release, its numpy, and PyPI's wheels at `uv.lock`'s versions, pinned in `tools/build_site.toml` | Accepted |
+| [0116](decisions/0116-the-engine-check-is-check-html-running-tests-web-flow-json-served-by-build-site-py-serve.md) | The engine check is `check.html`, which runs `tests/web/flow.json`'s calls on a song built in code, served by `build_site.py serve` with the site's headers | Accepted |
+| [0117](decisions/0117-m7-is-built-before-m5.md) | M7 is built before M5 | Accepted |
