@@ -8,16 +8,18 @@ import pytest
 from human_o_matic.files import name_new, write_aside
 
 
-@pytest.fixture(params=["links", "no links"])
+@pytest.fixture(params=["links", "no links", "no os.link"])
 def links(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> str:
-    """Each test runs with hard links, and on a file system without them, where linking fails
-    as it does on FAT or exFAT."""
+    """Each test runs with hard links, on a file system without them, where linking fails as it
+    does on FAT or exFAT, and where `os` has no `link`, as under Pyodide."""
     if request.param == "no links":
 
         def refuse(*_: object) -> None:
             raise PermissionError(1, "Operation not permitted")
 
         monkeypatch.setattr(os, "link", refuse)
+    if request.param == "no os.link":
+        monkeypatch.delattr(os, "link")
     return str(request.param)
 
 
