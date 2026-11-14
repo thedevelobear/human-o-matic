@@ -1,6 +1,6 @@
 # 0113. There is no question budget: questions are asked as the engine suggests them, counted and never limited
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-14
 
 - Neither the skill nor the page has a question budget: no "about 20" for a song, and no limit of two questions a repeat group with a third only for a ramp. A group gets every question `get_sections` suggests for its sections, the ramp question among them, so the engine's facts decide what is worth asking.

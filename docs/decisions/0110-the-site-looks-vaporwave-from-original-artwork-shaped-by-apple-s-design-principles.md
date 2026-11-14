@@ -1,6 +1,6 @@
 # 0110. The site looks vaporwave, from original artwork, shaped by Apple's design principles
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-14
 
 - The site's look is vaporwave. It replaces the space-age look the site plan's theme section described, which no ADR recorded.
