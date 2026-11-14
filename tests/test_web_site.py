@@ -1,10 +1,12 @@
-"""The site's build without the network, and the fixed hash: the calls of `tests/web/flow.json`
-on the check song, built in code, download the file whose SHA-256 the flow holds, as they must
-under Pyodide in Node (ADR 0100)."""
+"""The site's build without the network, its `_headers`, its page's origins and its file sizes,
+and the fixed hash: the calls of `tests/web/flow.json` on the check song, built in code,
+download the file whose SHA-256 the flow holds, as they must under Pyodide in Node (ADR 0100)."""
 
 import hashlib
 import io
 import json
+import re
+import tarfile
 import tomllib
 import zipfile
 from pathlib import Path
@@ -14,11 +16,16 @@ import pytest
 
 from build_site import (
     FLOW,
+    MAX_FILE_BYTES,
     ROOT,
+    SONG,
     HashMismatchError,
     Pin,
+    Pins,
     app_zip,
+    build,
     built_song,
+    check_sizes,
     fetched,
     read_pins,
 )
@@ -128,3 +135,118 @@ def test_the_check_page_has_no_inline_script_or_style_and_names_no_other_origin(
         assert "https://" not in text, path
         for storage in ("localStorage", "sessionStorage", "indexedDB", "caches."):
             assert storage not in text, (path, storage)
+
+
+@pytest.fixture(scope="module")
+def site(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """The site built without the network, from small stand-ins of the pinned downloads under
+    their own names."""
+    folder = tmp_path_factory.mktemp("build")
+    (folder / "sources").mkdir()
+    pins = read_pins()
+
+    def stand_in[P: Pin](pin: P, data: bytes) -> P:
+        path = folder / "sources" / pin.file_name
+        path.write_bytes(data)
+        sha256 = hashlib.sha256(data).hexdigest()
+        return pin.model_copy(update={"url": path.as_uri(), "sha256": sha256})
+
+    release = io.BytesIO()
+    with tarfile.open(fileobj=release, mode="w:bz2") as archive:
+        for name in pins.pyodide.files:
+            entry = tarfile.TarInfo(f"pyodide/{name}")
+            entry.size = len(name)
+            archive.addfile(entry, io.BytesIO(name.encode()))
+    stand_ins = Pins(
+        pyodide=stand_in(pins.pyodide, release.getvalue()),
+        packages=tuple(stand_in(pin, pin.name.encode()) for pin in pins.packages),
+        wheels=tuple(stand_in(pin, pin.name.encode()) for pin in pins.wheels),
+    )
+    return build(folder / "site", folder / "downloads", stand_ins)
+
+
+def headers_for(text: str, path: str) -> list[tuple[str, str]]:
+    """Every header a `_headers` file gives `path`, from each rule that matches it: its own path,
+    or a folder's `/*`, which matches every path under it."""
+    rules: list[tuple[str, list[tuple[str, str]]]] = []
+    for line in text.splitlines():
+        if line.startswith("  "):
+            name, value = line.strip().split(": ", 1)
+            rules[-1][1].append((name, value))
+        elif line:
+            rules.append((line, []))
+    return [
+        header
+        for rule, headers in rules
+        if rule == path or (rule.endswith("/*") and path.startswith(rule[:-1]))
+        for header in headers
+    ]
+
+
+EVERY_PATH = {
+    "Content-Security-Policy": (
+        "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; "
+        "connect-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; "
+        "form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+    ),
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Strict-Transport-Security": "max-age=31536000",
+}
+"""The headers of the website plan's section 7 on every path, written out, not imported, so a
+change to the build's shows here."""
+
+
+def test_every_path_of_the_built_site_gets_the_csp_and_headers_and_its_type_and_caching(
+    site: Path,
+) -> None:
+    text = (site / "_headers").read_text(encoding="utf-8")
+    paths = ["/" + path.relative_to(site).as_posix() for path in site.rglob("*") if path.is_file()]
+
+    assert "/pyodide/314.0.7/pyodide.asm.wasm" in paths
+    for path in paths:
+        found = headers_for(text, path)
+        headers = dict(found)
+        assert len(headers) == len(found), path
+        assert headers.items() >= EVERY_PATH.items(), path
+        wasm = headers.get("Content-Type") == "application/wasm"
+        assert wasm == path.endswith(".wasm"), path
+        immutable = headers.get("Cache-Control") == "public, max-age=31536000, immutable"
+        assert immutable == path.startswith(("/pyodide/314.0.7/", "/wheels/")), path
+
+
+ANOTHER_ORIGIN = re.compile(rb"[a-z][a-z0-9+.-]*://|[\"'(=]\s*//\w", re.IGNORECASE)
+"""A URL with a scheme, or one that starts `//`, which names another host."""
+
+
+def test_none_of_the_page_s_own_files_names_another_origin(site: Path) -> None:
+    # Pyodide's files, the wheels and the app's zip may hold URLs of their own, which the CSP
+    # keeps from being fetched (the website plan's section 12).
+    own = [
+        path
+        for path in site.rglob("*")
+        if path.is_file()
+        and path.relative_to(site).parts[0] not in ("pyodide", "wheels", "app.zip", SONG)
+    ]
+
+    assert {"_headers", "check.html", "engine.json", "js/worker.js"} <= {
+        path.relative_to(site).as_posix() for path in own
+    }
+    for path in own:
+        assert not ANOTHER_ORIGIN.search(path.read_bytes()), path
+
+
+def test_the_build_fails_on_a_file_of_10_mb_or_more(tmp_path: Path) -> None:
+    (tmp_path / "js").mkdir()
+    (tmp_path / "js" / "page.js").write_text("")
+    with (tmp_path / "js" / "big.wasm").open("wb") as file:
+        file.truncate(MAX_FILE_BYTES - 1)
+
+    check_sizes(tmp_path)
+    with (tmp_path / "js" / "big.wasm").open("wb") as file:
+        file.truncate(MAX_FILE_BYTES)
+    with pytest.raises(ValueError, match=r"js/big.wasm is 10,000,000 bytes, where a file must"):
+        check_sizes(tmp_path)
