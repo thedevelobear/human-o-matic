@@ -333,6 +333,64 @@ def test_set_section_controls_stores_them_and_says_what_they_give(
         tools.set_section_controls(session_id, ControlInput(energy=0.1), [5])
 
 
+def ramp_questions(tools: Tools, session_id: str) -> list[list[str]]:
+    """Each section's suggested questions about building into the next."""
+    reply: Json = tools.get_sections(session_id)
+    return [
+        [asked for asked in section["questions"] if asked.startswith("Build up into ")]
+        for section in reply["sections"]
+    ]
+
+
+def test_get_sections_asks_about_a_ramp_into_a_clearly_louder_section_until_it_is_set(
+    tools: Tools, tmp_path: Path
+) -> None:
+    session_id = ready(tools, tmp_path)
+    assert ramp_questions(tools, session_id) == [[], [], []]
+
+    tools.set_section_controls(session_id, ControlInput(energy=0.65), [4])
+    assert ramp_questions(tools, session_id) == [[], [], []]
+    tools.set_section_controls(session_id, ControlInput(energy=0.7), [4])
+    assert ramp_questions(tools, session_id) == [
+        [
+            "Build up into bars 5 to 8 over the last bars of bars 1 to 4, each a little harder, "
+            "or go straight in? How many bars, up to 2?"
+        ],
+        [],
+        [],
+    ]
+    tools.set_section_controls(session_id, ControlInput(skip=True), [4])
+    assert ramp_questions(tools, session_id) == [[], [], []]
+    tools.set_section_controls(session_id, ControlInput(skip=False), [4])
+    tools.set_section_controls(session_id, ControlInput(ramp=0), [0])
+    assert ramp_questions(tools, session_id) == [[], [], []]
+
+
+def test_a_ramp_is_clamped_to_8_bars_and_half_its_section_and_said_bar_by_bar(
+    tools: Tools, tmp_path: Path
+) -> None:
+    session_id = ready(tools, tmp_path)
+    tools.set_section_controls(session_id, ControlInput(energy=0.9), [4])
+    before: Json = tools.render(session_id)
+
+    reply: Json = tools.set_section_controls(session_id, ControlInput(ramp=12), [0], "two bars")
+    after: Json = tools.render(session_id)
+
+    (section,) = reply["sections"]
+    assert section["controls"] == {"ramp": 8}
+    assert section["resolved"]["ramp"] == 2
+    assert reply["clamped"] == [
+        {"control": "ramp", "given": 12, "used": 8},
+        {"control": "ramp", "given": 8, "used": 2, "section": 0},
+    ]
+    assert re.search(
+        r"; builds over bars 3 to 4, its hits about \d+ and \d+ bar by bar", section["expected"]
+    )
+    assert "builds over bars 3 to 4" in after["sections"][0]["says"]
+    assert after["sections"][1:] == before["sections"][1:]
+    assert tools.set_section_controls(session_id, ControlInput(energy=0.9), [0])["clamped"] == []
+
+
 def test_a_creative_section_says_what_it_adds_and_counts_it_leaving_the_others_alone(
     tools: Tools, tmp_path: Path
 ) -> None:
