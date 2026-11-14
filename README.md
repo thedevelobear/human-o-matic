@@ -6,7 +6,7 @@ Programmed drum MIDI sounds robotic, and existing tools mostly fix that with bli
 ## How it works
 1. The agent opens your file through the kit it was made for. The server finds its sections, its repeats, its soft notes and any bars whose grid is unclear.
 2. The agent confirms the kits, the section table, the soft notes and the unclear bars with you in one message.
-3. It asks once about the whole song: what kind of drummer, tight and modern or looser. Then, for each repeat group in song order, it asks at most two questions, about energy and feel, and where a section leads into a clearly louder one, a third: over how many bars it should build into it, or none. Repeats take their group's answers, and the agent asks about one only when it probably differs, such as a bigger last chorus. "Your call" is always an answer. The skill aims for about 20 questions for a typical song.
+3. It asks once about the whole song: what kind of drummer, tight and modern or looser. Then, for each repeat group in song order, it asks every question the engine suggests for it, about energy and feel, and where a section leads into a clearly louder one, over how many bars to build into it, or none. Repeats take their group's answers, and the agent asks about one only when it probably differs, such as a bigger last chorus. "Your call" is always an answer. The agent counts its questions and tells you the count at the end, and nothing limits them.
 4. Each answer becomes controls. The agent echoes them in plain words with what they give, and exports a new MIDI file for you to drag into the DAW. A refinement such as "a bit more laid back" is a small change to what is already set.
 
 For example (the words and numbers depend on the song):
