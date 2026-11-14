@@ -2,6 +2,7 @@
 kit do (ADRs 0048 to 0050)."""
 
 from collections.abc import Sequence
+from dataclasses import replace
 from functools import cache
 from itertools import pairwise
 from pathlib import Path
@@ -38,6 +39,7 @@ from grooves import (
     flams,
     grooves,
     normalized,
+    only_unmet_repeats,
     plan_for,
     rendered,
     rock,
@@ -357,7 +359,7 @@ neighbour and its drum's neighbour are often different notes."""
 
 
 @given(grooves(SHARED, velocities=(NORMAL, NORMAL, SOFT), per_bar=24), CUTS, st.data())
-def test_velocities_are_1_to_127_and_never_repeat_on_a_pitch_or_a_drum(
+def test_velocities_are_1_to_127_and_repeat_on_a_pitch_or_a_drum_only_where_unmet(
     hits: list[Hit], cuts: list[int], data: st.DataObject
 ) -> None:
     midi = song(hits)
@@ -366,11 +368,7 @@ def test_velocities_are_1_to_127_and_never_repeat_on_a_pitch_or_a_drum(
     out = rendered(midi, at_corners(data, midi, result, cuts))
 
     assert all(1 <= note.note.velocity <= 127 for note in out.notes)
-    for key in ("pitch", "drum"):
-        for notes in by_key(out.notes, key).values():
-            for earlier, later in pairwise(notes):
-                if not (earlier.kept and later.kept):
-                    assert earlier.note.velocity != later.note.velocity
+    only_unmet_repeats(out)
 
 
 @pytest.mark.parametrize("style", STYLE_NAMES)
@@ -387,6 +385,34 @@ def test_16ths_at_600_bpm_played_loose_keep_most_of_their_gap(
         starts = [note.note.start for note in rendered(midi, plan, result=result).notes]
         gaps = [later - earlier for earlier, later in pairwise(starts)]
         assert min(gaps) >= GAP_SHARE * SIXTEENTH - 1
+
+
+def test_a_repeat_where_the_soft_floor_and_the_boundary_class_leave_no_velocity_is_unmet() -> None:
+    # ADR 0109's corner. Section 1's snare has a soft note, so its other snare notes go no lower
+    # than 1 below their lowest, 124: 123 to 127. Its last backbeat is next to section 2's
+    # snare, so its class asks for a multiple of 4, and of 123 to 127 only 124 is one, the
+    # backbeat's before it. The guards keep the repeat and count it unmet.
+    hits: list[Hit] = [(3 * BAR, SNARE, SOFT), (7440, CRASH), (11040, CRASH)]
+    for bar in range(7):
+        at = bar * BAR
+        hits += [(at, KICK), (at + PPQ, SNARE), (at + 3 * PPQ, SNARE), (at, HAT)]
+        hits += [(at + 2 * PPQ, HAT)] if bar != 2 else []
+    midi = song(hits)
+    result = normalized(midi)
+    loud = ControlVector(energy=0.875, dynamic_range=0.0)
+
+    out = rendered(midi, plan_for(midi, result, cuts=[2, 4], sections={1: loud}), result=result)
+
+    snares = {
+        note.tick: note.note.velocity
+        for note in out.notes
+        if note.section == 1 and note.note.pitch == SNARE and note.hit_type == "normal"
+    }
+    assert snares == {2 * BAR + PPQ: 124, 2 * BAR + 3 * PPQ: 127, 12480: 124, 14400: 124}
+    assert out.guards.unmet == 1
+    only_unmet_repeats(out)
+    with pytest.raises(AssertionError):
+        only_unmet_repeats(replace(out, guards=out.guards.model_copy(update={"unmet": 0})))
 
 
 @pytest.mark.parametrize("style", STYLE_NAMES)

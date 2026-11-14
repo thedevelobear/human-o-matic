@@ -29,6 +29,7 @@ from grooves import (
     control_vectors,
     grooves,
     normalized,
+    only_unmet_repeats,
     plan_for,
     rendered,
     rock,
@@ -165,8 +166,7 @@ def test_through_a_kit_with_rimshots_and_chokes_every_section_is_independent_and
         for notes in by_key(out.notes, key).values():
             for earlier, later in pairwise(notes):
                 assert later.note.start > earlier.note.start or later.tick == earlier.tick
-                if not (earlier.kept and later.kept):
-                    assert earlier.note.velocity != later.note.velocity
+    only_unmet_repeats(out)
 
 
 @given(grooves() | sparse_songs(), CUTS | SPARSE_CUTS, st.data())
@@ -306,7 +306,7 @@ def by_key(notes: Sequence[RenderedNote], key: str) -> dict[object, list[Rendere
 
 
 @given(grooves(per_bar=16) | sparse_songs(), CUTS | SPARSE_CUTS, st.data())
-def test_velocities_are_1_to_127_never_repeat_and_soft_notes_land_below_with_added_notes(
+def test_velocities_are_1_to_127_repeat_only_where_unmet_and_soft_land_below_with_added_notes(
     hits: list[Hit], cuts: list[int], data: st.DataObject
 ) -> None:
     midi = song(hits)
@@ -315,11 +315,7 @@ def test_velocities_are_1_to_127_never_repeat_and_soft_notes_land_below_with_add
     out = rendered(midi, drawn_plan(data, midi, result, cuts))
 
     assert all(1 <= note.note.velocity <= 127 for note in out.notes)
-    for key in ("pitch", "drum"):
-        for notes in by_key(out.notes, key).values():
-            for earlier, later in pairwise(notes):
-                if not (earlier.kept and later.kept):
-                    assert earlier.note.velocity != later.note.velocity
+    only_unmet_repeats(out)
     places: dict[tuple[int, str, int], tuple[list[int], list[int]]] = {}
     for note in out.notes:
         if not note.kept:
