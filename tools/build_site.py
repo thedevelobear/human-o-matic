@@ -13,7 +13,9 @@ list gives. It then writes `dist/site/`:
 - `engine.json`, which tells the page's engine where each of these is and how big;
 - for the engine check, `check.html`: `check-song.mid`, a song built in code by `built_song`,
   and `check-flow.json`, the calls it makes on it and the SHA-256 of the file they give
-  natively, copied from `tests/web/flow.json`.
+  natively, copied from `tests/web/flow.json`;
+- `_headers`, the headers Netlify sends for each path (`headers_file`).
+The build fails when a file is 10 MB or more (`check_sizes`).
 
 `serve` serves `dist/site/` on this machine with the headers the site will send, its CSP among
 them, for the owner's check in a browser and on a phone on the same network.
@@ -71,6 +73,14 @@ HEADERS = {
 }
 """The headers every response of the site carries (the website plan's section 7). On this
 machine's server, without HTTPS, `Strict-Transport-Security` is left out, and nothing is cached."""
+HSTS = "max-age=31536000"
+"""`Strict-Transport-Security` on the host, which serves HTTPS only: a year, for the site's own
+host name, not its subdomains."""
+IMMUTABLE = "public, max-age=31536000, immutable"
+"""Caching for the folders whose paths name their versions, so an upgrade is a new path."""
+MAX_FILE_BYTES = 10_000_000
+"""A built file must stay under this: the 10 MB a file Netlify is said to take (the website
+plan's section 10)."""
 
 
 class Pin(BaseModel):
@@ -189,7 +199,44 @@ def build(site: Path = SITE, downloads: Path = DOWNLOADS, pins: Pins | None = No
         },
     }
     (site / "engine.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    (site / "_headers").write_text(headers_file(site, pins), encoding="utf-8")
+    check_sizes(site)
     return site
+
+
+def headers_file(site: Path, pins: Pins) -> str:
+    """Netlify's `_headers` for the built `site`: `HEADERS` and HSTS on every path, the type of
+    each WebAssembly file, and a year's immutable caching under the versioned folders. No two
+    rules give one path the same header, which Netlify would send twice."""
+    rules: list[tuple[str, dict[str, str]]] = [
+        ("/*", {**HEADERS, "Strict-Transport-Security": HSTS})
+    ]
+    # Each .wasm file by its own path, so no rule needs a wildcard inside a path's last part.
+    rules += [
+        (f"/{path.relative_to(site).as_posix()}", {"Content-Type": "application/wasm"})
+        for path in sorted(site.rglob("*.wasm"))
+    ]
+    rules += [
+        (f"/{folder}/*", {"Cache-Control": IMMUTABLE})
+        for folder in (f"pyodide/{pins.pyodide.version}", "wheels")
+    ]
+    return "\n".join(
+        path + "\n" + "".join(f"  {name}: {value}\n" for name, value in headers.items())
+        for path, headers in rules
+    )
+
+
+def check_sizes(site: Path) -> None:
+    """Raise `ValueError` when the site's largest file is `MAX_FILE_BYTES` or more."""
+    largest = max(
+        (path for path in site.rglob("*") if path.is_file()), key=lambda path: path.stat().st_size
+    )
+    size = largest.stat().st_size
+    if size >= MAX_FILE_BYTES:
+        raise ValueError(
+            f"{largest.relative_to(site).as_posix()} is {size:,} bytes, where a file must stay "
+            f"under {MAX_FILE_BYTES:,}: see the website plan's section 10"
+        )
 
 
 # The check's song: General MIDI, 4/4 at 140 BPM and 480 PPQ, a form of intro, verse, chorus, verse,
