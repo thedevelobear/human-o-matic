@@ -33,7 +33,7 @@ What was decided, specifically enough to check the code against.
 | Plan | Status |
 |---|---|
 | [2026-11-08-human-o-matic](plans/2026-11-08-human-o-matic.md) | Active. The app, milestone by milestone. |
-| [2026-11-13-website](plans/2026-11-13-website.md) | Planned. M7, the website, built after M4's gate. |
+| [2026-11-13-website](plans/2026-11-13-website.md) | Active. M7, the website, built after M4's gate and before M5: PR 1 in review. |
 
 ### Research
 | Page | Compares |
@@ -128,7 +128,7 @@ What was decided, specifically enough to check the code against.
 | [0082](decisions/0082-a-section-s-facts-are-counted-and-its-guess-says-only-what-the-score-shows.md) | A section's facts are counted from the score, its pattern is its most typical bar, and its guess says only what the score shows | Accepted. Its questions are amended by [ADR 0108](decisions/0108-the-skill-s-budget-is-about-20-questions-with-a-third-per-group-only-for-a-ramp.md) |
 | [0083](decisions/0083-expected-results-are-the-section-rendered-and-measured-by-role.md) | A section's expected results are the section rendered with its controls and measured by role | Accepted. Its words are amended by [ADR 0095](decisions/0095-an-addition-the-kit-can-t-play-is-skipped-and-the-reports-count-what-was-added.md) and [ADR 0107](decisions/0107-a-section-s-ramp-climbs-its-last-bars-toward-the-energy-the-next-section-starts-at.md) |
 | [0084](decisions/0084-the-tools-take-ids-and-paths-and-reply-with-compact-json.md) | The tools take IDs and paths, answer each request by the argument it names, and reply with compact JSON | Accepted. The summaries and sections of `render` and `export` are amended by [ADR 0095](decisions/0095-an-addition-the-kit-can-t-play-is-skipped-and-the-reports-count-what-was-added.md) |
-| [0085](decisions/0085-the-server-is-the-mcp-sdk-s-mcpserver-over-stdio-run-as-human-o-matic-mcp.md) | The server is the official SDK's `MCPServer` over stdio, run as `human-o-matic-mcp` | Accepted |
+| [0085](decisions/0085-the-server-is-the-mcp-sdk-s-mcpserver-over-stdio-run-as-human-o-matic-mcp.md) | The server is the official SDK's `MCPServer` over stdio, run as `human-o-matic-mcp` | Accepted. Its `Tools` in `mcp_server.py` is amended by [ADR 0100](decisions/0100-the-site-runs-the-engine-in-the-browser-under-pyodide-from-static-files.md) |
 | [0086](decisions/0086-a-note-belongs-to-the-beat-its-tick-is-in.md) | A note belongs to the beat its tick is in, and each beat's grid is chosen from the onsets that end up in it | Accepted |
 | [0087](decisions/0087-the-skill-s-answers-are-checked-by-a-table-with-ranges-a-test-of-it-and-an-agent-given-only-the-skill.md) | The skill's answers are checked by a table of answers with ranges, a test of it, and an agent given only the skill | Accepted. Its `Also` column is amended by [ADR 0096](decisions/0096-the-skill-turns-creative-mode-on-only-when-the-user-asks-for-added-notes.md) and [ADR 0108](decisions/0108-the-skill-s-budget-is-about-20-questions-with-a-third-per-group-only-for-a-ramp.md) |
 | [0088](decisions/0088-the-skill-is-installed-by-a-link-from-claude-skills-to-the-repository.md) | The skill is installed by a link from `~/.claude/skills/` to `skills/human-o-matic/` in the repository | Accepted |
@@ -157,3 +157,7 @@ What was decided, specifically enough to check the code against.
 | [0111](decisions/0111-the-page-asks-its-questions-in-tabs-as-claude-code-does.md) | The page asks each round of questions in tabs, as Claude Code does, with the vocabulary's rows as answers and "Set it by hand" in place of a typed answer | Accepted |
 | [0112](decisions/0112-node-with-no-npm-package-runs-the-pyodide-test-and-the-page-s-pure-module-tests.md) | Node, at an exact version and with no npm package, runs the Pyodide test and the page's pure-module tests, in CI and locally, and no headless browser is used for now | Accepted |
 | [0113](decisions/0113-there-is-no-question-budget-questions-are-asked-as-the-engine-suggests-them-counted-and-never-limited.md) | There is no question budget: the skill and the page ask every question `get_sections` suggests, counted and shown, never limited | Accepted |
+| [0114](decisions/0114-the-worker-api-takes-the-file-s-bytes-and-display-name-and-answers-an-error-as-error.md) | The worker API takes the file's bytes and its display name beside `open_session`, and answers an error as `{"error": why}` | Proposed |
+| [0115](decisions/0115-the-site-downloads-pyodide-s-core-release-its-numpy-and-pypi-s-wheels-at-uv-lock-s-versions.md) | The site downloads Pyodide's core release, its numpy, and PyPI's wheels at `uv.lock`'s versions, pinned in `tools/build_site.toml` | Proposed |
+| [0116](decisions/0116-the-engine-check-is-check-html-running-tests-web-flow-json-served-by-build-site-py-serve.md) | The engine check is `check.html`, which runs `tests/web/flow.json`'s calls on a song built in code, served by `build_site.py serve` with the site's headers | Proposed |
+| [0117](decisions/0117-m7-is-built-before-m5.md) | M7 is built before M5 | Proposed |
