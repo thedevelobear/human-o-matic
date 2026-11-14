@@ -50,7 +50,7 @@ from human_o_matic.normalize.answers import AnswerError
 from human_o_matic.normalize.score import Normalized
 from human_o_matic.render.engine import Rendered, RenderedNote, drift, render
 from human_o_matic.render.measure import rider_gap
-from human_o_matic.render.style import STYLE_NAMES
+from human_o_matic.render.style import STYLE_NAMES, Style, built_in_styles
 from human_o_matic.render.target import place_score
 from map_files import articulation, load_kit
 from midi_files import MidoMessage, build, cc, end, name, off, on, tempo, track
@@ -104,6 +104,21 @@ def test_another_seed_or_take_draws_another_performance() -> None:
 
     assert midi_bytes(rendered(midi, plan.model_copy(update={"seed": 2})).song) != first
     assert midi_bytes(rendered(midi, take).song) != first
+
+
+def test_a_style_given_renders_in_place_of_the_one_the_plan_names() -> None:
+    midi = song(rock(4))
+    result = normalized(midi)
+    tight = plan_for(midi, result, style="tight")
+    placement = place_score(result.score, GM, GM)
+    styles = built_in_styles()
+
+    def written(plan: SessionPlan, style: Style | None = None) -> bytes:
+        return midi_bytes(render(midi, result, placement, plan, style=style).song)
+
+    assert written(tight, styles["tight"]) == written(tight)
+    assert written(tight, styles["loose"]) == written(tight.model_copy(update={"style": "loose"}))
+    assert written(tight, styles["loose"]) != written(tight)
 
 
 @given(grooves(), st.lists(st.integers(1, 5), min_size=1, max_size=3), st.data())

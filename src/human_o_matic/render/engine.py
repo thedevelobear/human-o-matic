@@ -45,7 +45,7 @@ from human_o_matic.render.creative import (
 from human_o_matic.render.guards import GuardCounts, Slot, Tally, hold_timing, hold_velocity
 from human_o_matic.render.output import with_drums
 from human_o_matic.render.parts import Part, play_key
-from human_o_matic.render.style import built_in_styles
+from human_o_matic.render.style import Style, built_in_styles
 from human_o_matic.render.target import Placement
 
 STREAM_DRIFT = 0
@@ -158,8 +158,11 @@ def render(
     plan: SessionPlan,
     *,
     instrument: Instrument = DRUMS,
+    style: Style | None = None,
 ) -> Rendered:
-    """Render the song's drums by the plan, written as `placement` places them.
+    """Render the song's drums by the plan, written as `placement` places them, in the built-in
+    style the plan names, or in `style` when it is given, as the blind test's variant with no
+    timing is (ADR 0103).
 
     Raises `ValueError` while notes wait for an `unmapped_notes` or `conversion` answer, and
     when the plan's sections don't cover the drums' bars.
@@ -172,7 +175,8 @@ def render(
     bars = drum_bars(song, score)
     if plan.bars != bars:
         raise ValueError(f"the plan's sections cover {plan.bars} bars, and the drums {bars}")
-    style = built_in_styles()[plan.style]
+    if style is None:
+        style = built_in_styles()[plan.style]
     parts = instrument.parts(score)
     starts = [section.start for section in plan.sections]
     section_of = [
