@@ -1,6 +1,6 @@
 # 0107. A section's `ramp` climbs its last bars toward the energy the next section starts at
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-14
 
 - `ramp` is a control of `ControlVector`, `ControlInput` and `Controls` (`controls.py`): a whole number of bars from 0 to 8, `MAX_RAMP`, 0 in every style's defaults and in the placeholder, and unset in older sessions and plans. Set per section with `set_section_controls`, or for the song without `section_ids`, under each section's own. An agent's number is rounded to a whole bar and clamped to 0 to 8, and listed in `clamped`.

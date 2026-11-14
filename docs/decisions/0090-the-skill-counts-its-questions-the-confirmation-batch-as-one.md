@@ -1,6 +1,6 @@
 # 0090. The skill counts its questions, the confirmation batch as one, and tells the user the count
 
-- **Status:** Accepted. Its budget of about 12 is amended by [ADR 0108](0108-the-skill-s-budget-is-about-20-questions-with-a-third-per-group-only-for-a-ramp.md)
+- **Status:** Accepted. Its budget of about 12 is amended by [ADR 0108](0108-the-skill-s-budget-is-about-20-questions-with-a-third-per-group-only-for-a-ramp.md), and its budget by [ADR 0113](0113-there-is-no-question-budget-questions-are-asked-as-the-engine-suggests-them-counted-and-never-limited.md)
 - **Date:** 2026-11-12
 
 - The agent counts the questions it asks: one for the kits, when it has to ask which they are before opening the song, one for the confirmation batch, and one for each other question. The echo of an interpretation, with its "sound right?", doesn't count.
