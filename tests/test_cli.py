@@ -11,7 +11,7 @@ import pytest
 from typer.testing import CliRunner, Result
 
 from human_o_matic.analyze.sections import find_sections
-from human_o_matic.cli import EXIT_OPEN, Summary, app, read_answers, summarize
+from human_o_matic.cli import EXIT_OPEN, app, read_answers
 from human_o_matic.decisions import DecisionRequest
 from human_o_matic.maps.loader import built_in_maps, find_kit
 from human_o_matic.midi.io import MidiSong, read_midi
@@ -19,6 +19,7 @@ from human_o_matic.midi.tempo import MAX_BPM, MIN_BPM
 from human_o_matic.normalize.hit_types import HitTypeBounds
 from human_o_matic.normalize.pipeline import normalize
 from human_o_matic.normalize.score import Normalized
+from human_o_matic.reports import Summary, summarize
 from midi_files import MidoMessage, end, name, off, on, save, signature, tempo, track
 
 PPQ = 960

@@ -8,8 +8,9 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from human_o_matic.cli import EXIT_OPEN, SectionEntry, Summary, app
+from human_o_matic.cli import EXIT_OPEN, app
 from human_o_matic.decisions import DecisionRequest
+from human_o_matic.reports import SectionEntry, Summary
 from test_private_midi import private_sample
 
 SAMPLE_SIZE = 14

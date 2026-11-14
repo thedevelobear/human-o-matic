@@ -17,7 +17,7 @@ Every change is a branch made from `main`, merged into it through a PR ([ADR 000
 3. When the work is done, stop and report to the owner. Open a PR only when the owner asks, once the branch is pushed.
 
 ## Work milestone by milestone
-The plan's milestones, M0 to M7, are done in order, each in one or more PRs.
+The plan's milestones, M0 to M7, are done in order, each in one or more PRs, except M7, which is built before M5 ([ADR 0117](docs/decisions/0117-m7-is-built-before-m5.md)).
 1. Find the first milestone in the plan's progress table that isn't merged, and start or continue its branch as above.
 2. Before writing code, ask the owner what the plan leaves open for this milestone. Record each answer as an ADR.
 3. **Stop at each gate.** Check the milestone's exit criteria and report them. The next milestone starts only when the owner says so. No agent can hear the output, so every listening decision, such as the M4 blind test and the M5 comparison, belongs to the owner.
@@ -59,6 +59,8 @@ The plan's milestones, M0 to M7, are done in order, each in one or more PRs.
 | `uv run pyright` | Type-check `src/` strictly and `tests/` in standard mode. |
 | `uv run pytest` | All tests. The private ones skip when `private/` is missing. |
 | `uv run pytest -m "not private"` | The tests CI runs. |
+| `uv run python tools/build_site.py build` | The site in `dist/site/`, gitignored: Pyodide and the wheels of `tools/build_site.toml`, downloaded into `build/site-downloads/` and each checked by its SHA-256, the app's source and data, and the page ([ADR 0100](docs/decisions/0100-the-site-runs-the-engine-in-the-browser-under-pyodide-from-static-files.md)). `serve` serves it on this machine with the site's headers, for the browser check of `check.html`. |
+| `node --test tests/web/` | The Node tests, CI's last step, after the build: the engine under Pyodide gives the fixed hash of `tests/web/flow.json`. Node is the version in `.nvmrc`, through nvm, with no npm package ([ADR 0112](docs/decisions/0112-node-with-no-npm-package-runs-the-pyodide-test-and-the-page-s-pure-module-tests.md)). |
 | `HYPOTHESIS_PROFILE=ci uv run pytest` | The property tests with CI's example count. |
 | `uv run python tools/infer_map.py` | Pitch statistics for each folder of performed MIDI in `private/midi/`, read through its kit ([ADR 0057](docs/decisions/0057-each-folder-s-kit-is-in-a-gitignored-file-under-private-data.md)). `--map LIBRARY[/KIT]` reads through another. |
 | `uv run python tools/calibrate.py measure` | Each groove's statistics in the assigned folders, its timing spread, and the bands some cuts would make ([ADR 0059](docs/decisions/0059-calibration-measures-files-in-windows-of-at-most-16-bars.md)). `--excluded` adds the left-out folders' timing, apart. |

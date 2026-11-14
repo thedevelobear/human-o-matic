@@ -1,6 +1,6 @@
 # 0111. The page asks its questions in tabs, as Claude Code does
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-14
 
 - A round of questions is one window: a strip of tabs, one for each question and a last Submit tab, then the current question with what its section plays and its pattern, then its numbered answers, each with a one-line description and a pointer on the current one, and last, "Set it by hand". A question's tab shows a box until it is answered, then a check. The song-wide round, in the Drummer step, and each repeat group's round, in the Sections step, use it; the page's other steps are windows of their own, without tabs. The site plan's section 6 draws it, maps each tab's answers and gives its keyboard and ARIA in full.

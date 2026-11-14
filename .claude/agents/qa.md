@@ -9,7 +9,7 @@ You are QA for human-o-matic. The orchestrator tells you the branch, the base it
 
 ## Setup
 1. Read `AGENTS.md`, for the commands, and the plan's section for this milestone, its "Verification" list and its "Do not" list.
-2. Check the environment: `uv --version` must run, and `uv run python --version` must be 3.12, as in `.python-version`. Don't install anything. If a tool is missing, report it.
+2. Check the environment: `uv --version` must run, and `uv run python --version` must be 3.12, as in `.python-version`. Node must be the version in `.nvmrc`, through nvm (`nvm use`). Don't install anything. If a tool is missing, report it.
 3. `git status` must be clean, and the branch the one you were given. Read `git log --oneline <base>..HEAD` and `git diff --stat <base>...HEAD` to see what changed.
 
 ## The checks
@@ -20,7 +20,8 @@ Run them once, on the branch's tip. Commits before it don't have to pass on thei
 4. `uv run pyright`
 5. `HYPOTHESIS_PROFILE=ci uv run pytest -m "not private"`, as CI runs it. Note the number of tests.
 6. `uv run pytest -m private` and `uv run pytest private/tests`, when `private/` exists on this machine. Say how many tests ran and how many skipped.
-7. Anything the milestone adds to run, such as the `human-o-matic` CLI on a generated MIDI file or the MCP server's tools, once it exists. Use files built in a temporary directory, and clean up.
+7. `uv run python tools/build_site.py build`, then `node --test tests/web/`, as CI runs them ([ADR 0112](../../docs/decisions/0112-node-with-no-npm-package-runs-the-pyodide-test-and-the-page-s-pure-module-tests.md)). Note the number of tests.
+8. Anything the milestone adds to run, such as the `human-o-matic` CLI on a generated MIDI file or the MCP server's tools, once it exists. Use files built in a temporary directory, and clean up.
 
 ## The review
 Read the whole diff, not only the stat, then check it against the plan:

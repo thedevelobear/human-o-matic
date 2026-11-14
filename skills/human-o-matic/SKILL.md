@@ -26,12 +26,12 @@ and that a new Claude Code session then has the tools. Don't run it unless the u
 
 ## Question policy
 1. **Confirm before asking about feel:** kit maps, section table, soft notes and ambiguous bars, as one batch.
-2. **One song-wide question round,** at most three: the overall style or tightness, plus anything else that applies everywhere.
-3. **Per repeat group, in song order, at most two questions, and a third only to ask whether it builds into a louder section after it** (see "Ramps"). Always accept "your call".
+2. **One song-wide question round:** the overall style or tightness, plus anything else that applies everywhere.
+3. **Per repeat group, in song order, every question `get_sections` suggests for it,** among them whether it builds into a louder section after it, as a `ramp` (see "Ramps"). Always accept "your call".
 4. **Repeats inherit.** Ask only if a repeat probably differs, such as a bigger last chorus.
 5. **Ask only when plausible answers would change the controls audibly.** Otherwise assume, and state the assumption.
 6. **Echo each interpretation in plain words,** export the render for the user to hear in the DAW, and treat refinements as small changes to existing controls.
-7. **Budget:** about 20 questions for a typical song. Count the questions you ask (step 7).
+7. **Count, with no budget:** count the questions you ask and tell the user the count (step 7). It limits nothing.
 
 ## Workflow
 
@@ -60,15 +60,15 @@ Then settle what the user said:
   Each answer replaces the one held for its key, `null` takes one back, and the reply lists the requests still open.
 
 ### 3. The song-wide round (rule 2)
-At most three questions, for what holds everywhere: always what kind of drummer, tight and modern or looser, and anything else the user wants for the whole song, such as laid back throughout.
+Ask about what holds everywhere: always what kind of drummer, tight and modern or looser, and anything else the user wants for the whole song, such as laid back throughout.
 - `set_style(session_id, style, tightness)`: `style` is `tight`, the default, `medium` or `loose`, and sets how far the timing spreads. `tightness` tunes it within the style, 1 the tightest. The reply gives the style's defaults, which every control left unset takes.
 - Any other control for the whole song: `set_section_controls(session_id, controls)` without `section_ids`. Each section's own controls sit over the song's.
 
 ### 4. Each repeat group, in song order (rules 3 to 5)
-- Ask at most two questions per group, and a third only for a ramp. `get_sections` suggests them in each section's `questions`: put them in the user's terms, with what the section `plays` so they know which part it is.
+- Ask every question `get_sections` suggests in the group's sections' `questions`, however many there are: put them in the user's terms, with what the section `plays` so they know which part it is.
 - `guess` says what the score shows, `silent`, `repeat`, `fill` or `groove`, and how sure it is. It never says how hard a section plays, because that isn't readable from the notes: energy always comes from the user.
 - Repeats inherit: set a group's controls on all its sections at once, with every one of their IDs in `section_ids`. Ask about a repeat only when it probably differs. The last repeat of a group asks "the same, or bigger, as the last time?", and "bigger" is a refinement of that section alone, or the vocabulary's "big last chorus" for a last chorus.
-- Ask only when plausible answers would change the controls audibly. A silent section needs nothing, and a short fill one question at most. Otherwise assume, and say what you assumed.
+- Beyond those, ask only when plausible answers would change the controls audibly. A silent section needs nothing. Otherwise assume, and say what you assumed.
 - Turn the answer into controls with [the vocabulary](references/vocabulary.md), and call `set_section_controls(session_id, controls, section_ids, note)`, with the user's words as `note`.
 - Then call `get_sections` again, and ask the ramp questions it now suggests (see "Ramps").
 
@@ -85,7 +85,7 @@ At most three questions, for what holds everywhere: always what kind of drummer,
 - Export again under a new number after each refinement.
 
 ### 7. Count the questions (rule 7)
-Keep count as you go: one for the kits question when you need it, one for the confirmation batch, and one for each other question you ask. The echo's "sound right?" doesn't count. When the user has the file they're happy with, tell them how many questions you asked, in all and in each step, against the budget of about 20.
+Keep count as you go: one for the kits question when you need it, one for the confirmation batch, and one for each other question you ask. The echo's "sound right?" doesn't count. When the user has the file they're happy with, tell them how many questions you asked, in all and in each step. The count limits nothing.
 
 ## Turning answers into controls
 - Read [the vocabulary](references/vocabulary.md): its rows map answers to controls, each with a starting point and the range that keeps the answer's meaning. Start from the closest row, blend rows when an answer mixes them, and stay within their ranges.
@@ -100,7 +100,7 @@ Keep count as you go: one for the kits question when you need it, one for the co
 ## Ramps
 A ramp lets a section's last bars build, bar by bar, into a louder section after it, like a drummer pushing into the chorus. It is the section's `ramp`: how many of its last bars climb, 0 by default, at most 8 and half the section's bars.
 - It belongs to the section before the louder one, whose energy you know only once its group is answered. So after each group's answer, call `get_sections`: a section that leads into one 0.2 or more louder in energy, with its ramp unset, carries the ramp question in its `questions`. Ask it once the section's own group has been asked about too, right after the later of the two answers.
-- Ask in the user's terms, naming both parts: "Build into the chorus over the last few bars of the verse, or go straight in? How many bars?" It is the only question that can be a group's third.
+- Ask in the user's terms, naming both parts: "Build into the chorus over the last few bars of the verse, or go straight in? How many bars?"
 - Repeats inherit: ask once per group, and set the answer on every section of the group that leads into the louder group, with their IDs in `section_ids`. If a group leads into more than one louder group, ask once, naming them.
 - "No", "none", "straight in" and "your call" are `ramp: 0`, always accepted, and set so the question isn't suggested again. A number of bars is `ramp` that number, which the server clamps to 8 and half the section, saying so in `clamped`.
 - The climb starts slowly and pushes hardest in its last bar, which stays a step below the louder section so its first beat is the peak, and fills in those bars build with it. Echo what `expected` says, such as "builds over bars 13 to 16, its hits about 101, 104, 107 and 110 bar by bar". No ramp plays into a skipped or silent section or out of the last one, and none makes a section quieter: a section falling away is `arc: drop`.

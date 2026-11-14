@@ -1,6 +1,6 @@
 # 0112. Node, with no npm package, runs the Pyodide test and the page's pure-module tests
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-14
 
 - Node's own test runner, `node --test`, runs two kinds of test, in CI and on the developer's machine: the page's pure modules, the parts of its JavaScript that touch no DOM, such as the tabs' keyboard and ARIA state, the spring, the question count and the download's name; and the Pyodide test, which makes the worker's calls on a song built in code under Pyodide and checks its render against the committed SHA-256.

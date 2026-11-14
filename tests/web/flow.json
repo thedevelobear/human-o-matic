@@ -1,0 +1,16 @@
+{
+  "about": "The calls both runtimes make on the site's check song, built in code by tools/build_site.py, and the SHA-256 of the file the download gives: natively, by tests/test_web_site.py, under Pyodide in Node, by tests/web/engine.test.mjs, and in a browser, by the site's check.html. \"$session\" is the session open_session returned.",
+  "song": "check-song.mid",
+  "calls": [
+    {"call": "open_session", "args": {"name": "check-song.mid", "from_map": "gm", "to_map": "sleep-token-ii/default"}},
+    {"call": "set_hit_types", "args": {"session_id": "$session", "hit_types": {"kick": {}, "hat": {}, "tom": {}, "crash": {}, "ride": {}, "snare": {"soft_below": 60, "accent_from": 110}}}},
+    {"call": "update_sections", "args": {"session_id": "$session", "ops": [{"op": "split", "at": 4}]}},
+    {"call": "set_style", "args": {"session_id": "$session", "style": "medium", "seed": 7}},
+    {"call": "set_section_controls", "args": {"session_id": "$session", "controls": {"feel": 0.1}}},
+    {"call": "set_section_controls", "args": {"session_id": "$session", "controls": {"energy": 0.85}, "section_ids": [20, 52, 96, 128]}},
+    {"call": "set_section_controls", "args": {"session_id": "$session", "controls": {"ramp": 2, "creative": true}, "section_ids": [36]}},
+    {"call": "render", "args": {"session_id": "$session", "section_ids": [68], "take": 1}},
+    {"call": "download", "args": {"session_id": "$session"}}
+  ],
+  "sha256": "87319eb294e6c9c70e0f63d44d2a4b7147fcdaafa94365ce98a9185d273827db"
+}
