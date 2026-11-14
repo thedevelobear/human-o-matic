@@ -1,6 +1,6 @@
 # 0103. Variant 5 is variant 4's plan rendered with its style's timing set to nothing
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 - `render()` takes an optional `style`, which it renders with in place of the built-in style the plan names. Left out, as every caller but the blind test leaves it, a render is as before.

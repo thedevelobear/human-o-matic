@@ -1,6 +1,6 @@
 # 0101. The blind test renders the owner's saved session of one song through one built-in kit, each section with notes a trial
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 - `tools/make_ab.py make SESSION --kit LIBRARY[/KIT] --seed N --out FOLDER` reads a session the MCP server saved ([ADR 0079](0079-sessions-are-json-files-in-the-user-s-state-directory.md)): the one the owner made by running the skill on the test song in Claude Code and answering its questions, named by its ID, kept in the state directory, or by the path of its JSON file. It reads the song's file again, checked by its hash ([ADR 0080](0080-a-session-holds-what-a-render-needs-and-reads-its-file-again-by-its-hash.md)), and never writes the session or the song: a folder or key that is or holds either is refused ([ADR 0105](0105-trials-and-their-variants-are-shuffled-under-neutral-names-with-the-key-beside-the-folder.md)). The guided variants render the session's style, seed, controls and takes as it holds them. No answer is scripted for the test.

@@ -1,6 +1,6 @@
 # 0105. Trials and their variants are shuffled under neutral names, with the key beside the folder and a sheet to rate each file from 1 to 5
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 - `--seed` builds a numpy `Generator` from `SeedSequence(seed, spawn_key=(0,))`, which draws the order of the trials, then for each trial in turn the order of its five variants. Trial `NN`'s files are `trial-NN-a.mid` to `trial-NN-e.mid`, the letters taking the variants in its order, `NN` two digits or as many as the count needs. The same session, kit, seed and velocity give the same bytes in every file, the key and the sheet.

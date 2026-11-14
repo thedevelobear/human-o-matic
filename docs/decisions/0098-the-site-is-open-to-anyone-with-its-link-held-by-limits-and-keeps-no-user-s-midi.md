@@ -1,6 +1,6 @@
 # 0098. The site is open to anyone with its link, held by limits, and keeps no user's MIDI
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 - Anyone with the link can use the site: no accounts, no login and no invite code.

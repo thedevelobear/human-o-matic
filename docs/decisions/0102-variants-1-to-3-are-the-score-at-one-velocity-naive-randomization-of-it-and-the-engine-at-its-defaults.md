@@ -1,6 +1,6 @@
 # 0102. Variants 1 to 3 are the score at one velocity, naive randomization of it, and the engine at its defaults
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 - **1, quantized, one flat velocity:** every note on its grid point, as the engine places it with no timing ([ADR 0103](0103-variant-5-is-variant-4-s-plan-rendered-with-its-style-s-timing-set-to-nothing.md)), at one velocity, `--velocity`, 100 by default. Hit types aren't read, so soft notes play at it too. The velocity is held to the range of each note's articulation in the kit, so every variant plays the same articulations.

@@ -1,6 +1,6 @@
 # 0104. A trial is its section cut from the song's whole render into a file of its own, after a bar of lead-in, at the song's tempo, holding nothing else
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 - Each variant renders the whole song, so the guards and each section's stream are those of any render of it, and each section is then cut out: the notes the render gives it, moved so the file's first tick is the bar line before the section, or for the song's first section a bar of its first bar's length before it. A note played early has room, and the section starts on the file's second bar line.

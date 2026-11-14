@@ -1,6 +1,6 @@
 # 0097. A website is milestone M7, a thin page over the same engine that asks the questions itself
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-13
 
 - A public website is milestone M7, planned in [`docs/plans/2026-11-13-website.md`](../plans/2026-11-13-website.md). It is built after M4's gate, whose result sets how many questions the page asks.
