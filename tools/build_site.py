@@ -61,10 +61,15 @@ FLOW = ROOT / "tests" / "web" / "flow.json"
 SONG = "check-song.mid"
 ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 """Every entry of the app's zip is dated the same, so the same source gives the same zip."""
+TAILWIND = "https://cdn.tailwindcss.com"
+GOOGLE_FONTS = ("https://fonts.googleapis.com", "https://fonts.gstatic.com")
+"""The two other origins the page loads from (ADR 0125): Tailwind's Play CDN, whose script injects
+the style element it makes, and Google Fonts' stylesheet and fonts."""
 CSP = (
-    "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; "
-    "connect-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; "
-    "form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+    f"default-src 'none'; script-src 'self' 'wasm-unsafe-eval' {TAILWIND}; worker-src 'self'; "
+    f"connect-src 'self'; style-src 'self' 'unsafe-inline' {GOOGLE_FONTS[0]}; img-src 'self'; "
+    f"font-src 'self' {GOOGLE_FONTS[1]}; form-action 'self'; base-uri 'none'; "
+    "frame-ancestors 'none'"
 )
 HEADERS = {
     "Content-Security-Policy": CSP,

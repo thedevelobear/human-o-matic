@@ -190,9 +190,11 @@ def headers_for(text: str, path: str) -> list[tuple[str, str]]:
 
 EVERY_PATH = {
     "Content-Security-Policy": (
-        "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; "
-        "connect-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; "
-        "form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+        "default-src 'none'; script-src 'self' 'wasm-unsafe-eval' https://cdn.tailwindcss.com; "
+        "worker-src 'self'; connect-src 'self'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self'; "
+        "font-src 'self' https://fonts.gstatic.com; form-action 'self'; base-uri 'none'; "
+        "frame-ancestors 'none'"
     ),
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
@@ -223,27 +225,36 @@ def test_every_path_of_the_built_site_gets_the_csp_and_headers_and_its_type_and_
         assert immutable == path.startswith(("/pyodide/314.0.7/", "/wheels/")), path
 
 
-ANOTHER_ORIGIN = re.compile(rb"[a-z][a-z0-9+.-]*://|[\"'(=]\s*//\w", re.IGNORECASE)
-"""A URL with a scheme, or one that starts `//`, which names another host."""
+URL = re.compile(rb"([a-z][a-z0-9+.-]*://[^/\s\"'();]*)|[\"'(=]\s*(//\w)", re.IGNORECASE)
+"""A URL's origin, with a scheme, or the start of one that starts `//`, which names another host."""
+TAILWIND = b"https://cdn.tailwindcss.com"
+GOOGLE_FONTS = {b"https://fonts.googleapis.com", b"https://fonts.gstatic.com"}
+"""The only other origins the page loads from (ADR 0125)."""
 
 
-def test_none_of_the_page_s_own_files_names_another_origin(site: Path) -> None:
+def origins(data: bytes) -> set[bytes]:
+    return {found.group(1) or found.group(2) for found in URL.finditer(data)}
+
+
+def test_the_page_s_own_files_name_only_tailwind_s_cdn_and_google_fonts(site: Path) -> None:
     # Pyodide's files, the wheels and the app's zip may hold URLs of their own, which the CSP
-    # keeps from being fetched (the website plan's section 12).
+    # keeps from being fetched (the website plan's section 12). Of the page's own, the page names
+    # Tailwind's CDN and Google Fonts' stylesheet, the headers the three hosts the CSP allows, and
+    # nothing else names another origin.
     own = [
         path
         for path in site.rglob("*")
         if path.is_file()
         and path.relative_to(site).parts[0] not in ("pyodide", "wheels", "app.zip", SONG)
     ]
+    named = {path.relative_to(site).as_posix(): origins(path.read_bytes()) for path in own}
 
     page = {path.relative_to(static_dir()).as_posix() for path in static_dir().rglob("*.*")}
     assert {"index.html", "site.css", "check.html", "js/app.js", "js/round.js"} <= page
-    assert page | {"_headers", "engine.json", "check-flow.json"} == {
-        path.relative_to(site).as_posix() for path in own
-    }
-    for path in own:
-        assert not ANOTHER_ORIGIN.search(path.read_bytes()), path
+    assert page | {"_headers", "engine.json", "check-flow.json"} == set(named)
+    assert named.pop("index.html") == {TAILWIND, b"https://fonts.googleapis.com"}
+    assert named.pop("_headers") == {TAILWIND} | GOOGLE_FONTS
+    assert {path: found for path, found in named.items() if found} == {}
 
 
 def test_the_build_fails_on_a_file_of_10_mb_or_more(tmp_path: Path) -> None:
