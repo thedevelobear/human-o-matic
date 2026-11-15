@@ -229,7 +229,8 @@ export function rampTabs(reply, asked, presets, defaults) {
   const ready = sections.filter((section, index) => {
     const after = sections[index + 1];
     const ramps = section.questions.some((question) => kindOf(question) === "ramp");
-    return ramps && asked.has(section.group) && asked.has(after.group);
+    // The engine never asks it of the last section, which has none after it to build into.
+    return ramps && after !== undefined && asked.has(section.group) && asked.has(after.group);
   });
   const groups = [...new Set(ready.map((section) => section.group))];
   return groups.map((group) => {

@@ -372,6 +372,12 @@ test("a Ramp tab waits until both groups are asked about, and is one per group o
   assert.deepEqual([small[0].hand[0].name, small[0].hand[0].max], ["ramp", 1]);
 });
 
+test("a ramp question on the last section, with nothing after it, joins no round", () => {
+  const found = reply([section(0, 4, "A", []), section(4, 4, "B", [RAMP(2)])]);
+
+  assert.deepEqual(rampTabs(found, new Set(["A", "B"]), presets, DEFAULTS), []);
+});
+
 test("the echo says what each section plays, what the engine clamped, and the count", () => {
   const replies = [
     {
