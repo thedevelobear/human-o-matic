@@ -366,6 +366,17 @@ body .check:has(input:checked) {
   background: linear-gradient(125deg, var(--soft-1) 0%, var(--soft-2) 52%, var(--soft-3) 100%);
 }
 
+/* It rises on hover and presses on a click as a button does, from its deeper shadow. */
+body .check:hover:not(:has(:disabled)) {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0px var(--ink-black);
+}
+
+body .check:active:not(:has(:disabled)) {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px var(--ink-black);
+}
+
 .check label {
   font-weight: 700;
   line-height: 1.35;
@@ -967,7 +978,8 @@ body .modal-body {
     animation: engineShimmer 5s ease infinite;
   }
 
-  .retro-btn {
+  .retro-btn,
+  .check {
     transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.12s cubic-bezier(0.22, 1, 0.36, 1),
       background-color 0.15s ease;
   }
