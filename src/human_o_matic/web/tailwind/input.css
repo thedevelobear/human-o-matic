@@ -180,16 +180,6 @@ progress.engine-bar::-moz-progress-bar {
   background-size: 200% 200%;
 }
 
-/* Before the first step reports, its share isn't known: the whole bar shimmers. */
-body progress.engine-bar:indeterminate {
-  background: linear-gradient(95deg, var(--pill-start) 0%, var(--sunset-orange) 35%, var(--vibrant-magenta) 72%, var(--pill-end) 100%);
-  background-size: 200% 200%;
-}
-
-progress.engine-bar:indeterminate::-moz-progress-bar {
-  background: transparent;
-}
-
 /* Each step's card, with the design's halftone corner. */
 
 .card::before {
@@ -969,10 +959,6 @@ body .modal-body {
   }
 
   progress.engine-bar::-moz-progress-bar {
-    animation: engineShimmer 5s ease infinite;
-  }
-
-  body progress.engine-bar:indeterminate {
     animation: engineShimmer 5s ease infinite;
   }
 

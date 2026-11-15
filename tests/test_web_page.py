@@ -187,9 +187,10 @@ def test_the_page_shows_the_loading_view_alone_until_the_engine_is_ready() -> No
 
     assert "hidden" not in by_id["loading"][1]
     assert {"hidden", "inert"} <= set(by_id["app"][1])
-    # The bar is indeterminate until the engine's first step says how far it is.
+    # The bar starts empty, before the page's script runs, until the engine's first step says
+    # how far it is.
     assert by_id["engine"][0] == "progress"
-    assert "value" not in by_id["engine"][1]
+    assert by_id["engine"][1].get("value") == "0"
     assert "app" not in page.within["engine"]
     for inside in ("steps", "status", "file", "kits", "check", "drummer", "sections", "review"):
         assert "app" in page.within[inside], inside

@@ -120,11 +120,7 @@ function startEngine() {
  * place once it is ready: hidden and inert until then (ADR 0125). */
 function loading({ phase, text, value }) {
   const bar = $("#engine");
-  if (value === null) {
-    bar.removeAttribute("value");
-  } else {
-    bar.value = value;
-  }
+  bar.value = value;
   const ready = phase === "ready";
   bar.hidden = phase === "failed";
   $("#engine-status").textContent = text;
