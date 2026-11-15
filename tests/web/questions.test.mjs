@@ -525,14 +525,16 @@ test("the review says each round's answers in words, by hand with what it moved,
     { hand: { [soft.id]: { ghost_level: 0.2 } }, fine: { creative: true } },
   );
 
+  // Each answer starts with a capital, as the page shows it, while the rows keep their own case.
   assert.deepEqual(answerLines(tabs, draft), [
-    "Energy: chorus, big and open",
-    "Soft notes: set by hand, soft notes 0.2",
-    "Last repeat: your call",
-    "Fine-tune: creative true",
+    "Energy: Chorus, big and open",
+    "Soft notes: Set by hand, soft notes 0.2",
+    "Last repeat: Your call",
+    "Fine-tune: Creative true",
   ]);
   assert.equal(last.label, "Last repeat");
+  assert.equal(energy.rows[index(energy, "chorus, big and open")], "chorus, big and open");
   assert.deepEqual(answerLines(tabs.slice(1, 2), round({ [soft.id]: soft.rows.length + 1 })), [
-    "Soft notes: set by hand, nothing moved",
+    "Soft notes: Set by hand, nothing moved",
   ]);
 });

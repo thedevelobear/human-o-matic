@@ -1,8 +1,8 @@
 // Draws the fields of forms.js as the platform's own controls, each with its label and any hint
-// tied to it by `aria-describedby`, and reads their values back by name. It sets no style: the
-// CSP allows none but site.css's.
+// tied to it by `aria-describedby`, its words starting with a capital, and reads their values back
+// by name. It sets no style: the CSP allows none but tailwind.css's.
 
-import { words } from "./forms.js";
+import { capital, words } from "./forms.js";
 
 /** An element named `name`, with `attributes`, true for one without a value, and `children`. */
 export function element(name, attributes = {}, ...children) {
@@ -60,13 +60,13 @@ export function writeFields(parent, values, skip = new Set()) {
 
 function drawField(field, prefix) {
   const id = `${prefix}-${field.name ?? field.legend ?? field.label}`.replace(/[^\w-]/g, "_");
-  const hint = field.hint ? element("p", { id: `${id}-hint`, class: "hint" }, field.hint) : "";
+  const hint = field.hint ? element("p", { id: `${id}-hint`, class: "hint" }, capital(field.hint)) : "";
   const described = hint && `${id}-hint`;
-  const label = () => element("label", { for: id }, field.label);
+  const label = () => element("label", { for: id }, capital(field.label));
   switch (field.type) {
     case "group": {
       const group = element("fieldset", { "aria-describedby": described });
-      group.append(element("legend", {}, field.legend), hint);
+      group.append(element("legend", {}, capital(field.legend)), hint);
       drawFields(group, field.fields, id);
       return group;
     }
@@ -74,7 +74,7 @@ function drawField(field, prefix) {
       return element(
         "fieldset",
         { "aria-describedby": described },
-        element("legend", {}, field.label),
+        element("legend", {}, capital(field.label)),
         hint,
         ...field.options.map((option, index) =>
           element(
@@ -88,7 +88,7 @@ function drawField(field, prefix) {
               checked: option.value === field.value,
               required: field.required,
             }),
-            element("label", { for: `${id}-${index}` }, option.label),
+            element("label", { for: `${id}-${index}` }, capital(option.label)),
           ),
         ),
       );
@@ -113,7 +113,7 @@ function drawField(field, prefix) {
         required: field.required,
         "aria-describedby": described,
       });
-      select.append(...field.options.map(({ value, label }) => new Option(label, value)));
+      select.append(...field.options.map(({ value, label }) => new Option(capital(label), value)));
       select.value = field.value ?? field.options[0]?.value ?? "";
       return element("div", { class: "field" }, label(), select, hint);
     }
@@ -142,8 +142,8 @@ function drawField(field, prefix) {
       return element(
         "div",
         {},
-        element("p", {}, field.label),
-        element("ul", {}, ...field.items.map((item) => element("li", {}, item))),
+        element("p", {}, capital(field.label)),
+        element("ul", {}, ...field.items.map((item) => element("li", {}, capital(item)))),
       );
     default:
       return element(

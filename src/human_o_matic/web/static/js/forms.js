@@ -11,6 +11,12 @@ export function count(number, noun) {
   return `${number} ${noun}${number === 1 ? "" : "s"}`;
 }
 
+/** `text` with a capital first letter, as the page shows every sentence and option, while the
+ * vocabulary and every value keep their own case. */
+export function capital(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 // Each decision request kind's form (the website plan's section 6), from the request's
 // `message`, `options` and `details`: its fields, and the answer their values give, under the
 // argument `answer_with` names. `open` is open_session's, asked again; the rest are set_hit_types'.

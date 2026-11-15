@@ -1,12 +1,13 @@
 // A round of questions on one card (ADR 0124): each question a fieldset of numbered native
 // radios with their one-line descriptions, "your call" chosen until another answer is, and "Set
 // it by hand" opening that question's own controls under it; then the round's Fine-tune and a
-// line that says whether the round is applied. A round's questions are data, from questions.js.
+// line that says whether the round is applied. A round's questions are data, from questions.js,
+// whose words it shows starting with a capital.
 // It sends nothing: its answers are a draft, which `keep` hands the page on every change, and the
 // page applies the round when the user moves on.
 
 import { drawFields, element, readFields, writeFields } from "./fields.js";
-import { touchedControls } from "./forms.js";
+import { capital, touchedControls } from "./forms.js";
 
 export const BY_HAND = {
   label: "Set it by hand",
@@ -58,9 +59,9 @@ export function drawRound(parent, { id, questions, fineTune, draft = {}, follow,
     const given = answers[kept] ? kept : answers.length - 2;
     const name = `${id}-${tab.id}`;
     const box = element("fieldset", { class: "answers", "data-tab": tab.id });
-    box.append(element("legend", {}, tab.question));
+    box.append(element("legend", {}, capital(tab.question)));
     if (tab.plays) {
-      box.append(element("p", {}, tab.plays));
+      box.append(element("p", {}, capital(tab.plays)));
     }
     if (tab.pattern) {
       box.append(element("pre", {}, tab.pattern.join("\n")));
@@ -79,8 +80,8 @@ export function drawRound(parent, { id, questions, fineTune, draft = {}, follow,
             checked: index === given,
             "aria-describedby": `${radio}-about`,
           }),
-          element("label", { for: radio }, `${index + 1}. ${label}`),
-          element("p", { id: `${radio}-about`, class: "hint" }, description),
+          element("label", { for: radio }, `${index + 1}. ${capital(label)}`),
+          element("p", { id: `${radio}-about`, class: "hint" }, capital(description)),
         ),
       );
     }

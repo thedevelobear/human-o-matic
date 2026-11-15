@@ -6,7 +6,7 @@
 // controls come from the worker's `presets` call, so no number of the vocabulary is written
 // here. It touches no DOM, so `node --test` loads it; round.js and app.js draw the rounds.
 
-import { count, fineTune, mostRamp } from "./forms.js";
+import { capital, count, fineTune, mostRamp } from "./forms.js";
 
 export const YOUR_CALL = "your call";
 /** The section kinds the Energy tab offers, in the vocabulary's order. */
@@ -425,8 +425,6 @@ export function shownSong(tabs, round, { presets, song, defaults, style, before 
   return { ...base, style, ...songControls(tabs, round, { presets }).controls };
 }
 
-const capital = (text) => text[0].toUpperCase() + text.slice(1);
-
 /** The lines of a round's echo: each section's `expected` from the replies, or only those of the
  * sections `only` names, and any control the engine clamped and the value it used. */
 export function echo(replies, only = null) {
@@ -498,8 +496,8 @@ export function answerLines(tabs, { answered = {}, hand = {}, fine = {} } = {}) 
     const index = answered[tab.id] ?? tab.rows.length;
     const moved = described(hand[tab.id] ?? {}) || "nothing moved";
     const answer = index > tab.rows.length ? `set by hand, ${moved}` : tab.answers[index].label;
-    return `${tab.label}: ${answer}`;
+    return `${tab.label}: ${capital(answer)}`;
   });
   const tuned = described(fine);
-  return tuned ? [...lines, `Fine-tune: ${tuned}`] : lines;
+  return tuned ? [...lines, `Fine-tune: ${capital(tuned)}`] : lines;
 }

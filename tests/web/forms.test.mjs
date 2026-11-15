@@ -12,6 +12,7 @@ import {
   REQUESTS,
   SONG_CONTROLS,
   batch,
+  capital,
   editBars,
   fineTune,
   form,
@@ -319,6 +320,15 @@ test("only the controls touched are sent, numbers as numbers", () => {
     skip: true,
   });
   assert.deepEqual(touchedControls(values, new Set()), {});
+});
+
+test("the page shows a sentence or an option with a capital first letter, and changes nothing else", () => {
+  assert.equal(capital("loose"), "Loose");
+  assert.equal(capital("your call"), "Your call");
+  assert.equal(capital("nothing new: the song's controls stay"), "Nothing new: the song's controls stay");
+  assert.equal(capital("Set it by hand"), "Set it by hand");
+  assert.equal(capital("4 bars"), "4 bars");
+  assert.equal(capital(""), "");
 });
 
 test("a slider's value is said in words", () => {

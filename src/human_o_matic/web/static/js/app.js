@@ -12,6 +12,7 @@ import {
   GROUP_CONTROLS,
   SONG_CONTROLS,
   batch,
+  capital,
   count,
   editBars,
   fineTune,
@@ -194,7 +195,7 @@ function applied() {
 function drawApplied() {
   const [last] = applied();
   $("#last-applied").hidden = !page.session;
-  $("#last-applied").textContent = last ? `Last applied: ${last.name}` : "Nothing applied yet";
+  $("#last-applied").textContent = last ? `Last applied: ${capital(last.name)}` : "Nothing applied yet";
 }
 
 /** The dialog behind "Last applied": each round applied, newest first, its echo a line each, and
@@ -306,7 +307,7 @@ async function leave(stay) {
   }
   if (done.move) {
     if (done.said !== undefined) {
-      toast(`Applied: ${kept.name}`, "What it set is under \u201cLast applied\u201d, at the top.");
+      toast(`Applied: ${capital(kept.name)}`, "What it set is under \u201cLast applied\u201d, at the top.");
     }
     return true;
   }
