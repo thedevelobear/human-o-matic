@@ -181,7 +181,7 @@ function drawField(field, prefix) {
         { class: "field range" },
         element("div", { class: "row" }, label(), shown),
         slider,
-        element("p", { class: "scale", "aria-hidden": "true" }, ...ends.map((end) => element("span", {}, end))),
+        element("p", { class: "scale", "aria-hidden": "true" }, ...ends.map((end) => element("span", {}, capital(end)))),
         hint,
       );
     }
