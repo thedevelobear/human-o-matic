@@ -24,6 +24,7 @@ import {
   keptAfterEdit,
   kindByName,
   kindOf,
+  noteGrid,
   offered,
   overSong,
   rampTabs,
@@ -501,6 +502,23 @@ test("a Ramp question an apply brings up joins the round, which stays for it whe
   assert.deepEqual([bar.move, bar.joined], [true, [ramp]]);
   // Joined, the round has changed, so the next click applies it with its ramp and moves on.
   assert.deepEqual([shown.move, shown.sent.length, shown.joined], [true, 1, []]);
+});
+
+test("a section's pattern is a grid of its drums' steps, a beat's steps apart, for the piano roll", () => {
+  const grid = noteGrid(["ride  X.x. X.x.", "hat   ..x. ..x.", "snare .... X.o.", "kick  X..x ..X."]);
+
+  assert.equal(grid.perBeat, 4);
+  assert.deepEqual(
+    grid.rows.map(({ drum, cells }) => [drum, cells.join("")]),
+    [
+      ["ride", "X.x.X.x."],
+      ["hat", "..x...x."],
+      ["snare", "....X.o."],
+      ["kick", "X..x..X."],
+    ],
+  );
+  assert.equal(noteGrid(["kick xxx xxx xx"]).perBeat, 3);
+  assert.deepEqual(noteGrid([]), { rows: [], perBeat: 1 });
 });
 
 test("a question an apply brings up opens a dialog that asks it in the engine's own words", async () => {

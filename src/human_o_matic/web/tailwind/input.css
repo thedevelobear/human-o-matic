@@ -496,10 +496,71 @@ body main legend {
   font-size: 0.8125rem;
 }
 
-.answers pre {
+/* A section's most typical bar as a piano roll, in an ink frame with a hard shadow: a lane a drum,
+   a column a step, the beats' lines heavier, and a square a hit, an accent the largest in the
+   sunset-to-magenta gradient, a normal hit sunset and a soft one the smallest, in lavender. A
+   long bar scrolls sideways. */
+.roll {
   margin: 0 0 0.75rem;
+  padding: 0 3px 3px 0;
   overflow-x: auto;
-  font-size: 0.8125rem;
+}
+
+.roll svg {
+  display: block;
+  overflow: hidden;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.75rem;
+  box-shadow: 3px 3px 0px var(--ink-black);
+  background: var(--surface-cream);
+}
+
+.roll .names {
+  fill: var(--bg-parchment);
+}
+
+.roll .lane {
+  fill: var(--surface-cream);
+}
+
+.roll .lane.odd {
+  fill: var(--surface-well);
+}
+
+.roll .step {
+  stroke: rgba(20, 18, 24, 0.12);
+  stroke-width: 1px;
+}
+
+.roll .beat {
+  stroke: rgba(20, 18, 24, 0.5);
+  stroke-width: 1.5px;
+}
+
+.roll .drum {
+  fill: var(--ink-black);
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  text-anchor: end;
+  dominant-baseline: central;
+}
+
+.roll .shade {
+  fill: var(--ink-black);
+}
+
+.roll .hit {
+  stroke: var(--ink-black);
+  stroke-width: 1.5px;
+}
+
+.roll .normal {
+  fill: var(--sunset-orange);
+}
+
+.roll .soft {
+  fill: var(--soft-lavender);
 }
 
 /* Each answer is a selectable card around its native radio: the whole card is its label. */

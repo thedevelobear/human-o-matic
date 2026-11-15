@@ -8,11 +8,75 @@
 
 import { drawFields, element, readFields, writeFields } from "./fields.js";
 import { capital, touchedControls } from "./forms.js";
+import { noteGrid } from "./questions.js";
 
 export const BY_HAND = {
   label: "Set it by hand",
   description: "this question's controls, from where the section is now",
 };
+
+const SVG = "http://www.w3.org/2000/svg";
+// A hit's kind by its pattern's letter, and how far its square sits inside its step, in twelfths:
+// an accent the largest, a soft hit the smallest, so size tells them apart beside colour.
+const HITS = { X: ["accent", 1], x: ["normal", 2], o: ["soft", 3] };
+
+/** An SVG element named `name`, with `attributes` and `children`. */
+function svg(name, attributes, ...children) {
+  const made = document.createElementNS(SVG, name);
+  for (const [attribute, value] of Object.entries(attributes)) {
+    made.setAttribute(attribute, String(value));
+  }
+  made.append(...children);
+  return made;
+}
+
+/** A section's pattern, its most typical bar from `get_sections`, as a piano roll: a lane a drum,
+ * a column a step, the beats' lines heavier, and a square a hit. Its colours are tailwind.css's;
+ * the accent's gradient is the page's sprite's. */
+function roll(lines) {
+  const { rows, perBeat } = noteGrid(lines);
+  const steps = Math.max(1, ...rows.map(({ cells }) => cells.length));
+  const size = Math.max(10, Math.min(20, Math.floor(480 / steps)));
+  const names = 12 + 7 * Math.max(0, ...rows.map(({ drum }) => drum.length));
+  const [width, height] = [names + steps * size, rows.length * size];
+  const lanes = rows.flatMap(({ drum }, row) => [
+    svg("rect", { class: row % 2 ? "lane odd" : "lane", x: names, y: row * size, width: steps * size, height: size }),
+    svg("text", { class: "drum", x: names - 6, y: row * size + size / 2 }, drum),
+  ]);
+  const grid = Array.from({ length: steps + 1 }, (_, step) => {
+    const x = names + step * size;
+    return svg("line", { class: step % perBeat ? "step" : "beat", x1: x, y1: 0, x2: x, y2: height });
+  });
+  const hits = rows.flatMap(({ cells }, row) =>
+    cells.flatMap((cell, step) => {
+      if (!HITS[cell]) {
+        return [];
+      }
+      const [kind, twelfths] = HITS[cell];
+      const inset = Math.round((size * twelfths) / 12);
+      const [x, y, side] = [names + step * size + inset, row * size + inset, size - 2 * inset];
+      const square = { x, y, width: side, height: side, rx: 2 };
+      const fill = kind === "accent" ? { fill: "url(#roll-accent)" } : {};
+      return [
+        svg("rect", { ...square, class: "shade", x: x + 2, y: y + 2 }),
+        svg("rect", { ...square, ...fill, class: `hit ${kind}` }),
+      ];
+    }),
+  );
+  const label = `Its most typical bar: ${lines.map((line) => line.trim()).join("; ")}`;
+  return element(
+    "div",
+    { class: "roll" },
+    svg(
+      "svg",
+      { viewBox: `0 0 ${width} ${height}`, width, height, role: "img", "aria-label": label },
+      svg("rect", { class: "names", x: 0, y: 0, width: names, height }),
+      ...lanes,
+      ...grid,
+      ...hits,
+    ),
+  );
+}
 
 /**
  * Draw a round in `parent`, replacing what it held, with the answers of `draft`.
@@ -66,7 +130,7 @@ export function drawRound(parent, { id, questions, fineTune, draft = {}, follow,
       box.append(element("p", {}, capital(tab.plays)));
     }
     if (tab.pattern) {
-      box.append(element("pre", {}, tab.pattern.join("\n")));
+      box.append(roll(tab.pattern));
     }
     const hand = element("div", { class: "hand", "data-tab": tab.id });
     drawFields(hand, tab.hand ?? [], name);

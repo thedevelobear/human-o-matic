@@ -241,8 +241,8 @@ def test_the_page_s_own_files_name_only_google_fonts(site: Path) -> None:
     # Pyodide's files, the wheels and the app's zip may hold URLs of their own, which the CSP
     # keeps from being fetched (the website plan's section 12). Of the page's own, the page names
     # Google Fonts' stylesheet, the headers the two hosts the CSP allows, Tailwind's CSS its
-    # project in the licence it keeps and the chevron its namespace, neither fetched, and
-    # nothing else another origin.
+    # project in the licence it keeps, and the two SVG files and round.js the SVG namespace, none
+    # fetched, and nothing else another origin.
     own = [
         path
         for path in site.rglob("*")
@@ -257,9 +257,11 @@ def test_the_page_s_own_files_name_only_google_fonts(site: Path) -> None:
     assert named.pop("index.html") == {b"https://fonts.googleapis.com"}
     assert named.pop("_headers") == GOOGLE_FONTS
     assert named.pop("tailwind.css") == {b"https://tailwindcss.com"}
-    # An SVG file names its namespace, which is never fetched.
+    # An SVG file names its namespace, which is never fetched, as round.js does to draw a
+    # section's pattern.
     assert named.pop("chevron.svg") == {b"http://www.w3.org"}
     assert named.pop("check.svg") == {b"http://www.w3.org"}
+    assert named.pop("js/round.js") == {b"http://www.w3.org"}
     assert {path: found for path, found in named.items() if found} == {}
 
 

@@ -444,6 +444,17 @@ export function echo(replies, only = null) {
   return [...lines, ...clamped];
 }
 
+/** A section's pattern, the lines `get_sections` gives of its most typical bar, as a grid to
+ * draw: each row its drum and its steps, "." none, "o" a soft hit, "x" a normal one and "X" an
+ * accent, and how many steps a beat holds. */
+export function noteGrid(lines) {
+  const split = lines.map((line) => line.trim().split(/\s+/));
+  return {
+    rows: split.map(([drum, ...beats]) => ({ drum, cells: [...beats.join("")] })),
+    perBeat: split[0]?.[1]?.length ?? 1,
+  };
+}
+
 /** What the page's dialog says when applying a round brings up questions it didn't have, the Ramp
  * tabs `joined` (ADR 0124): its title, why such a question comes up, and each question in the
  * engine's own words with the sections it is set on. */
