@@ -444,6 +444,20 @@ export function echo(replies, only = null) {
   return [...lines, ...clamped];
 }
 
+/** What the page's dialog says when applying a round brings up questions it didn't have, the Ramp
+ * tabs `joined` (ADR 0124): its title, why such a question comes up, and each question in the
+ * engine's own words with the sections it is set on. */
+export function cameUp(joined) {
+  return {
+    title: joined.length === 1 ? "One more question came up" : `${joined.length} more questions came up`,
+    lead:
+      "Your answers are applied. A section now leads into a louder one, so its last bars can " +
+      "build into it, each a little harder, or go straight in:",
+    asked: joined.map(({ question, plays }) => ({ question, where: `${plays}.` })),
+    after: "It is at the end of this round, and applies with it when you move on.",
+  };
+}
+
 /** The rounds applied, each `{said, ...}` by key, in the sections' order, as "Last applied" lists
  * them: the song-wide round, then each repeat group's, `groups` naming them in song order. */
 export function inSongOrder(rounds, groups) {

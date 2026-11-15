@@ -30,8 +30,9 @@ export const BY_HAND = {
  * @param {(tabs: Array<object>, draft: object) => string} options.keep Takes the draft, with its
  *   Ramp tabs as `ramps`, and gives the line to show.
  * @returns {{tabs: () => Array<object>, join: (question: object) => boolean,
- *   say: (text: string) => void}} The questions shown; `join` adds a question, unless the round
- *   has it, with focus on its answer, and says whether it did; `say` shows a line.
+ *   answer: (tabId: string) => void, say: (text: string) => void}} The questions shown; `join`
+ *   adds a question, unless the round has it, marked "New" until it is answered, and says whether
+ *   it did; `answer` scrolls to a question and moves focus to its answer; `say` shows a line.
  */
 export function drawRound(parent, { id, questions, fineTune, draft = {}, follow, keep }) {
   const tabs = [];
@@ -52,14 +53,15 @@ export function drawRound(parent, { id, questions, fineTune, draft = {}, follow,
   const handTouched = {};
   writeFields(fine, draft.fine ?? {});
 
-  function add(tab) {
+  function add(tab, fresh = false) {
     const answers = [...tab.answers, BY_HAND];
     // The draft's answer, or else "your call", the last answer before "Set it by hand".
     const kept = draft.answered?.[tab.id];
     const given = answers[kept] ? kept : answers.length - 2;
     const name = `${id}-${tab.id}`;
     const box = element("fieldset", { class: "answers", "data-tab": tab.id });
-    box.append(element("legend", {}, capital(tab.question)));
+    const badge = fresh ? [element("span", { class: "badge new" }, "New"), " "] : [];
+    box.append(element("legend", {}, ...badge, capital(tab.question)));
     if (tab.plays) {
       box.append(element("p", {}, capital(tab.plays)));
     }
@@ -97,8 +99,8 @@ export function drawRound(parent, { id, questions, fineTune, draft = {}, follow,
   }
 
   /** A question's answer chosen, its radio by name, never a radio of its own controls. */
-  function chosen(tab) {
-    return cards.querySelector(`input[name="${id}-${tab.id}"]:checked`);
+  function chosen(tabId) {
+    return cards.querySelector(`input[name="${id}-${tabId}"]:checked`);
   }
 
   /** The draft as it stands: each question's answer, the controls moved in field order, so the
@@ -108,7 +110,7 @@ export function drawRound(parent, { id, questions, fineTune, draft = {}, follow,
     const hand = {};
     for (const tab of tabs) {
       const box = cards.querySelector(`fieldset[data-tab="${tab.id}"]`);
-      answered[tab.id] = Number(chosen(tab).value);
+      answered[tab.id] = Number(chosen(tab.id).value);
       const names = (tab.hand ?? []).map((field) => field.name).filter((each) => handTouched[tab.id].has(each));
       if (names.length) {
         hand[tab.id] = touchedControls(readFields(box.querySelector(".hand")), names);
@@ -143,6 +145,8 @@ export function drawRound(parent, { id, questions, fineTune, draft = {}, follow,
       if (hand) {
         handTouched[hand.dataset.tab].add(event.target.dataset.name ?? event.target.name);
       }
+      // A question that came up is new until it is answered.
+      event.target.closest("fieldset.answers")?.querySelector("legend .new")?.remove();
       update();
     });
     fine.addEventListener(type, (event) => {
@@ -156,11 +160,14 @@ export function drawRound(parent, { id, questions, fineTune, draft = {}, follow,
     join: (question) => {
       const joins = !tabs.some((tab) => tab.id === question.id);
       if (joins) {
-        add(question);
+        add(question, true);
         update();
-        chosen(question).focus();
       }
       return joins;
+    },
+    answer: (tabId) => {
+      cards.querySelector(`fieldset[data-tab="${tabId}"]`).scrollIntoView({ block: "center" });
+      chosen(tabId).focus({ preventScroll: true });
     },
     say: (text) => {
       said.textContent = text;

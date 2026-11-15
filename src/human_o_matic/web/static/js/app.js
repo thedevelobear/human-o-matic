@@ -24,6 +24,7 @@ import {
 import {
   answerLines,
   applyRound,
+  cameUp,
   echo,
   groupCalls,
   groupControls,
@@ -321,13 +322,41 @@ async function leave(stay) {
     return true;
   }
   // A Ramp question both of whose groups are now asked about joins this round (ADR 0108), which
-  // stays for it, and is applied with it when the user moves on again.
+  // stays for it, and is applied with it when the user moves on again; a dialog says so.
   for (const tab of done.joined) {
     shown.drawn.join(tab);
   }
-  const more = done.joined.map((tab) => tab.question).join(" ");
-  shown.drawn.say(`\u2713 Applied. One more question came up, below: ${more} It applies when you move on.`);
+  shown.drawn.say(`\u2713 Applied. ${cameUp(done.joined).title}, below: it applies when you move on.`);
+  showCameUp(done.joined, shown.drawn);
   return false;
+}
+
+/** The dialog that tells of the questions `joined` that applying the round on screen brought up,
+ * in the engine's own words, whose "Answer it" scrolls to the first and focuses its answer, while
+ * Escape or the backdrop leaves focus to return where it was (ADR 0124). */
+function showCameUp(joined, drawn) {
+  const { title, lead, asked, after } = cameUp(joined);
+  $("#more-title").textContent = title;
+  $("#more-what").replaceChildren(
+    element("p", { class: "mb-3" }, lead),
+    ...asked.flatMap(({ question, where }) => [
+      element("p", { class: "font-bold mb-1" }, question),
+      element("p", { class: "font-mono text-xs text-ink/75 mb-3" }, where),
+    ]),
+    element("p", {}, after),
+  );
+  const dialog = $("#more-dialog");
+  dialog.returnValue = "";
+  dialog.addEventListener(
+    "close",
+    () => {
+      if (dialog.returnValue === "answer") {
+        drawn.answer(joined[0].id);
+      }
+    },
+    { once: true },
+  );
+  openDialog(dialog);
 }
 
 /** The line a round shows: applied or not yet; what it applied is behind "Last applied". */

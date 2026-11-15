@@ -562,6 +562,10 @@ body main legend {
   text-transform: uppercase;
 }
 
+legend .badge {
+  vertical-align: 0.125em;
+}
+
 .choice > .badge {
   grid-column: 3;
   grid-row: 1;

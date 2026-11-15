@@ -14,6 +14,7 @@ import {
   YOUR_CALL,
   answerLines,
   applyRound,
+  cameUp,
   described,
   echo,
   groupCalls,
@@ -500,6 +501,23 @@ test("a Ramp question an apply brings up joins the round, which stays for it whe
   assert.deepEqual([bar.move, bar.joined], [true, [ramp]]);
   // Joined, the round has changed, so the next click applies it with its ramp and moves on.
   assert.deepEqual([shown.move, shown.sent.length, shown.joined], [true, 1, []]);
+});
+
+test("a question an apply brings up opens a dialog that asks it in the engine's own words", async () => {
+  const tabs = groupTabs(SONG, "B", presets, DEFAULTS);
+  const found = reply([section(0, 4, "A", [RAMP(2)]), section(4, 4, "B", []), section(8, 2, "A", [RAMP(1)]), section(10, 4, "C", [])]);
+  const [ramp] = rampTabs(found, new Set(["A", "B"]), presets, DEFAULTS);
+
+  // The dialog opens when Next applied the round and stayed for the question, and not otherwise.
+  const next = await applying(tabs, round(), { due: [ramp] });
+  const bar = await applying(tabs, round(), { due: [ramp], stay: false });
+  const said = cameUp(next.joined);
+
+  assert.deepEqual([next.move, bar.move], [false, true]);
+  assert.equal(said.title, "One more question came up");
+  assert.deepEqual(said.asked, [{ question: RAMP(2), where: "Set on 1 section of A: bars 1 to 4." }]);
+  assert.match(said.lead, /leads into a louder one/);
+  assert.equal(cameUp([ramp, ramp]).title, "2 more questions came up");
 });
 
 test("Last applied lists the rounds applied in the sections' order, the song-wide round first", () => {
