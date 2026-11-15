@@ -271,9 +271,11 @@
         </div>
       </div>
 
-      <dialog id="applied-dialog" aria-labelledby="applied-title" class="bg-cream retro-box-lg rounded-2xl max-w-lg w-[calc(100%-2rem)] max-h-[85vh] p-5 sm:p-6 text-ink backdrop:bg-ink/45">
+      <!-- The page's one dialog pattern (ADR 0125): its head and its buttons fixed, its body
+           scrolling, over the page blurred, closed by Escape or a click on the blur. -->
+      <dialog id="applied-dialog" aria-labelledby="applied-title" class="modal bg-cream retro-box-lg rounded-2xl max-w-lg w-[calc(100%-2rem)] text-ink">
         <form method="dialog">
-          <div class="flex items-start gap-3.5 mb-4">
+          <div class="modal-head">
             <div class="w-11 h-11 rounded-2xl iridescent-mesh border-2 border-ink shadow-[2px_2px_0px_#141218] flex items-center justify-center shrink-0">
               <svg class="w-5 h-5" aria-hidden="true" focusable="false"><use href="#star"/></svg>
             </div>
@@ -282,24 +284,24 @@
               <p id="applied-count" class="font-mono text-xs text-ink/80 mt-1"></p>
             </div>
           </div>
-          <ol id="applied-list" class="applied"></ol>
-          <div class="flex items-center justify-end pt-2">
+          <ol id="applied-list" class="applied modal-body"></ol>
+          <div class="modal-foot">
             <button value="close" class="retro-btn bg-parchment hover:bg-white text-ink font-bold text-xs sm:text-sm px-4 py-2 rounded-xl" autofocus>Close</button>
           </div>
         </form>
       </dialog>
-      <dialog id="delete-dialog" aria-labelledby="delete-title" class="bg-cream retro-box-lg rounded-2xl max-w-md w-[calc(100%-2rem)] p-5 sm:p-6 text-ink backdrop:bg-ink/45">
+      <dialog id="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-what" class="modal bg-cream retro-box-lg rounded-2xl max-w-md w-[calc(100%-2rem)] text-ink">
         <form method="dialog">
-          <div class="flex items-start gap-3.5 mb-4">
+          <div class="modal-head">
             <div class="w-11 h-11 rounded-2xl bg-[#FDE8EC] border-2 border-ink shadow-[2px_2px_0px_#141218] flex items-center justify-center text-[#B91C3C] shrink-0">
               <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" aria-hidden="true" focusable="false"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             </div>
-            <div>
-              <h2 id="delete-title" class="font-display text-xl font-bold text-ink">Delete your file now?</h2>
-              <p id="delete-what" class="text-xs sm:text-sm text-ink/80 mt-1"></p>
-            </div>
+            <h2 id="delete-title" class="font-display text-xl font-bold text-ink self-center">Delete your file now?</h2>
           </div>
-          <div class="flex items-center justify-end gap-2.5 pt-2">
+          <div class="modal-body">
+            <p id="delete-what" class="text-sm text-ink/80"></p>
+          </div>
+          <div class="modal-foot">
             <button value="keep" class="retro-btn bg-parchment hover:bg-white text-ink font-bold text-xs sm:text-sm px-4 py-2 rounded-xl" autofocus>Keep my file</button>
             <button value="delete" class="retro-btn bg-[#E2587A] text-ink font-bold text-xs sm:text-sm px-4 py-2 rounded-xl">Yes, delete it</button>
           </div>

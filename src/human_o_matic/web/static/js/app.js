@@ -212,7 +212,20 @@ function showApplied() {
   const none = element("li", {}, "Nothing is applied yet: a round applies when you move on from it.");
   $("#applied-list").replaceChildren(...(blocks.length ? blocks : [none]));
   $("#applied-count").textContent = `Questions so far: ${page.asked.size}`;
-  $("#applied-dialog").showModal();
+  openDialog($("#applied-dialog"));
+}
+
+/** Open `dialog`, the page's one dialog pattern, at the top of what its body holds. */
+function openDialog(dialog) {
+  dialog.showModal();
+  dialog.querySelector(".modal-body").scrollTop = 0;
+}
+
+/** Whether `event`, a click on `dialog` itself, fell outside its box, on the blurred backdrop. */
+function onBackdrop(dialog, event) {
+  const box = dialog.getBoundingClientRect();
+  const { clientX: x, clientY: y } = event;
+  return event.target === dialog && (x < box.left || x > box.right || y < box.top || y > box.bottom);
 }
 
 /** A round's names: short, for "Last applied" and the toast, and whole, for its dialog. */
@@ -896,10 +909,19 @@ $("#delete").addEventListener("click", () => {
   $("#delete-what").textContent =
     `This ends the engine, which holds your file, ${song}, and everything made from it, and ` +
     "starts again from step 1.";
-  // Escape closes the dialog without a value, so a choice made before never counts again.
+  // Escape or the backdrop closes the dialog without a value, so a choice made before never
+  // counts again.
   $("#delete-dialog").returnValue = "";
-  $("#delete-dialog").showModal();
+  openDialog($("#delete-dialog"));
 });
+// A click on a dialog's blurred backdrop closes it, as Escape does.
+for (const dialog of document.querySelectorAll("dialog.modal")) {
+  dialog.addEventListener("click", (event) => {
+    if (onBackdrop(dialog, event)) {
+      dialog.close();
+    }
+  });
+}
 $("#delete-dialog").addEventListener("close", () => {
   if ($("#delete-dialog").returnValue === "delete") {
     deleteFile();
