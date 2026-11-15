@@ -219,3 +219,8 @@ def test_app_js_changes_the_rounds_controls_only_from_their_submit() -> None:
         ("drawDrummer", "session_id: page.session"),
         ("songTake", "session_id: page.session, seed: page.seed + 1"),
     ]
+    # A section edit forgets what a round set on the sections it changes, once the engine has
+    # taken it (ADR 0122).
+    edit = functions["edit"]
+    kept = edit.find("page.sent = keptAfterEdit(page.sent, sections, reply.sections)")
+    assert 0 <= edit.index('ask("update_sections"') < edit.index("if (failed(reply))") < kept

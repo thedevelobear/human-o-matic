@@ -411,8 +411,12 @@ test("a section edit keeps what a round set only on the sections it leaves as th
   const split = [before[0], { start: 4, bars: 2, group: "B" }, { start: 6, bars: 2, group: "B" }, before[2]];
   const regrouped = [before[0], before[1], { start: 8, bars: 4, group: "C" }];
   const merged = [{ start: 0, bars: 8, group: "A" }, before[2]];
+  const moved = [{ start: 0, bars: 6, group: "A" }, { start: 6, bars: 2, group: "B" }, before[2]];
+  const renamed = before.map((section) => ({ ...section, name: "chorus" }));
 
   assert.deepEqual(keptAfterEdit(sent, before, before), sent);
+  assert.deepEqual(keptAfterEdit(sent, before, renamed), sent);
+  assert.deepEqual(keptAfterEdit(sent, before, moved), { song: ["feel"], A: { 8: ["energy"] }, B: {} });
   assert.deepEqual(keptAfterEdit(sent, before, split), { ...sent, B: {} });
   assert.deepEqual(keptAfterEdit(sent, before, regrouped), { ...sent, A: { 0: ["energy"] } });
   assert.deepEqual(keptAfterEdit(sent, before, merged), { song: ["feel"], A: { 8: ["energy"] }, B: {} });
