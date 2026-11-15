@@ -28,6 +28,7 @@ import {
   groupCalls,
   groupControls,
   groupTabs,
+  inSongOrder,
   keptAfterEdit,
   membersOf,
   rampTabs,
@@ -184,24 +185,19 @@ function toast(title, body) {
   toastTimer = setTimeout(() => $("#toast").classList.remove("shown"), TOAST_MS);
 }
 
-/** The rounds applied, newest first. */
-function applied() {
-  return Object.values(page.rounds)
-    .filter(({ said }) => said)
-    .sort((a, b) => b.at - a.at);
-}
-
 /** "Last applied", in the top bar: the round applied last, by a short name, once a song is open. */
 function drawApplied() {
-  const [last] = applied();
+  const [last] = Object.values(page.rounds)
+    .filter(({ said }) => said)
+    .sort((a, b) => b.at - a.at);
   $("#last-applied").hidden = !page.session;
   $("#last-applied").textContent = last ? `Last applied: ${capital(last.name)}` : "Nothing applied yet";
 }
 
-/** The dialog behind "Last applied": each round applied, newest first, its echo a line each, and
- * the count of questions so far. */
+/** The dialog behind "Last applied": each round applied, in the sections' order, its echo a line
+ * each, and the count of questions so far. */
 function showApplied() {
-  const blocks = applied().map(({ title, said }) =>
+  const blocks = inSongOrder(page.rounds, groupsOf(page.table)).map(({ title, said }) =>
     element(
       "li",
       {},

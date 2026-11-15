@@ -444,6 +444,12 @@ export function echo(replies, only = null) {
   return [...lines, ...clamped];
 }
 
+/** The rounds applied, each `{said, ...}` by key, in the sections' order, as "Last applied" lists
+ * them: the song-wide round, then each repeat group's, `groups` naming them in song order. */
+export function inSongOrder(rounds, groups) {
+  return ["song", ...groups].map((key) => rounds[key]).filter((round) => round?.said);
+}
+
 /** A round's questions and draft as one text, so two rounds alike in both send the same. */
 export function signature(tabs, { answered = {}, hand = {}, fine = {} } = {}) {
   return JSON.stringify([tabs.map((tab) => tab.id), answered, hand, fine]);

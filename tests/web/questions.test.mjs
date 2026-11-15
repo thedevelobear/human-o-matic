@@ -19,6 +19,7 @@ import {
   groupCalls,
   groupControls,
   groupTabs,
+  inSongOrder,
   keptAfterEdit,
   kindByName,
   kindOf,
@@ -499,6 +500,21 @@ test("a Ramp question an apply brings up joins the round, which stays for it whe
   assert.deepEqual([bar.move, bar.joined], [true, [ramp]]);
   // Joined, the round has changed, so the next click applies it with its ramp and moves on.
   assert.deepEqual([shown.move, shown.sent.length, shown.joined], [true, 1, []]);
+});
+
+test("Last applied lists the rounds applied in the sections' order, the song-wide round first", () => {
+  const rounds = {
+    B: { said: ["b"], at: 1 },
+    song: { said: ["song"], at: 3 },
+    C: { draft: {} },
+    A: { said: [], at: 2 },
+  };
+
+  assert.deepEqual(
+    inSongOrder(rounds, ["A", "B", "C"]).map(({ said }) => said),
+    [["song"], [], ["b"]],
+  );
+  assert.deepEqual(inSongOrder({}, ["A"]), []);
 });
 
 test("a section edit keeps a group's draft only when its sections, and its Ramp tabs', are as they were", () => {

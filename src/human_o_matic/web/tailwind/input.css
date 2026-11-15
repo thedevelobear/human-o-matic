@@ -830,7 +830,7 @@ body .modal-body {
   border-top: 2px dashed rgba(20, 18, 24, 0.25);
 }
 
-/* What "Last applied" opens: each round applied, a line each. */
+/* What "Last applied" opens: each round applied, in the sections' order, a line each. */
 .applied > li {
   margin: 0 0 0.875rem;
   padding: 0.75rem 1rem;
