@@ -1,7 +1,9 @@
-// The rounds' questions (the website plan's PR 4), on the pure module the page draws them from,
-// with the vocabulary's rows as presets: every answer the page names is a row, each tab offers
-// section 6's rows, "your call" sets nothing new, rows move from the song's own controls, and a
-// round's Submit sends the whole round as it stands, replacing what it set before.
+// The rounds' questions (the website plan's PRs 4 and 4b), on the pure module the page draws
+// them from, with the vocabulary's rows as presets: every answer the page names is a row, each
+// question offers section 6's rows, "your call" sets nothing new, rows move from the song's own
+// controls, a round applied sends the whole round as it stands, replacing what it set before,
+// and only when it was never applied or has changed since, and an edit keeps a round's draft only
+// over the sections it leaves as they were.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -10,6 +12,8 @@ import {
   SECTION_KINDS,
   TABS,
   YOUR_CALL,
+  answerLines,
+  applyRound,
   described,
   echo,
   groupCalls,
@@ -21,8 +25,10 @@ import {
   offered,
   overSong,
   rampTabs,
+  roundsAfterEdit,
   rowsOf,
   shownGroup,
+  signature,
   songCalls,
   songControls,
   songTabs,
@@ -72,7 +78,8 @@ const SONG = reply([
   section(8, 4, "A", [LAST]),
 ]);
 const members = (found, group) => found.sections.filter((each) => each.group === group);
-const round = (answered = {}, more = {}) => ({ answered, hand: {}, handTouched: {}, fine: {}, ...more });
+/** A round's draft: its answers by tab, and the controls moved, by tab and of Fine-tune. */
+const round = (answered = {}, more = {}) => ({ answered, hand: {}, fine: {}, ...more });
 /** The answer index of `name` on `tab`, "your call" after the rows. */
 const index = (tab, name) => (name === YOUR_CALL ? tab.rows.length : tab.rows.indexOf(name));
 
@@ -256,17 +263,11 @@ test("the last repeat takes its own answer over the group's, a bit harder added 
   assert.deepEqual(same[8], same[0]);
 });
 
-test("Set it by hand gives only the controls moved, and Fine-tune's moved controls go over every answer", () => {
+test("Set it by hand gives the controls it moved, and Fine-tune's moved controls go over every answer", () => {
   const tabs = groupTabs(SONG, "A", presets, DEFAULTS);
   const [energy] = tabs;
   const context = { presets, song: {}, defaults: DEFAULTS, members: members(SONG, "A") };
-  const byHand = round(
-    { [energy.id]: energy.rows.length + 1 },
-    {
-      hand: { [energy.id]: { energy: "0.7", arc: "steady" } },
-      handTouched: { [energy.id]: new Set(["energy"]) },
-    },
-  );
+  const byHand = round({ [energy.id]: energy.rows.length + 1 }, { hand: { [energy.id]: { energy: 0.7 } } });
   const fine = round({ [energy.id]: index(energy, "quiet intro") }, { fine: { energy: 0.4 } });
 
   assert.deepEqual(groupControls(tabs, byHand, context).controls[0], { energy: 0.7 });
@@ -420,4 +421,121 @@ test("a section edit keeps what a round set only on the sections it leaves as th
   assert.deepEqual(keptAfterEdit(sent, before, split), { ...sent, B: {} });
   assert.deepEqual(keptAfterEdit(sent, before, regrouped), { ...sent, A: { 0: ["energy"] } });
   assert.deepEqual(keptAfterEdit(sent, before, merged), { song: ["feel"], A: { 8: ["energy"] }, B: {} });
+});
+
+test("a round's signature changes with an answer, a control moved or a question joining, and only then", () => {
+  const tabs = groupTabs(SONG, "A", presets, DEFAULTS);
+  const [energy] = tabs;
+  const draft = round({ [energy.id]: 2 });
+  const [ramp] = rampTabs(reply([section(0, 4, "A", [RAMP(2)]), section(4, 4, "B", [])]), new Set(["A", "B"]), presets, DEFAULTS);
+
+  assert.equal(signature(tabs, draft), signature(tabs, round({ [energy.id]: 2 })));
+  for (const changed of [
+    signature(tabs, round({ [energy.id]: 3 })),
+    signature(tabs, round({ [energy.id]: 2 }, { hand: { [energy.id]: { energy: 0.7 } } })),
+    signature(tabs, round({ [energy.id]: 2 }, { fine: { creative: true } })),
+    signature([...tabs, ramp], draft),
+  ]) {
+    assert.notEqual(changed, signature(tabs, draft));
+  }
+});
+
+/** applyRound with a send that records each draft it sends, and fails when `fails` is set. */
+function applying(tabs, draft, { applied, due = [], stay = true, fails = false } = {}) {
+  const sent = [];
+  const send = async (shown, given) => {
+    sent.push(structuredClone(given));
+    return fails ? { error: "the engine said no" } : "Bars 1 to 4: kick about 100.";
+  };
+  return applyRound({ tabs, draft, applied, send, due: () => due, stay }).then((done) => ({ ...done, sent }));
+}
+
+test("a round is applied when the page moves on only if it was never applied or has changed since", async () => {
+  const tabs = groupTabs(SONG, "A", presets, DEFAULTS);
+  const [energy] = tabs;
+  // Never applied and untouched: sent, so "your call" counts as its answer.
+  const untouched = round();
+
+  const first = await applying(tabs, untouched);
+  const again = await applying(tabs, untouched, { applied: first.applied });
+  const changed = await applying(tabs, round({ [energy.id]: 1 }), { applied: first.applied });
+
+  assert.deepEqual([first.move, first.sent.length, first.said], [true, 1, "Bars 1 to 4: kick about 100."]);
+  assert.equal(first.applied, signature(tabs, untouched));
+  assert.deepEqual([again.move, again.sent.length, again.applied], [true, 0, first.applied]);
+  assert.deepEqual([changed.move, changed.sent.length], [true, 1]);
+  assert.notEqual(changed.applied, first.applied);
+});
+
+test("a round that fails to apply stays, with its draft as it was and its last apply kept", async () => {
+  const tabs = groupTabs(SONG, "A", presets, DEFAULTS);
+  const draft = round({ [tabs[0].id]: 4 }, { fine: { energy: 0.6 } });
+  const before = structuredClone(draft);
+
+  const done = await applying(tabs, draft, { applied: "before", fails: true });
+
+  assert.deepEqual([done.move, done.applied, done.error], [false, "before", "the engine said no"]);
+  assert.deepEqual(draft, before);
+  assert.deepEqual(done.sent, [before]);
+});
+
+test("a Ramp question an apply brings up joins the round, which stays for it when its Next asks", async () => {
+  const tabs = groupTabs(SONG, "B", presets, DEFAULTS);
+  const [ramp] = rampTabs(reply([section(0, 4, "A", [RAMP(2)]), section(4, 4, "B", [])]), new Set(["A", "B"]), presets, DEFAULTS);
+
+  const next = await applying(tabs, round(), { due: [ramp] });
+  const bar = await applying(tabs, round(), { due: [ramp], stay: false });
+  const shown = await applying([...tabs, ramp], round(), { applied: next.applied, due: [ramp] });
+
+  assert.deepEqual([next.move, next.joined], [false, [ramp]]);
+  assert.equal(next.applied, signature(tabs, round()));
+  // The top bar moves on anyway, the ramp left unset to join the next round drawn.
+  assert.deepEqual([bar.move, bar.joined], [true, [ramp]]);
+  // Joined, the round has changed, so the next click applies it with its ramp and moves on.
+  assert.deepEqual([shown.move, shown.sent.length, shown.joined], [true, 1, []]);
+});
+
+test("a section edit keeps a group's draft only when its sections, and its Ramp tabs', are as they were", () => {
+  const before = [
+    { start: 0, bars: 4, group: "A" },
+    { start: 4, bars: 4, group: "B" },
+    { start: 8, bars: 4, group: "A" },
+  ];
+  const ramp = { id: "ramp-0", kind: "ramp", sections: [0] };
+  const kept = {
+    song: { draft: round({ drummer: 1 }) },
+    A: { draft: round({ "energy-0": 2 }), applied: "A" },
+    B: { draft: { ...round({ "energy-4": 1 }), ramps: [ramp] }, applied: "B" },
+  };
+  const renamed = before.map((section) => ({ ...section, name: "chorus" }));
+  const splitB = [before[0], { start: 4, bars: 2, group: "B" }, { start: 6, bars: 2, group: "B" }, before[2]];
+  const splitA = [{ start: 0, bars: 2, group: "A" }, { start: 2, bars: 2, group: "A" }, ...before.slice(1)];
+  const joined = [before[0], before[1], { start: 8, bars: 4, group: "B" }];
+
+  assert.deepEqual(roundsAfterEdit(kept, before, renamed), kept);
+  assert.deepEqual(Object.keys(roundsAfterEdit(kept, before, splitB)), ["song", "A"]);
+  // A split of A changes the section B's ramp builds over, so B's draft goes with A's.
+  assert.deepEqual(Object.keys(roundsAfterEdit(kept, before, splitA)), ["song"]);
+  // A section moved from A into B changes both groups.
+  assert.deepEqual(Object.keys(roundsAfterEdit(kept, before, joined)), ["song"]);
+});
+
+test("the review says each round's answers in words, by hand with what it moved, and Fine-tune's", () => {
+  const tabs = groupTabs(SONG, "A", presets, DEFAULTS);
+  const [energy, soft, last] = tabs;
+  const draft = round(
+    { [energy.id]: index(energy, "chorus, big and open"), [soft.id]: soft.rows.length + 1 },
+    { hand: { [soft.id]: { ghost_level: 0.2 } }, fine: { creative: true } },
+  );
+
+  assert.deepEqual(answerLines(tabs, draft), [
+    "Energy: chorus, big and open",
+    "Soft notes: set by hand, soft notes 0.2",
+    "Last repeat: your call",
+    "Fine-tune: creative true",
+  ]);
+  assert.equal(last.label, "Last repeat");
+  assert.deepEqual(answerLines(tabs.slice(1, 2), round({ [soft.id]: soft.rows.length + 1 })), [
+    "Soft notes: set by hand, nothing moved",
+  ]);
 });
