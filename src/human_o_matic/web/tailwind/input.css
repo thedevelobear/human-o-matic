@@ -1,8 +1,10 @@
-/* The page's own styles beside Tailwind's (ADR 0125): the owner's design's block, as it was, then
-   what the page's scripts draw, the round's cards and the forms' fields. Tailwind's Play CDN
-   appends its style element after this file, so a rule here that styles an element its reset
-   also styles starts with `body` to outrank it. Every animation and transition is inside
-   `prefers-reduced-motion: no-preference`, and no style is set from script. */
+/* The input of static/tailwind.css, which `uv run python tools/build_site.py css` builds with
+   Tailwind's standalone CLI (ADR 0126): the owner's design's style block, then the styles of
+   what the page's scripts draw, the round's cards and the forms' fields, then Tailwind's own at
+   the end, in the order the page had them from Tailwind's Play CDN (ADR 0125). Tailwind's reset
+   comes after them, so a rule here that styles an element the reset also styles starts with
+   `body` to outrank it. Every animation and transition is inside
+   `prefers-reduced-motion: no-preference`. */
 
 :root {
   --bg-parchment: #e8e2d5;
@@ -627,3 +629,7 @@ body .state {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

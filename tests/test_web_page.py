@@ -121,29 +121,27 @@ def test_a_page_has_lang_a_label_on_every_input_and_alt_text_on_every_image(path
             assert attributes.get("alt"), (path.name, attributes)
 
 
-TAILWIND = "https://cdn.tailwindcss.com/3.4.17"
 FONTS = (
     "https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Space+Grotesk:wght@500;"
     "600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
 )
 SCRIPTS = {
     "check.html": [{"type": "module", "src": "js/check.js"}],
-    "index.html": [
-        {"src": TAILWIND},
-        {"src": "js/tailwind-config.js"},
-        {"type": "module", "src": "js/app.js"},
-    ],
+    "index.html": [{"type": "module", "src": "js/app.js"}],
 }
 LINKS = {
     "check.html": [],
-    "index.html": [{"rel": "stylesheet", "href": FONTS}, {"rel": "stylesheet", "href": "site.css"}],
+    "index.html": [
+        {"rel": "stylesheet", "href": FONTS},
+        {"rel": "stylesheet", "href": "tailwind.css"},
+    ],
 }
-"""What each page loads (ADR 0125): of others', Tailwind's Play CDN at its pinned version and
-Google Fonts' stylesheet alone, and the rest its own files."""
+"""What each page loads (ADR 0126): of others', Google Fonts' stylesheet alone, and the rest its own
+files, Tailwind's CSS among them."""
 
 
 @pytest.mark.parametrize("path", PAGES, ids=lambda path: path.name)
-def test_a_page_loads_only_its_own_tailwind_s_and_google_fonts_and_holds_no_inline_code(
+def test_a_page_loads_only_its_own_files_and_google_fonts_and_holds_no_inline_code(
     path: Path,
 ) -> None:
     page = parsed(path)
@@ -160,6 +158,8 @@ def test_a_page_loads_only_its_own_tailwind_s_and_google_fonts_and_holds_no_inli
 
 
 INDEX = static_dir() / "index.html"
+TAILWIND = static_dir().parent / "tailwind"
+"""The input stylesheet and configuration of `tailwind.css` (ADR 0126)."""
 
 
 def test_every_drawing_of_the_page_is_hidden_from_assistive_technology() -> None:
@@ -221,15 +221,15 @@ def over(colour: str, under: str, alpha: float) -> str:
 
 def test_the_palette_s_text_is_at_least_4_5_to_1_and_its_focus_ring_3_to_1() -> None:
     # WCAG 2's contrast of each text colour on each surface it sits on, from the tokens of
-    # site.css and the colours of the Tailwind configuration (ADR 0125).
-    css = (static_dir() / "site.css").read_text(encoding="utf-8")
+    # Tailwind's input stylesheet and the colours of its configuration (ADRs 0125 and 0126).
+    css = (TAILWIND / "input.css").read_text(encoding="utf-8")
     root = re.search(r":root \{(.*?)\}", css, re.DOTALL)
     assert root is not None
     token = {
         name: value.lower()
         for name, value in re.findall(r"--([\w-]+): (#[0-9a-f]{6});", root.group(1))
     }
-    config = (static_dir() / "js" / "tailwind-config.js").read_text(encoding="utf-8")
+    config = (TAILWIND / "tailwind.config.js").read_text(encoding="utf-8")
     tailwind = {
         name: value.lower() for name, value in re.findall(r'(\w+): "(#[0-9A-F]{6})"', config)
     }
@@ -270,8 +270,8 @@ def without_block(text: str, opening: str) -> str:
 
 def test_nothing_moves_unless_the_reader_allows_motion() -> None:
     # Every animation and transition is inside `prefers-reduced-motion: no-preference`, in
-    # site.css, and the page uses none of Tailwind's own (ADR 0125).
-    css = (static_dir() / "site.css").read_text(encoding="utf-8")
+    # Tailwind's input stylesheet, and the page uses none of Tailwind's own (ADR 0125).
+    css = (TAILWIND / "input.css").read_text(encoding="utf-8")
     outside = without_block(css, REDUCED)
     classes = re.findall(r'class="([^"]*)"', INDEX.read_text(encoding="utf-8"))
     tailwind = [
@@ -287,7 +287,8 @@ def test_nothing_moves_unless_the_reader_allows_motion() -> None:
 
 
 def test_the_page_s_own_files_are_within_300_kb_compressed() -> None:
-    # Tailwind's script and Google's fonts come from their hosts, outside this count (ADR 0125).
+    # Tailwind's CSS is the page's own (ADR 0126); Google's fonts come from their host, outside
+    # this count.
     own = [path for path in static_dir().rglob("*") if path.is_file()]
     compressed = sum(len(gzip.compress(path.read_bytes(), 9)) for path in own)
 
@@ -307,7 +308,6 @@ def test_the_page_s_javascript_keeps_nothing_in_the_browser_s_storage() -> None:
         "questions.js",
         "review.js",
         "round.js",
-        "tailwind-config.js",
     }
     assert own <= {path.name for path in MODULES}
     for path in MODULES:

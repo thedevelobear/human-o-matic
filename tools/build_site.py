@@ -9,8 +9,8 @@ list gives. It then writes `dist/site/`:
 - `wheels/`: the other wheels;
 - `app.zip`: `src/human_o_matic/`, `data/` and `skills/human-o-matic/references/vocabulary.md`
   at their repository paths, so `resources.data_dir()` and `resources.skill_dir()` find them;
-- the page's own files from `human_o_matic/web/static/`, as they are: `index.html`, `site.css`
-  and the modules in `js/`, with the engine check's `check.html`;
+- the page's own files from `human_o_matic/web/static/`, as they are: `index.html`,
+  `tailwind.css`, the modules in `js/` and `chevron.svg`, with the engine check's `check.html`;
 - `engine.json`, which tells the page's engine where each of these is and how big;
 - for the engine check, `check.html`: `check-song.mid`, a song built in code by `built_song`,
   and `check-flow.json`, the calls it makes on it and the SHA-256 of the file they give
@@ -21,9 +21,16 @@ The build fails when a file is 10 MB or more (`check_sizes`).
 `serve` serves `dist/site/` on this machine with the headers the site will send, its CSP among
 them, for the owner's check in a browser and on a phone on the same network.
 
+`css` downloads Tailwind's standalone CLI in `tools/build_site.toml` into `build/site-downloads/`,
+checked by its SHA-256 in the same way, and builds `human_o_matic/web/static/tailwind.css`, which
+is committed, from `human_o_matic/web/tailwind/`: the input stylesheet and the configuration,
+over the classes of `index.html` and `js/` (ADR 0126). Run it after changing either, or a class
+of the page's.
+
 Run from the repository root:
     uv run python tools/build_site.py build
     uv run python tools/build_site.py serve [--host 0.0.0.0] [--port 8000]
+    uv run python tools/build_site.py css
 """
 
 import argparse
@@ -32,6 +39,7 @@ import hashlib
 import io
 import json
 import shutil
+import subprocess
 import sys
 import tarfile
 import tomllib
@@ -61,13 +69,14 @@ FLOW = ROOT / "tests" / "web" / "flow.json"
 SONG = "check-song.mid"
 ZIP_TIME = (1980, 1, 1, 0, 0, 0)
 """Every entry of the app's zip is dated the same, so the same source gives the same zip."""
-TAILWIND = "https://cdn.tailwindcss.com"
+TAILWIND = ROOT / "src" / "human_o_matic" / "web" / "tailwind"
+"""Tailwind's input stylesheet and configuration, which `css` builds `tailwind.css` from."""
 GOOGLE_FONTS = ("https://fonts.googleapis.com", "https://fonts.gstatic.com")
-"""The two other origins the page loads from (ADR 0125): Tailwind's Play CDN, whose script injects
-the style element it makes, and Google Fonts' stylesheet and fonts."""
+"""The other origins the page loads from (ADRs 0125 and 0126): Google Fonts' stylesheet and
+fonts."""
 CSP = (
-    f"default-src 'none'; script-src 'self' 'wasm-unsafe-eval' {TAILWIND}; worker-src 'self'; "
-    f"connect-src 'self'; style-src 'self' 'unsafe-inline' {GOOGLE_FONTS[0]}; img-src 'self'; "
+    "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; "
+    f"connect-src 'self'; style-src 'self' {GOOGLE_FONTS[0]}; img-src 'self'; "
     f"font-src 'self' {GOOGLE_FONTS[1]}; form-action 'self'; base-uri 'none'; "
     "frame-ancestors 'none'"
 )
@@ -120,6 +129,8 @@ class Pins(BaseModel):
     packages: tuple[Pin, ...]
     """Pyodide's own packages, loaded by name beside its lock file."""
     wheels: tuple[Pin, ...]
+    tailwind: Pin
+    """Tailwind's standalone CLI, which `css` runs; the site never serves it."""
 
 
 def read_pins(path: Path = PINS) -> Pins:
@@ -146,6 +157,31 @@ def fetched(pin: Pin, folder: Path = DOWNLOADS) -> Path:
         path.unlink()
         raise HashMismatchError(f"{pin.file_name}: SHA-256 {found}, where {pin.sha256} is pinned")
     return path
+
+
+def built_css(
+    out: Path | None = None, downloads: Path = DOWNLOADS, pins: Pins | None = None
+) -> str:
+    """Build `tailwind.css` into `out`, the page's own by default, with the pinned CLI, minified,
+    and return what the CLI said."""
+    cli = fetched((pins or read_pins()).tailwind, downloads)
+    cli.chmod(0o755)
+    made = subprocess.run(
+        [
+            str(cli),
+            "--config",
+            str(TAILWIND / "tailwind.config.js"),
+            "--input",
+            str(TAILWIND / "input.css"),
+            "--output",
+            str(out or static_dir() / "tailwind.css"),
+            "--minify",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return (made.stdout + made.stderr).strip()
 
 
 def app_zip(root: Path = ROOT) -> bytes:
@@ -346,6 +382,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Build the site, or serve it on this machine.")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("build", help="download and check Pyodide and the wheels, write the site")
+    commands.add_parser("css", help="download and check Tailwind's CLI, build tailwind.css")
     serving = commands.add_parser("serve", help="serve the built site with its headers")
     serving.add_argument("--host", default="127.0.0.1", help="0.0.0.0 to reach it from a phone")
     serving.add_argument("--port", type=int, default=8000)
@@ -357,6 +394,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"error: {error}", file=sys.stderr)
             return 1
         print(json.dumps(json.loads((site / "engine.json").read_text(encoding="utf-8"))["bytes"]))
+        return 0
+    if args.command == "css":
+        try:
+            print(built_css())
+        except (OSError, ValueError, subprocess.CalledProcessError) as error:
+            print(f"error: {error}", file=sys.stderr)
+            return 1
         return 0
     if not (SITE / "engine.json").is_file():
         print("error: no site to serve; run build first", file=sys.stderr)
