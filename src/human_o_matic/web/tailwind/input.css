@@ -233,7 +233,18 @@ progress.engine-bar:indeterminate::-moz-progress-bar {
   cursor: not-allowed;
 }
 
-body .next:disabled {
+/* Each step's call to action, centred under its card, with its secondary actions beside it. */
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 1.5rem 0 0;
+}
+
+body .next:disabled,
+body .secondary:disabled {
   border-style: dashed;
   box-shadow: none;
   background: var(--bg-parchment);
@@ -737,7 +748,8 @@ body .state {
   }
 
   #steps .step:disabled,
-  body .next:disabled {
+  body .next:disabled,
+  body .secondary:disabled {
     border-style: solid;
   }
 
