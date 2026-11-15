@@ -259,6 +259,7 @@ def test_the_page_s_own_files_name_only_google_fonts(site: Path) -> None:
     assert named.pop("tailwind.css") == {b"https://tailwindcss.com"}
     # An SVG file names its namespace, which is never fetched.
     assert named.pop("chevron.svg") == {b"http://www.w3.org"}
+    assert named.pop("check.svg") == {b"http://www.w3.org"}
     assert {path: found for path, found in named.items() if found} == {}
 
 
