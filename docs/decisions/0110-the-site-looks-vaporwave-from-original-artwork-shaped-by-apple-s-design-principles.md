@@ -1,6 +1,6 @@
 # 0110. The site looks vaporwave, from original artwork, shaped by Apple's design principles
 
-- **Status:** Accepted. Its tabs are amended by [ADR 0124](0124-the-page-asks-each-round-on-one-card-keeps-its-answers-as-a-draft-and-applies-it-when-the-user-moves-on.md)
+- **Status:** Superseded by [0125](0125-the-page-takes-the-owner-s-design-in-tailwind-from-its-play-cdn-with-google-fonts-the-mascot-as-its-logo-and-a-loading-view.md)
 - **Date:** 2026-11-14
 
 - The site's look is vaporwave. It replaces the space-age look the site plan's theme section described, which no ADR recorded.
