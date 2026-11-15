@@ -172,13 +172,14 @@ test("each question get_sections asks is a tab kind, and one it doesn't is none"
   assert.equal(kindOf("Anything else?"), null);
 });
 
-test("a row's description is its controls at their starting points, in words", () => {
+test("a row's description is its controls at their starting points, in words, with two decimals", () => {
   assert.equal(
     described(rows["chorus, big and open"]),
-    "energy 0.8, groove 0.5, dynamic range 0.45, tightness 0.75, feel 0, soft notes 0.35",
+    "energy 0.80, groove 0.50, dynamic range 0.45, tightness 0.75, feel 0.00, soft notes 0.35",
   );
   assert.equal(described(rows["fill, big into the chorus"]), "fills 0.85");
-  assert.equal(described(rows["a bit harder"], true), "energy +0.1");
+  assert.equal(described(rows["a bit harder"], true), "energy +0.10");
+  assert.equal(described({ style: "loose", ramp: 2, creative: true }), "style loose, ramp 2, creative true");
 });
 
 test("your call takes the one kind a section's name gives: equal, trimmed, in any case", () => {
@@ -387,7 +388,10 @@ test("the echo says what each section plays and what the engine clamped, a line 
         { start: 0, label: "bars 1 to 4", expected: "kick about 100" },
         { start: 4, label: "bars 5 to 8", expected: "kick about 110" },
       ],
-      clamped: [{ control: "ramp", given: 4, used: 2, section: 0 }],
+      clamped: [
+        { control: "ramp", given: 4, used: 2, section: 0 },
+        { control: "energy", given: 1.3, used: 1 },
+      ],
     },
   ];
 
@@ -395,8 +399,13 @@ test("the echo says what each section plays and what the engine clamped, a line 
     "Bars 1 to 4: kick about 100.",
     "Bars 5 to 8: kick about 110.",
     "Ramp 4 was taken as 2 in bars 1 to 4.",
+    "Energy 1.30 was taken as 1.00.",
   ]);
-  assert.deepEqual(echo(replies, [4]), ["Bars 5 to 8: kick about 110.", "Ramp 4 was taken as 2 in bars 1 to 4."]);
+  assert.deepEqual(echo(replies, [4]), [
+    "Bars 5 to 8: kick about 110.",
+    "Ramp 4 was taken as 2 in bars 1 to 4.",
+    "Energy 1.30 was taken as 1.00.",
+  ]);
 });
 
 test("a section edit keeps what a round set only on the sections it leaves as they were", () => {
@@ -528,7 +537,7 @@ test("the review says each round's answers in words, by hand with what it moved,
   // Each answer starts with a capital, as the page shows it, while the rows keep their own case.
   assert.deepEqual(answerLines(tabs, draft), [
     "Energy: Chorus, big and open",
-    "Soft notes: Set by hand, soft notes 0.2",
+    "Soft notes: Set by hand, soft notes 0.20",
     "Last repeat: Your call",
     "Fine-tune: Creative true",
   ]);

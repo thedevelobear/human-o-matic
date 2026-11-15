@@ -2,7 +2,7 @@
 // tied to it by `aria-describedby`, its words starting with a capital, and reads their values back
 // by name. It sets no style: the CSP allows none but tailwind.css's.
 
-import { capital, words } from "./forms.js";
+import { capital, fixed, words } from "./forms.js";
 
 /** An element named `name`, with `attributes`, true for one without a value, and `children`. */
 export function element(name, attributes = {}, ...children) {
@@ -52,7 +52,7 @@ export function writeFields(parent, values, skip = new Set()) {
       control.value = String(values[control.name]);
     }
     if (control.type === "range") {
-      parent.querySelector(`output[for="${control.id}"]`).value = control.value;
+      parent.querySelector(`output[for="${control.id}"]`).value = fixed(control.name, control.value);
       control.setAttribute("aria-valuetext", words(control.name, control.value));
     }
   }
@@ -129,9 +129,9 @@ function drawField(field, prefix) {
         "aria-valuetext": words(field.name, field.value),
         "aria-describedby": described,
       });
-      const shown = element("output", { for: id }, field.value);
+      const shown = element("output", { for: id }, fixed(field.name, field.value));
       slider.addEventListener("input", () => {
-        shown.value = slider.value;
+        shown.value = fixed(field.name, slider.value);
         slider.setAttribute("aria-valuetext", words(field.name, slider.value));
       });
       return element("div", { class: "field range" }, label(), slider, shown, hint);

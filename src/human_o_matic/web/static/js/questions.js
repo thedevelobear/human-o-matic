@@ -6,7 +6,7 @@
 // controls come from the worker's `presets` call, so no number of the vocabulary is written
 // here. It touches no DOM, so `node --test` loads it; round.js and app.js draw the rounds.
 
-import { capital, count, fineTune, mostRamp } from "./forms.js";
+import { capital, count, fineTune, fixed, mostRamp } from "./forms.js";
 
 export const YOUR_CALL = "your call";
 /** The section kinds the Energy tab offers, in the vocabulary's order. */
@@ -117,12 +117,13 @@ export function kindByName(name) {
   return found.length === 1 ? found[0] : null;
 }
 
-/** A row's controls in plain words, each name and value, a change with its sign. */
+/** A row's controls in plain words, each name and value, a number with two decimals and a change
+ * with its sign. */
 export function described(controls, change = false) {
   return Object.entries(controls)
     .map(([name, value]) => {
-      const shown = change && value > 0 ? `+${value}` : String(value);
-      return `${WORDS[name] ?? name} ${shown}`;
+      const number = typeof value === "number" ? fixed(name, value) : String(value);
+      return `${WORDS[name] ?? name} ${change && value > 0 ? "+" : ""}${number}`;
     })
     .join(", ");
 }
@@ -437,7 +438,8 @@ export function echo(replies, only = null) {
     .flatMap((reply) => reply.clamped ?? [])
     .map(({ control, given: was, used, section }) => {
       const where = section === undefined ? "" : ` in ${labels[section]}`;
-      return `${capital(WORDS[control] ?? control)} ${was} was taken as ${used}${where}.`;
+      const [given, taken] = [was, used].map((value) => fixed(control, value));
+      return `${capital(WORDS[control] ?? control)} ${given} was taken as ${taken}${where}.`;
     });
   return [...lines, ...clamped];
 }

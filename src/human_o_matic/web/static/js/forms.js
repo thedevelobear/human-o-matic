@@ -251,16 +251,23 @@ export function touchedControls(values, touched) {
 
 const LEVELS = ["very low", "low", "medium", "high", "very high"];
 
-/** A slider's value in words, for its `aria-valuetext`, such as "0.8, very high". */
+/** A control's number as the page shows it: with two decimals, "0.50" or "-1.00", but a ramp's
+ * bars, a whole number, as they are. */
+export function fixed(name, value) {
+  return name === "ramp" ? String(value) : Number(value).toFixed(2);
+}
+
+/** A slider's value in words, for its `aria-valuetext`, such as "0.80, very high". */
 export function words(name, value) {
   const number = Number(value);
   if (name === "ramp") {
     return number ? count(number, "bar") : "no ramp";
   }
+  const shown = fixed(name, number);
   if (name === "feel") {
-    return `${number}, ${number < 0 ? "pushed" : number > 0 ? "laid back" : "on the beat"}`;
+    return `${shown}, ${number < 0 ? "pushed" : number > 0 ? "laid back" : "on the beat"}`;
   }
-  return `${number}, ${LEVELS[Math.min(Math.floor(number * LEVELS.length), LEVELS.length - 1)]}`;
+  return `${shown}, ${LEVELS[Math.min(Math.floor(number * LEVELS.length), LEVELS.length - 1)]}`;
 }
 
 /** The section edit `op` on `section`, with bars as the page shows them, from 1, given as the

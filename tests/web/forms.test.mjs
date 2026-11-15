@@ -15,6 +15,7 @@ import {
   capital,
   editBars,
   fineTune,
+  fixed,
   form,
   kitOptions,
   mostRamp,
@@ -331,14 +332,22 @@ test("the page shows a sentence or an option with a capital first letter, and ch
   assert.equal(capital(""), "");
 });
 
+test("a slider's number shows two decimals, but a ramp's whole bars", () => {
+  assert.equal(fixed("energy", "1"), "1.00");
+  assert.equal(fixed("energy", 0.5), "0.50");
+  assert.equal(fixed("feel", "-1"), "-1.00");
+  assert.equal(fixed("feel", "0.25"), "0.25");
+  assert.equal(fixed("ramp", "4"), "4");
+});
+
 test("a slider's value is said in words", () => {
-  assert.equal(words("energy", "0.8"), "0.8, very high");
-  assert.equal(words("energy", "1"), "1, very high");
-  assert.equal(words("ghost_level", "0"), "0, very low");
-  assert.equal(words("groove", "0.5"), "0.5, medium");
-  assert.equal(words("feel", "-0.3"), "-0.3, pushed");
-  assert.equal(words("feel", "0"), "0, on the beat");
-  assert.equal(words("feel", "0.4"), "0.4, laid back");
+  assert.equal(words("energy", "0.8"), "0.80, very high");
+  assert.equal(words("energy", "1"), "1.00, very high");
+  assert.equal(words("ghost_level", "0"), "0.00, very low");
+  assert.equal(words("groove", "0.5"), "0.50, medium");
+  assert.equal(words("feel", "-0.3"), "-0.30, pushed");
+  assert.equal(words("feel", "0"), "0.00, on the beat");
+  assert.equal(words("feel", "0.4"), "0.40, laid back");
   assert.equal(words("ramp", "0"), "no ramp");
   assert.equal(words("ramp", "1"), "1 bar");
   assert.equal(words("ramp", "4"), "4 bars");
