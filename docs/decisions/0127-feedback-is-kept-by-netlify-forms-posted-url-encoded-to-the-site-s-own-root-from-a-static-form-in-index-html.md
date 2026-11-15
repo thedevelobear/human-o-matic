@@ -1,6 +1,6 @@
 # 0127. Feedback is kept by Netlify Forms, posted URL-encoded to the site's own `/` from a static form in `index.html`
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-15
 
 - **The store** is Netlify Forms, the static host's own form service ([ADR 0099](0099-the-site-s-feedback-form-keeps-text-and-settings-never-midi.md) leaves the store to the site plan). The site has no server of its own: no web app, no Dockerfile and no new dependency. The server of the site's own stays the site plan's fallback, for when Netlify Forms can't be used.

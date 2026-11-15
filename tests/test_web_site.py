@@ -282,6 +282,15 @@ def test_the_built_page_holds_the_feedback_form_netlify_reads(site: Path) -> Non
     assert "connect-src 'self';" in EVERY_PATH["Content-Security-Policy"]
 
 
+def test_no_page_of_the_built_site_is_left_with_a_placeholder(site: Path) -> None:
+    # The notice's last two sentences were once "[TO FILL IN: ...]", and a site that still says
+    # so isn't one to deploy.
+    pages = {path.relative_to(site).as_posix(): path for path in site.rglob("*.html")}
+
+    assert {"index.html", "check.html"} <= set(pages)
+    assert [name for name, path in pages.items() if "[TO FILL IN" in path.read_text("utf-8")] == []
+
+
 CLI = DOWNLOADS / read_pins().tailwind.file_name
 
 

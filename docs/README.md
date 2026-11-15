@@ -33,7 +33,7 @@ What was decided, specifically enough to check the code against.
 | Plan | Status |
 |---|---|
 | [2026-11-08-human-o-matic](plans/2026-11-08-human-o-matic.md) | Active. The app, milestone by milestone. |
-| [2026-11-13-website](plans/2026-11-13-website.md) | Active. M7, the website, built after M4's gate and before M5: PRs 1 to 4b merged. |
+| [2026-11-13-website](plans/2026-11-13-website.md) | Active. M7, the website, built after M4's gate and before M5: PRs 1 to 6 merged. |
 
 ### Research
 | Page | Compares |
@@ -170,5 +170,5 @@ What was decided, specifically enough to check the code against.
 | [0124](decisions/0124-the-page-asks-each-round-on-one-card-keeps-its-answers-as-a-draft-and-applies-it-when-the-user-moves-on.md) | The page asks each round of questions on one card, keeps its answers as a draft for the song as opened, and applies a round when the user moves on, staying for a Ramp question its Next button brings up | Accepted |
 | [0125](decisions/0125-the-page-takes-the-owner-s-design-in-tailwind-from-its-play-cdn-with-google-fonts-the-mascot-as-its-logo-and-a-loading-view.md) | The page takes the owner's design in Tailwind from its Play CDN, with Google Fonts, the mascot as its logo, and a loading view alone until the engine is ready | Accepted. Its Play CDN, its integrity hash, its configuration file and its CSP are amended by [ADR 0126](decisions/0126-the-page-s-tailwind-css-is-built-by-tailwind-s-standalone-cli-pinned-like-pyodide-into-a-committed-file.md) |
 | [0126](decisions/0126-the-page-s-tailwind-css-is-built-by-tailwind-s-standalone-cli-pinned-like-pyodide-into-a-committed-file.md) | The page's Tailwind CSS is built by Tailwind's standalone CLI, pinned like Pyodide, into a committed file, and the CSP drops Tailwind's CDN and inline styles | Accepted |
-| [0127](decisions/0127-feedback-is-kept-by-netlify-forms-posted-url-encoded-to-the-site-s-own-root-from-a-static-form-in-index-html.md) | Feedback is kept by Netlify Forms, posted URL-encoded to the site's own `/` from a static form in `index.html` with its honeypot, the page's only request with a body, and the notice says Netlify records the sender's address | Proposed |
-| [0128](decisions/0128-the-feedback-s-settings-include-each-section-s-take.md) | The feedback's settings include each section's take, beside the kits, style, seed, bars, the number of sections and the song's and each section's own controls | Proposed |
+| [0127](decisions/0127-feedback-is-kept-by-netlify-forms-posted-url-encoded-to-the-site-s-own-root-from-a-static-form-in-index-html.md) | Feedback is kept by Netlify Forms, posted URL-encoded to the site's own `/` from a static form in `index.html` with its honeypot, the page's only request with a body, and the notice says Netlify records the sender's address | Accepted |
+| [0128](decisions/0128-the-feedback-s-settings-include-each-section-s-take.md) | The feedback's settings include each section's take, beside the kits, style, seed, bars, the number of sections and the song's and each section's own controls | Accepted |
