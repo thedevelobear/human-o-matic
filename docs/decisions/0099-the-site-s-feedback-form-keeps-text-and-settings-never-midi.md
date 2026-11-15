@@ -1,6 +1,6 @@
 # 0099. The site's feedback form keeps text and settings, never MIDI
 
-- **Status:** Accepted
+- **Status:** Accepted. Its list of the settings the page sends is amended by [ADR 0128](0128-the-feedback-s-settings-include-each-section-s-take.md)
 - **Date:** 2026-11-13
 
 - After a download the page offers a short form: a rating, a comment and an optional contact.
