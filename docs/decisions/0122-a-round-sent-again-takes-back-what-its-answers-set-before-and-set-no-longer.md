@@ -1,6 +1,6 @@
 # 0122. A round sent again takes back what its answers set before and set no longer
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-15
 
 - When the page sends a round, it keeps, for each section, the controls the round's answers set: the group-wide tabs', Energy, Soft notes, Groove and Fill, on every section of the group, and the Last repeat tab's on its own section; for the song-wide round, the song's `tightness` and `feel`. When the round is sent again, a control its answers set at the last send and no longer set is sent as `null`, so the section takes the song's value, or the style's default, again. So "your call" after a row unsets that row's controls, and "chorus, big and open" after "verse, holding back, building" unsets the `arc: build` the verse set.
