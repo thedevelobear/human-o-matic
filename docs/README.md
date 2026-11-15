@@ -33,7 +33,7 @@ What was decided, specifically enough to check the code against.
 | Plan | Status |
 |---|---|
 | [2026-11-08-human-o-matic](plans/2026-11-08-human-o-matic.md) | Active. The app, milestone by milestone. |
-| [2026-11-13-website](plans/2026-11-13-website.md) | Active. M7, the website, built after M4's gate and before M5: PRs 1 to 3 merged, PR 4 in progress. |
+| [2026-11-13-website](plans/2026-11-13-website.md) | Active. M7, the website, built after M4's gate and before M5: PRs 1 to 3 merged, PR 4 in review. |
 
 ### Research
 | Page | Compares |
@@ -163,5 +163,7 @@ What was decided, specifically enough to check the code against.
 | [0117](decisions/0117-m7-is-built-before-m5.md) | M7 is built before M5 | Accepted |
 | [0118](decisions/0118-the-page-is-hand-rolled-es-modules-with-native-controls-and-no-library.md) | The page is hand-rolled ES modules with native controls and no library, vendored or fetched, and a vendored htm build of Preact was set aside | Accepted |
 | [0119](decisions/0119-the-build-writes-netlify-s-headers-with-hsts-for-a-year-and-fails-on-a-file-of-10-mb-or-more.md) | The build writes Netlify's `_headers`, the CSP and headers with HSTS for a year on every path, each `.wasm` file's type and immutable caching of the versioned folders, and fails on a file of 10 MB or more | Accepted |
-| [0120](decisions/0120-the-question-window-sends-only-the-controls-changed-and-enter-on-set-it-by-hand-opens-its-controls.md) | The question window sends only the controls changed, and Enter on "Set it by hand" opens its controls | Accepted |
+| [0120](decisions/0120-the-question-window-sends-only-the-controls-changed-and-enter-on-set-it-by-hand-opens-its-controls.md) | The question window sends only the controls changed, and Enter on "Set it by hand" opens its controls | Accepted. Its line that the page can't unset a control once it is sent is amended by [ADR 0122](decisions/0122-a-round-sent-again-takes-back-what-its-answers-set-before-and-set-no-longer.md) |
 | [0121](decisions/0121-the-page-has-seven-steps-until-the-feedback-form-opens-the-song-afresh-for-each-kit-and-takes-the-next-seed-for-a-new-take.md) | The page has seven steps until the feedback form, opens the song afresh for each kit, and takes the next seed for a new take | Accepted |
+| [0122](decisions/0122-a-round-sent-again-takes-back-what-its-answers-set-before-and-set-no-longer.md) | A round sent again takes back, as `null`, what its answers set at the last send and set no longer, never what Fine-tune moved or a ramp | Proposed |
+| [0123](decisions/0123-the-page-reads-each-question-s-tab-from-its-wording-in-get-sections.md) | The page reads each question's tab from its wording in `get_sections`, an unknown one a tab of "your call" alone, and a Ramp tab joins a round only once it is sent | Proposed |
