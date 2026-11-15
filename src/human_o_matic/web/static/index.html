@@ -116,12 +116,12 @@
 
           <section id="file" aria-labelledby="file-title">
           <div class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative">
-            <h2 id="file-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Choose a file</h2>
+            <h2 id="file-title" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Choose a file</h2>
             <p id="deleted" role="status" class="font-mono text-sm mb-3 empty:hidden"></p>
             <p class="mb-4">Choose a drum MIDI file, answer a few questions about it, and download it re-performed, to drag into your DAW.</p>
             <div id="drop" class="border-2 border-dashed border-ink rounded-2xl p-4 sm:p-5 bg-parchment/55 halftone-subtle mb-4">
               <label for="midi" class="block font-bold mb-2">A drum MIDI file, .mid or .midi, up to 512 KB</label>
-              <input id="midi" type="file" accept=".mid,.midi" class="font-mono text-sm file:mr-3 file:rounded-xl file:border-2 file:border-ink file:bg-cream file:px-3 file:py-1.5 file:font-bold file:text-ink">
+              <input id="midi" type="file" accept=".mid,.midi" class="font-mono text-sm rounded-xl file:mr-3 file:rounded-xl file:border-2 file:border-ink file:bg-cream file:px-3 file:py-1.5 file:font-bold file:text-ink">
               <p class="font-mono text-xs text-ink/75 mt-2">Or drop it here.</p>
             </div>
             <p id="chosen" class="font-mono text-sm mb-4 empty:hidden"></p>
@@ -138,7 +138,7 @@
 
           <section id="kits" aria-labelledby="kits-title" hidden>
           <div class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative">
-            <h2 id="kits-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Kits</h2>
+            <h2 id="kits-title" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Kits</h2>
             <form id="kits-form">
               <div class="field">
                 <label for="from-map">Where did this MIDI come from?</label>
@@ -158,7 +158,7 @@
 
           <section id="check" aria-labelledby="check-title" hidden>
           <div class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative">
-            <h2 id="check-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Check</h2>
+            <h2 id="check-title" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Check</h2>
             <p id="opened-facts" class="font-mono text-sm font-bold mb-2"></p>
             <p class="mb-3">The sections found, and what the file leaves unclear. You can change the sections in step 5.</p>
             <ol id="check-sections" class="strip"></ol>
@@ -174,7 +174,7 @@
           <section id="drummer" aria-labelledby="drummer-title" hidden>
           <div class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative">
             <div class="flex items-center gap-2.5 mb-2">
-              <h2 id="drummer-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight">Drummer</h2>
+              <h2 id="drummer-title" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight">Drummer</h2>
               <svg class="w-5 h-5 animate-sparkle" aria-hidden="true" focusable="false"><use href="#sun-star"/></svg>
             </div>
             <div id="song-round" class="round"></div>
@@ -186,7 +186,7 @@
 
           <section id="sections" aria-labelledby="sections-title" hidden>
           <div class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative">
-            <h2 id="sections-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Sections</h2>
+            <h2 id="sections-title" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Sections</h2>
             <ol id="section-strip" class="strip"></ol>
             <details class="edits">
               <summary>Change <span id="editing"></span>: split, merge, move, rename or take again</summary>
@@ -225,7 +225,7 @@
               </div>
             </details>
             <div class="flex items-center gap-2.5 mt-6 mb-2">
-              <h3 id="group-title" tabindex="-1" class="font-display text-xl sm:text-2xl font-bold text-ink tracking-tight"></h3>
+              <h3 id="group-title" class="font-display text-xl sm:text-2xl font-bold text-ink tracking-tight"></h3>
               <svg class="w-5 h-5 animate-sparkle shrink-0" aria-hidden="true" focusable="false"><use href="#sun-star"/></svg>
             </div>
             <div id="group-round" class="round"></div>
@@ -238,7 +238,7 @@
 
           <section id="review" aria-labelledby="review-title" hidden>
           <div class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative">
-            <h2 id="review-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Review</h2>
+            <h2 id="review-title" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Review</h2>
             <h3 class="font-display font-bold text-xl mb-2">Your answers</h3>
             <ol id="answers" class="answered"></ol>
             <h3 class="font-display font-bold text-xl mt-6 mb-2">Each section</h3>
@@ -254,7 +254,7 @@
 
           <section id="download" aria-labelledby="download-title" hidden>
           <div class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative">
-            <h2 id="download-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Download</h2>
+            <h2 id="download-title" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Download</h2>
             <p id="saved" role="status" class="font-mono text-sm mt-3 empty:hidden"></p>
             <p id="listen" class="mt-3"></p>
             <!-- feat/web-feedback adds the feedback form here. -->
@@ -265,17 +265,13 @@
           </section>
         </main>
 
-        <footer id="delete-box" class="mt-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4" hidden>
-          <p id="delete-about" class="text-sm text-ink/75 max-w-md">Ends the engine, which holds your file and everything made from it, and starts again from step 1.</p>
-          <button type="button" id="delete" class="retro-btn bg-cream hover:bg-[#FDE8EC] text-ink hover:text-[#B91C3C] font-mono font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2" aria-describedby="delete-about">
+        <footer id="delete-box" class="mt-7 gap-4" hidden>
+          <button type="button" id="delete" class="retro-btn bg-cream hover:bg-[#FDE8EC] text-ink hover:text-[#B91C3C] font-mono font-bold text-xs px-2 py-1.5 rounded-xl flex items-center gap-2" aria-describedby="delete-about">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
             <span>Delete my file now</span>
           </button>
+          <p id="delete-about" class="text-xs text-ink/75">Ends the engine, which holds your file and everything made from it, and starts again from step 1.</p>
         </footer>
-      </div>
-
-      <div class="w-full h-14 overflow-hidden pointer-events-none relative mt-2 border-t-2 border-ink/20" aria-hidden="true">
-        <div class="w-[140%] -left-[20%] h-24 perspective-floor absolute bottom-0"></div>
       </div>
 
       <!-- What the page has just applied; #status says it to assistive technology. -->

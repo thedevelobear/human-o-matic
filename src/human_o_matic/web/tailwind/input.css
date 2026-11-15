@@ -24,7 +24,7 @@
   --error-red: #b91c3c;
   --focus-violet: #5b2bd1;
   color-scheme: light;
-  accent-color: var(--focus-violet);
+  accent-color: var(--sunset-orange);
 }
 
 body {
@@ -43,8 +43,8 @@ body {
 }
 
 body :focus-visible {
-  outline: 0.1875rem solid var(--focus-violet);
-  outline-offset: 0.125rem;
+  outline: 2px solid var(--vibrant-magenta);
+  outline-offset: -2px;
 }
 
 /* Hard retro borders and offset shadows */
@@ -700,7 +700,7 @@ body .state {
     }
 
     50% {
-      transform: translateY(-3px) rotate(1.5deg);
+      transform: translateY(-3px) rotate(3.5deg);
     }
   }
 
