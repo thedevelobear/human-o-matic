@@ -23,6 +23,7 @@ import {
   groupCalls,
   groupControls,
   groupTabs,
+  keptAfterEdit,
   membersOf,
   rampTabs,
   resolvedOf,
@@ -513,6 +514,7 @@ async function edit(op, event) {
     return;
   }
   const { sections } = page.sections;
+  page.sent = keptAfterEdit(page.sent, sections, reply.sections);
   const before = sections[sections.indexOf(section) - 1];
   const start = { merge: before?.start, move: change.to }[op] ?? section.start;
   say(`The sections are changed: ${reply.sections.length} sections.`);

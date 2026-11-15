@@ -360,6 +360,23 @@ export function songControls(tabs, round, { presets, before = [] }) {
   return { controls, set: Object.keys(answers).filter((name) => name !== "style") };
 }
 
+/** What the rounds' answers set, by round and section, kept after a section edit only for the
+ * sections the edit leaves as they were, `before` against `after`: the same first bar, bars and
+ * group. A split, merge, move or new group forgets the rest, so taking back what a round set
+ * never reaches a section that now means something else (ADR 0122). The song's stays. */
+export function keptAfterEdit(sent, before, after) {
+  const shape = ({ start, bars, group }) => `${start} ${bars} ${group}`;
+  const same = new Set(after.map(shape));
+  const unchanged = before.filter((section) => same.has(shape(section)));
+  const kept = new Set(unchanged.map(({ start }) => String(start)));
+  return Object.fromEntries(
+    Object.entries(sent).map(([key, set]) => [
+      key,
+      key === "song" ? set : Object.fromEntries(Object.entries(set).filter(([start]) => kept.has(start))),
+    ]),
+  );
+}
+
 /** The calls that send a group's round: set_section_controls once for each set of controls,
  * with the sections that take it, in song order. */
 export function groupCalls(controls) {

@@ -15,6 +15,7 @@ import {
   groupCalls,
   groupControls,
   groupTabs,
+  keptAfterEdit,
   kindByName,
   kindOf,
   offered,
@@ -398,4 +399,21 @@ test("the echo says what each section plays, what the engine clamped, and the co
     echo(replies, 6, [4]),
     "Bars 5 to 8: kick about 110. Ramp 4 was taken as 2 in bars 1 to 4. Questions so far: 6.",
   );
+});
+
+test("a section edit keeps what a round set only on the sections it leaves as they were", () => {
+  const before = [
+    { start: 0, bars: 4, group: "A" },
+    { start: 4, bars: 4, group: "B" },
+    { start: 8, bars: 4, group: "A" },
+  ];
+  const sent = { song: ["feel"], A: { 0: ["energy"], 8: ["energy"] }, B: { 4: ["groove"] } };
+  const split = [before[0], { start: 4, bars: 2, group: "B" }, { start: 6, bars: 2, group: "B" }, before[2]];
+  const regrouped = [before[0], before[1], { start: 8, bars: 4, group: "C" }];
+  const merged = [{ start: 0, bars: 8, group: "A" }, before[2]];
+
+  assert.deepEqual(keptAfterEdit(sent, before, before), sent);
+  assert.deepEqual(keptAfterEdit(sent, before, split), { ...sent, B: {} });
+  assert.deepEqual(keptAfterEdit(sent, before, regrouped), { ...sent, A: { 0: ["energy"] } });
+  assert.deepEqual(keptAfterEdit(sent, before, merged), { song: ["feel"], A: { 8: ["energy"] }, B: {} });
 });
