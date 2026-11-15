@@ -1,6 +1,6 @@
 # 0126. The page's Tailwind CSS is built by Tailwind's standalone CLI, pinned like Pyodide, into a committed file
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-15
 
 - **The committed file:** the page's CSS is `web/static/tailwind.css`, committed, which the site's build copies as it is with the page's other files. The page loads it in place of Tailwind's Play CDN, which it no longer loads, and runs no Tailwind script.
