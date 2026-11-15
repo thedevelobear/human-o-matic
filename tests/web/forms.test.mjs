@@ -341,18 +341,18 @@ test("a slider's number shows two decimals, but a ramp's whole bars", () => {
   assert.equal(fixed("ramp", "4"), "4");
 });
 
-test("a slider's captions say what its ends mean, with its middle between them", () => {
-  assert.deepEqual(scale("energy", 0, 1), ["0.00 quiet", "0.50", "1.00 full power"]);
-  assert.deepEqual(scale("tightness", 0, 1), ["0.00 loosest", "0.50", "1.00 tightest"]);
-  assert.deepEqual(scale("feel", -1, 1), ["-1.00 pushed", "0.00 on the beat", "1.00 laid back"]);
-  assert.deepEqual(scale("ghost_level", 0, 1), ["0.00 tucked away", "0.50", "1.00 present"]);
-  assert.deepEqual(scale("ramp", 0, 4), ["no ramp", "", "4 bars"]);
+test("a slider's captions say in words alone what its ends mean, and feel's middle", () => {
+  assert.deepEqual(scale("energy"), ["quiet", "", "full power"]);
+  assert.deepEqual(scale("tightness"), ["loosest", "", "tightest"]);
+  assert.deepEqual(scale("feel"), ["pushed", "on the beat", "laid back"]);
+  assert.deepEqual(scale("ghost_level"), ["tucked away", "", "present"]);
+  assert.deepEqual(scale("ramp"), ["no ramp", "", "longest"]);
   for (const name of GROUP_CONTROLS) {
     const field = fineTune([name], { energy: 0, groove: 0, dynamic_range: 0, tightness: 0, feel: 0, fill_intensity: 0, ghost_level: 0, ramp: 0 })[0];
     if (field.type === "range") {
-      const [low, , high] = scale(name, field.min, field.max);
-      assert.match(low, /\D$/, name);
-      assert.match(high, /\D$/, name);
+      const [low, , high] = scale(name);
+      assert.ok(low && high, name);
+      assert.doesNotMatch(scale(name).join(" "), /\d/, name);
     }
   }
 });

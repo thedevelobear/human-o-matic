@@ -171,7 +171,7 @@ function drawField(field, prefix) {
       slider.addEventListener("input", () => showValue(slider, shown));
       // Its label and value on one row of one height, so sliders side by side line up, and its
       // ends' meaning under it, which its words already say to assistive technology.
-      const ends = scale(field.name, Number(field.min), Number(field.max));
+      const ends = scale(field.name);
       return element(
         "div",
         { class: "field range" },

@@ -281,18 +281,15 @@ const ENDS = {
   feel: ["pushed", "laid back"],
   fill_intensity: ["small", "big"],
   ghost_level: ["tucked away", "present"],
+  ramp: ["no ramp", "longest"],
 };
 
-/** A slider's captions under it, at its least, middle and most: each end its number and what it
- * means, "0.00 quiet" and "1.00 full power", the middle its number, or for feel "0.00 on the
- * beat", and a ramp's ends its bars alone, with no middle. */
-export function scale(name, min, max) {
-  if (name === "ramp") {
-    return [words(name, min), "", words(name, max)];
-  }
+/** A slider's captions under it, at its least, middle and most, in words alone, its number being
+ * in its pill: what each end means, "quiet" and "full power", and a middle only for feel, "on the
+ * beat". */
+export function scale(name) {
   const [low, high] = ENDS[name] ?? ["", ""];
-  const at = (value, meaning) => `${fixed(name, value)} ${meaning}`.trim();
-  return [at(min, low), at((min + max) / 2, name === "feel" ? "on the beat" : ""), at(max, high)];
+  return [low, name === "feel" ? "on the beat" : "", high];
 }
 
 /** The section edit `op` on `section`, with bars as the page shows them, from 1, given as the
