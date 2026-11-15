@@ -193,11 +193,11 @@ export const FINE_TUNE = {
   groove: { ...UNIT, label: "Groove" },
   dynamic_range: { ...UNIT, label: "Dynamic range" },
   tightness: { ...UNIT, label: "Tightness" },
-  feel: { ...UNIT, label: "Feel, from pushed to laid back", min: -1 },
+  feel: { ...UNIT, label: "Feel", min: -1 },
   arc: { kind: "select", label: "Arc", options: ["steady", "build", "drop"] },
   fill_intensity: { ...UNIT, label: "Fills" },
   ghost_level: { ...UNIT, label: "Soft notes" },
-  ramp: { ...UNIT, label: "Ramp, in bars", step: 1 },
+  ramp: { ...UNIT, label: "Ramp", step: 1 },
   skip: { kind: "switch", label: "Leave this section as it is" },
   creative: { kind: "switch", label: ADD_NOTES },
 };
@@ -269,6 +269,30 @@ export function words(name, value) {
     return `${shown}, ${number < 0 ? "pushed" : number > 0 ? "laid back" : "on the beat"}`;
   }
   return `${shown}, ${LEVELS[Math.min(Math.floor(number * LEVELS.length), LEVELS.length - 1)]}`;
+}
+
+// What each slider's ends mean, from the controls' descriptions in the engine and the
+// vocabulary's words for them.
+const ENDS = {
+  energy: ["quiet", "full power"],
+  groove: ["steady", "more groove"],
+  dynamic_range: ["flat", "wide"],
+  tightness: ["loosest", "tightest"],
+  feel: ["pushed", "laid back"],
+  fill_intensity: ["small", "big"],
+  ghost_level: ["tucked away", "present"],
+};
+
+/** A slider's captions under it, at its least, middle and most: each end its number and what it
+ * means, "0.00 quiet" and "1.00 full power", the middle its number, or for feel "0.00 on the
+ * beat", and a ramp's ends its bars alone, with no middle. */
+export function scale(name, min, max) {
+  if (name === "ramp") {
+    return [words(name, min), "", words(name, max)];
+  }
+  const [low, high] = ENDS[name] ?? ["", ""];
+  const at = (value, meaning) => `${fixed(name, value)} ${meaning}`.trim();
+  return [at(min, low), at((min + max) / 2, name === "feel" ? "on the beat" : ""), at(max, high)];
 }
 
 /** The section edit `op` on `section`, with bars as the page shows them, from 1, given as the

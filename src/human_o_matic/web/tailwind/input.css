@@ -414,37 +414,49 @@ body main input[type="checkbox"]:checked {
   background-image: url("check.svg");
 }
 
-/* A slider and its value: the value's width is fixed for the longest it shows, "-0.75", so the
-   slider never changes width as the value changes. */
+/* A slider: its label and its value's pill on a row of one height, the slider under them at its
+   full width and its captions under it, so sliders side by side line up. */
 .range {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.row {
+  display: flex;
   align-items: center;
-  column-gap: 0.75rem;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2rem;
 }
 
-.range input[type="range"] {
-  min-width: 0;
-}
-
-.range label,
-.range .hint {
-  grid-column: 1 / -1;
-}
-
-.range output {
-  box-sizing: content-box;
-  width: 5ch;
-  flex-shrink: 0;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  padding: 0 0.5rem;
-  border: 1px solid var(--ink-black);
-  border-radius: 0.375rem;
+.pill {
+  flex: none;
+  padding: 0.125rem 0.625rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.625rem;
   background: var(--bg-parchment);
   font-family: "Space Mono", monospace;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+body .scale {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--ink-muted);
+  font-family: "Space Mono", monospace;
+  font-size: 0.75rem;
+}
+
+/* The controls side by side in a card's grid keep no margin of their own. */
+.hand > *,
+.fine-tune > * {
+  margin: 0;
 }
 
 body .hint {
@@ -598,7 +610,10 @@ body main fieldset.segments {
 
 body main .segments legend {
   float: left;
+  display: flex;
+  align-items: center;
   width: 100%;
+  min-height: 2rem;
   padding: 0;
   border: 0;
   box-shadow: none;

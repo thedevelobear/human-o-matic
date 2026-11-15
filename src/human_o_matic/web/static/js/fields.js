@@ -2,7 +2,7 @@
 // tied to it by `aria-describedby`, its words starting with a capital, and reads their values back
 // by name. It sets no style: the CSP allows none but tailwind.css's.
 
-import { capital, fixed, words } from "./forms.js";
+import { capital, scale, words } from "./forms.js";
 
 /** An element named `name`, with `attributes`, true for one without a value, and `children`. */
 export function element(name, attributes = {}, ...children) {
@@ -61,10 +61,15 @@ export function writeFields(parent, values, skip = new Set()) {
       control.value = String(values[name]);
     }
     if (control.type === "range") {
-      parent.querySelector(`output[for="${control.id}"]`).value = fixed(control.name, control.value);
-      control.setAttribute("aria-valuetext", words(control.name, control.value));
+      showValue(control, parent.querySelector(`output[for="${control.id}"]`));
     }
   }
+}
+
+/** A slider's value in words, in its pill and for assistive technology: "0.80, very high". */
+function showValue(slider, shown) {
+  shown.value = capital(words(slider.name, slider.value));
+  slider.setAttribute("aria-valuetext", words(slider.name, slider.value));
 }
 
 function drawField(field, prefix) {
@@ -159,15 +164,22 @@ function drawField(field, prefix) {
         max: field.max,
         step: field.step,
         value: field.value,
-        "aria-valuetext": words(field.name, field.value),
         "aria-describedby": described,
       });
-      const shown = element("output", { for: id }, fixed(field.name, field.value));
-      slider.addEventListener("input", () => {
-        shown.value = fixed(field.name, slider.value);
-        slider.setAttribute("aria-valuetext", words(field.name, slider.value));
-      });
-      return element("div", { class: "field range" }, label(), slider, shown, hint);
+      const shown = element("output", { for: id, class: "pill" });
+      showValue(slider, shown);
+      slider.addEventListener("input", () => showValue(slider, shown));
+      // Its label and value on one row of one height, so sliders side by side line up, and its
+      // ends' meaning under it, which its words already say to assistive technology.
+      const ends = scale(field.name, Number(field.min), Number(field.max));
+      return element(
+        "div",
+        { class: "field range" },
+        element("div", { class: "row" }, label(), shown),
+        slider,
+        element("p", { class: "scale", "aria-hidden": "true" }, ...ends.map((end) => element("span", {}, end))),
+        hint,
+      );
     }
     case "button":
       return element("button", { type: "button", class: "retro-btn btn", name: field.name }, field.label);
