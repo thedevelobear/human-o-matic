@@ -1,6 +1,6 @@
 # 0128. The feedback's settings include each section's take
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-15
 
 - The `settings` field the feedback form sends ([ADR 0099](0099-the-site-s-feedback-form-keeps-text-and-settings-never-midi.md)) holds exactly these keys: `from_map` and `to_map`, the kits the song was opened with; `style`, `seed` and `bars`; `sections`, how many; `song_controls`, the song's own controls; `section_controls`, each section's own controls, in song order; and `takes`, each section's take, in song order.
