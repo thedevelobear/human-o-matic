@@ -178,3 +178,44 @@ def test_a_round_sends_only_from_its_submit_button() -> None:
     assert 'button.addEventListener("click"' in submit
     assert "await send(" in submit
     assert "send" not in (static_dir() / "js" / "tabs.js").read_text(encoding="utf-8")
+
+
+FUNCTION = re.compile(r"^(?:async )?function (\w+)\(.*?^\}", re.MULTILINE | re.DOTALL)
+CALL = re.compile(r"\bask\(\s*([^,)]+)")
+
+
+def test_app_js_changes_the_rounds_controls_only_from_their_submit() -> None:
+    # The rounds' controls go to the engine through songCalls and groupCalls, from sendSong and
+    # sendGroup, which are a round's `send`; the page's other calls read, edit sections, take or
+    # check, and no handler at the top level calls the engine itself.
+    text = (static_dir() / "js" / "app.js").read_text(encoding="utf-8")
+    functions = {found.group(1): found.group(0) for found in FUNCTION.finditer(text)}
+    calls = {name: CALL.findall(body) for name, body in functions.items()}
+
+    assert "set_section_controls" not in text
+    assert CALL.findall(FUNCTION.sub("", text)) == []
+    assert {name for name, made in calls.items() if "call" in made} == {
+        "ask",
+        "confirmCheck",
+        "sendSong",
+        "sendGroup",
+    }
+    rounds = re.compile(r"\b(song|group)Calls\(")
+    assert {name for name, body in functions.items() if rounds.search(body)} == {
+        "sendSong",
+        "sendGroup",
+    }
+    # Each is named twice: where it is defined, and as a round's `send`.
+    assert text.count("sendSong") == 2
+    assert "send: sendSong," in text
+    assert text.count("sendGroup") == 2
+    assert "send: (round) => sendGroup(" in text
+    styled = [
+        (name, re.search(r'ask\("set_style", \{([^}]*)\}', body))
+        for name, body in functions.items()
+        if '"set_style"' in body
+    ]
+    assert [(name, found and found.group(1).strip()) for name, found in styled] == [
+        ("drawDrummer", "session_id: page.session"),
+        ("songTake", "session_id: page.session, seed: page.seed + 1"),
+    ]
