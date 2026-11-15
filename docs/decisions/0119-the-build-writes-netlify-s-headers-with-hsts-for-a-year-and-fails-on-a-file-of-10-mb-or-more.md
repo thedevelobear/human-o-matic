@@ -1,6 +1,6 @@
 # 0119. The build writes Netlify's `_headers`, with HSTS for a year, and fails on a file of 10 MB or more
 
-- **Status:** Accepted. Its CSP and its page naming no other origin are amended by [ADR 0125](0125-the-page-takes-the-owner-s-design-in-tailwind-from-its-play-cdn-with-google-fonts-the-mascot-as-its-logo-and-a-loading-view.md)
+- **Status:** Accepted. Its CSP and its page naming no other origin are amended by [ADR 0125](0125-the-page-takes-the-owner-s-design-in-tailwind-from-its-play-cdn-with-google-fonts-the-mascot-as-its-logo-and-a-loading-view.md) and [ADR 0126](0126-the-page-s-tailwind-css-is-built-by-tailwind-s-standalone-cli-pinned-like-pyodide-into-a-committed-file.md)
 - **Date:** 2026-11-14
 
 - `tools/build_site.py build` writes `dist/site/_headers`, in the form Netlify reads, with these rules:
