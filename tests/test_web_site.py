@@ -217,7 +217,7 @@ def test_none_of_the_page_s_own_files_names_another_origin(site: Path) -> None:
     ]
 
     page = {path.relative_to(static_dir()).as_posix() for path in static_dir().rglob("*.*")}
-    assert {"index.html", "site.css", "check.html", "js/app.js", "js/tabs.js"} <= page
+    assert {"index.html", "site.css", "check.html", "js/app.js", "js/round.js"} <= page
     assert page | {"_headers", "engine.json", "check-flow.json"} == {
         path.relative_to(site).as_posix() for path in own
     }

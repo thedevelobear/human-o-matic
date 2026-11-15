@@ -1,7 +1,8 @@
 """The page's own files, read as they are served (the website plan's PRs 3 and 4): every decision
 request kind has a form, each HTML page has `lang`, a label on every input, alt text on every image
 and no inline script or style, the page's JavaScript keeps nothing in the browser's storage, writes
-no number of the vocabulary, and sends a round only from its Submit button."""
+no number of the vocabulary, applies a round only as the page moves on, and keeps its drafts
+until the song is opened again."""
 
 import re
 from html.parser import HTMLParser
@@ -130,7 +131,7 @@ STORAGE = re.compile(r"\b(localStorage|sessionStorage|indexedDB|caches)\b")
 
 
 def test_the_page_s_javascript_keeps_nothing_in_the_browser_s_storage() -> None:
-    own = {"app.js", "fields.js", "forms.js", "questions.js", "review.js", "round.js", "tabs.js"}
+    own = {"app.js", "fields.js", "forms.js", "questions.js", "review.js", "round.js"}
     assert own <= {path.name for path in MODULES}
     for path in MODULES:
         found = STORAGE.findall(path.read_text(encoding="utf-8"))
@@ -169,31 +170,31 @@ def test_the_page_writes_no_number_of_the_vocabulary() -> None:
         assert found & {abs(number) for number in numbers} == set(), path.name
 
 
-def test_a_round_sends_only_from_its_submit_button() -> None:
-    # Only Submit sends (ADR 0111): the tabs, their keys and Next draw, and never call `send`.
+def test_a_round_sends_nothing_itself() -> None:
+    # A round's answers are a draft it hands the page (ADR 0124): only app.js calls the engine.
     text = (static_dir() / "js" / "round.js").read_text(encoding="utf-8")
-    submit = text[text.index("function submitPanel()") : text.index("function asked()")]
 
-    assert text.count("send(") == 1
-    assert 'button.addEventListener("click"' in submit
-    assert "await send(" in submit
-    assert "send" not in (static_dir() / "js" / "tabs.js").read_text(encoding="utf-8")
+    assert not re.search(r"\bsend\b|\bask\(|postMessage", text)
+    assert "keep(tabs, now)" in text
 
 
 FUNCTION = re.compile(r"^(?:async )?function (\w+)\(.*?^\}", re.MULTILINE | re.DOTALL)
 CALL = re.compile(r"\bask\(\s*([^,)]+)")
 
 
-def test_app_js_changes_the_rounds_controls_only_from_their_submit() -> None:
+def test_app_js_applies_a_round_only_as_the_page_moves_on() -> None:
     # The rounds' controls go to the engine through songCalls and groupCalls, from sendSong and
-    # sendGroup, which are a round's `send`; the page's other calls read, edit sections, take or
-    # check, and no handler at the top level calls the engine itself.
+    # sendGroup, which are a drawn round's `send`, called by applyRound in leave() alone, which
+    # moveOn() alone calls; every handler at the top level that changes the step or the group goes
+    # through moveOn, and none calls the engine itself (ADR 0124). The page's other calls read,
+    # edit sections, take or check.
     text = (static_dir() / "js" / "app.js").read_text(encoding="utf-8")
     functions = {found.group(1): found.group(0) for found in FUNCTION.finditer(text)}
     calls = {name: CALL.findall(body) for name, body in functions.items()}
+    top = FUNCTION.sub("", text)
 
     assert "set_section_controls" not in text
-    assert CALL.findall(FUNCTION.sub("", text)) == []
+    assert CALL.findall(top) == []
     assert {name for name, made in calls.items() if "call" in made} == {
         "ask",
         "confirmCheck",
@@ -205,11 +206,18 @@ def test_app_js_changes_the_rounds_controls_only_from_their_submit() -> None:
         "sendSong",
         "sendGroup",
     }
-    # Each is named twice: where it is defined, and as a round's `send`.
+    # Each is named twice: where it is defined, and as a drawn round's `send`.
     assert text.count("sendSong") == 2
     assert "send: sendSong," in text
     assert text.count("sendGroup") == 2
-    assert "send: (round) => sendGroup(" in text
+    assert "send: (tabs, draft) => sendGroup(" in text
+    using = {
+        called: {name for name, body in functions.items() if f"{called}(" in body} - {called}
+        for called in ("applyRound", "leave", "drawRound")
+    }
+    assert using == {"applyRound": {"leave"}, "leave": {"moveOn"}, "drawRound": {"drawShown"}}
+    assert top.count("go(") == len(re.findall(r"moveOn\((?:true|false), \(\) => go\(", top)) > 0
+    assert "pick(" not in top.replace("moveOn(false, () => pick(", "").replace("return pick(", "")
     styled = [
         (name, re.search(r'ask\("set_style", \{([^}]*)\}', body))
         for name, body in functions.items()
@@ -219,8 +227,19 @@ def test_app_js_changes_the_rounds_controls_only_from_their_submit() -> None:
         ("drawDrummer", "session_id: page.session"),
         ("songTake", "session_id: page.session, seed: page.seed + 1"),
     ]
-    # A section edit forgets what a round set on the sections it changes, once the engine has
-    # taken it (ADR 0122).
+
+
+def test_app_js_keeps_the_drafts_until_the_song_is_opened_again() -> None:
+    # The rounds' drafts are dropped only when the song is opened again, or by "Delete my file
+    # now" through fresh(), and a section edit keeps them, and what a round set, over the sections
+    # it leaves as they were, once the engine has taken it (ADRs 0122 and 0124).
+    text = (static_dir() / "js" / "app.js").read_text(encoding="utf-8")
+    functions = {found.group(1): found.group(0) for found in FUNCTION.finditer(text)}
+
+    emptied = {name for name, body in functions.items() if "rounds: {}" in body}
+    assert emptied == {"fresh", "openSong"}
+    assert {name for name, body in functions.items() if "page.rounds =" in body} == {"edit"}
     edit = functions["edit"]
-    kept = edit.find("page.sent = keptAfterEdit(page.sent, sections, reply.sections)")
-    assert 0 <= edit.index('ask("update_sections"') < edit.index("if (failed(reply))") < kept
+    sent = edit.find("page.sent = keptAfterEdit(page.sent, sections, reply.sections)")
+    kept = edit.find("page.rounds = roundsAfterEdit(page.rounds, sections, reply.sections)")
+    assert 0 <= edit.index('ask("update_sections"') < edit.index("if (failed(reply))") < sent < kept

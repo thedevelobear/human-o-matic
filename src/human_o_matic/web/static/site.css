@@ -44,8 +44,7 @@ header h1 {
 }
 
 #steps,
-.strip,
-[role="tablist"] {
+.strip {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -136,25 +135,6 @@ fieldset {
   margin: 0 0 1rem;
   padding: 1rem;
   border: 0.0625rem solid var(--muted);
-}
-
-.tabbar {
-  display: flex;
-  align-items: start;
-  gap: 0.5rem;
-}
-
-.tabbar [role="tablist"] {
-  flex: 1;
-}
-
-[role="tab"][aria-selected="true"] {
-  background: var(--lilac);
-  color: var(--ink);
-}
-
-[role="tab"] .glyph {
-  margin-right: 0.25rem;
 }
 
 .answers legend {

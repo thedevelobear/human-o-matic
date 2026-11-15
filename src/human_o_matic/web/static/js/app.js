@@ -3,7 +3,9 @@
 // as the page opens. The page never sees a note and stores nothing: the chosen file's bytes stay
 // in this page's memory and the worker's until "Delete my file now" ends the worker, or the tab
 // is closed (the website plan's section 8). The song-wide round and each repeat group's ask
-// their questions in tabs, from questions.js, and only a round's Submit sends.
+// their questions on one card, from questions.js, whose answers stay a draft in this page's
+// memory until the song is opened again, and a round is applied when the user moves on from it
+// (ADR 0124).
 
 import { drawFields, element, readFields } from "./fields.js";
 import {
@@ -16,9 +18,10 @@ import {
   kitOptions,
   mostRamp,
   sectionEdit,
-  touchedControls,
 } from "./forms.js";
 import {
+  answerLines,
+  applyRound,
   echo,
   groupCalls,
   groupControls,
@@ -27,8 +30,10 @@ import {
   membersOf,
   rampTabs,
   resolvedOf,
+  roundsAfterEdit,
   shownGroup,
   shownSong,
+  signature,
   songCalls,
   songControls,
   songTabs,
@@ -49,6 +54,8 @@ let kitNames = {};
 let presets = null;
 // Whether the kit to play the file was chosen, so it no longer follows the kit it came from.
 let toChosen = false;
+// Whether the page is moving on, so a second click can't apply a round twice.
+let moving = false;
 let page = fresh();
 
 /** What the page holds of one file, from choosing it to deleting it. */
@@ -66,9 +73,13 @@ function fresh() {
     // The session's style, which the Drummer step's "your call" keeps.
     drummer: null,
     seed: 0,
-    // Each round's answers by tab, the controls its answers set at its last send, by section, and
-    // the groups whose rounds were sent, all of the song as opened; and the questions asked.
-    answers: {},
+    // Each round, "song" or a group's, as `{draft, applied, said, lines}`: its draft of
+    // answers, its signature and echo when last applied, and its answers in words for the
+    // review; the round on screen, `{key, drawn, send, due}`; the controls each round's
+    // answers set at its last send, by section; and the groups whose rounds were sent, all of
+    // the song as opened; and the questions asked.
+    rounds: {},
+    round: null,
     sent: {},
     groupsAsked: new Set(),
     asked: new Set(),
@@ -171,8 +182,83 @@ async function go(step) {
     page.reached = step;
   }
   problem("");
+  page.round = null;
   show(step);
   await ENTER[step]?.();
+}
+
+/** Leave the round on screen, applying it, then `then()` if the page may move on: a round that
+ * fails to apply, or that `stay` keeps for a Ramp question it brought up, stays. */
+async function moveOn(stay, then) {
+  if (moving) {
+    return;
+  }
+  moving = true;
+  try {
+    if (await leave(stay)) {
+      await then();
+    }
+  } finally {
+    moving = false;
+  }
+}
+
+/** Apply the round on screen if it was never applied or has changed since (ADR 0124), and say
+ * whether the page may move on from it. */
+async function leave(stay) {
+  const shown = page.round;
+  // A round an edit has just forgotten, still on screen until it is drawn again, has no draft.
+  const kept = page.rounds[shown?.key];
+  if (!kept) {
+    return true;
+  }
+  const tabs = shown.drawn.tabs();
+  const send = (given, draft) => {
+    shown.drawn.say("Applying your answers");
+    return shown.send(given, draft);
+  };
+  const { due } = shown;
+  const done = await applyRound({ tabs, draft: kept.draft, applied: kept.applied, send, due, stay });
+  if (done.error !== undefined) {
+    shown.drawn.say(`Not applied: ${done.error}. Your answers are kept, to apply when you move on.`);
+    return false;
+  }
+  if (done.said !== undefined) {
+    Object.assign(kept, { applied: done.applied, said: done.said, lines: answerLines(tabs, kept.draft) });
+  }
+  if (done.move) {
+    return true;
+  }
+  // A Ramp question both of whose groups are now asked about joins this round (ADR 0108), which
+  // stays for it, and is applied with it when the user moves on again.
+  for (const tab of done.joined) {
+    shown.drawn.join(tab);
+  }
+  const more = done.joined.map((tab) => tab.question).join(" ");
+  shown.drawn.say(`Applied. ${done.said} One more question came up, below: ${more} It applies when you move on.`);
+  return false;
+}
+
+/** The line a round shows: applied, with its echo, or not yet. */
+function stateOf(key, tabs) {
+  const { draft, applied, said } = page.rounds[key];
+  return applied === signature(tabs, draft)
+    ? `Applied. ${said}`
+    : `Not applied yet: it applies when you move on. Questions so far: ${page.asked.size}.`;
+}
+
+/** Draw the round of `key` in `parent` from its draft, as the round on screen. */
+function drawShown(key, parent, { send, due = () => [], ...options }) {
+  const kept = (page.rounds[key] ??= {});
+  const drawn = drawRound(parent, {
+    ...options,
+    draft: kept.draft,
+    keep: (tabs, draft) => {
+      kept.draft = draft;
+      return stateOf(key, tabs);
+    },
+  });
+  page.round = { key, drawn, send, due };
 }
 
 // 1. Choose a file.
@@ -239,7 +325,7 @@ async function openSong() {
   }
   page.session = reply.session_id ?? null;
   page.toKit = reply.to_kit ?? null;
-  Object.assign(page, { answers: {}, sent: {}, groupsAsked: new Set() });
+  Object.assign(page, { rounds: {}, sent: {}, groupsAsked: new Set() });
   if (page.session) {
     page.asked.add("kits");
   }
@@ -328,11 +414,6 @@ async function vocabulary() {
   return presets;
 }
 
-/** `tabs` with the answer given before in each, where the pointer starts. */
-function withGiven(tabs, key) {
-  return tabs.map((tab) => ({ ...tab, given: page.answers[key]?.[tab.id] }));
-}
-
 function songContext() {
   const { song, defaults, drummer, sent } = page;
   return { presets, song, defaults, style: drummer, before: sent.song ?? [] };
@@ -345,34 +426,31 @@ async function drawDrummer() {
   }
   remember(styled);
   const resolved = { ...styled.defaults, ...styled.controls, style: styled.style };
-  drawRound($("#song-round"), {
+  drawShown("song", $("#song-round"), {
     id: "song",
-    name: "The drummer",
-    questions: withGiven(songTabs(presets, resolved), "song"),
+    questions: songTabs(presets, resolved),
     fineTune: fineTune(SONG_CONTROLS, resolved),
-    follow: (round) => shownSong(round.tabs, round, songContext()),
-    count: () => page.asked.size,
+    follow: (tabs, draft) => shownSong(tabs, draft, songContext()),
     send: sendSong,
   });
 }
 
-async function sendSong(round) {
-  // The round as it stands: its style, its answers, and of Fine-tune the controls moved.
-  const fine = touchedControls(round.values, round.touched);
-  const { controls, set } = songControls(round.tabs, { ...round, fine }, songContext());
+/** Send the song-wide round's draft: its style as it stands, its answers, and of Fine-tune the
+ * controls moved. Gives the echo, or the failed reply. */
+async function sendSong(tabs, draft) {
+  const { controls, set } = songControls(tabs, draft, songContext());
   const replies = [];
-  for (const { call, args } of songCalls(controls, round.values.style)) {
+  for (const { call, args } of songCalls(controls, page.drummer)) {
     const reply = await ask(call, { session_id: page.session, ...args });
     if (failed(reply)) {
-      return "Not sent";
+      return reply;
     }
     replies.push(reply);
   }
   const [styled, tuned] = replies;
   remember({ ...styled, controls: tuned.song.controls });
-  page.answers.song = round.answered;
   page.sent.song = set;
-  for (const tab of round.tabs) {
+  for (const tab of tabs) {
     page.asked.add(tab.id);
   }
   const firsts = groupsOf(page.table).map(
@@ -434,6 +512,12 @@ function drawEdits() {
   $("#take").textContent = String(section.take);
 }
 
+/** A group's name, by its first section: its letter, bars and what it plays. */
+function groupTitle(group) {
+  const [first] = membersOf(page.sections, group);
+  return `${group}: ${first.label}, ${first.plays}`;
+}
+
 function groupContext(group) {
   const members = membersOf(page.sections, group);
   const { controls: song } = page.sections;
@@ -446,56 +530,62 @@ function drawGroup() {
   const members = membersOf(page.sections, group);
   const groups = groupsOf(sections);
   const [first] = members;
-  const title = `${group}: ${first.label}, ${first.plays}`;
+  const title = groupTitle(group);
   $("#group-title").textContent = title;
   $("#next-group").disabled = groups.indexOf(group) === groups.length - 1;
   const questions = groupTabs(page.sections, group, presets, page.defaults);
   if (!questions.length) {
     // A group whose sections ask nothing has no round: they play no notes.
+    page.round = null;
     $("#group-round").replaceChildren(element("p", {}, "Nothing to ask here: no drums play."));
     return;
   }
   const resolved = resolvedOf(first, controls, page.defaults);
   const ramp = Math.max(...members.map((section) => mostRamp(section.bars)));
-  const drawn = drawRound($("#group-round"), {
+  // Its Ramp tabs, kept in its draft, then any Ramp question due that no round shows yet.
+  const ramps = page.rounds[group]?.draft?.ramps ?? [];
+  drawShown(group, $("#group-round"), {
     id: `group-${groups.indexOf(group)}`,
-    name: title,
-    questions: withGiven(questions, group),
+    questions: [...questions, ...ramps, ...dueRamps()],
     fineTune: fineTune(GROUP_CONTROLS, resolved, ramp),
-    follow: (round) => shownGroup(round.tabs, round, groupContext(group)),
-    count: () => page.asked.size,
-    send: (round) => sendGroup(group, round, drawn),
+    follow: (tabs, draft) => shownGroup(tabs, draft, groupContext(group)),
+    send: (tabs, draft) => sendGroup(group, tabs, draft),
+    due: dueRamps,
   });
 }
 
-async function sendGroup(group, round, drawn) {
-  const fine = touchedControls(round.values, round.touched);
-  const { controls, set } = groupControls(round.tabs, { ...round, fine }, groupContext(group));
+/** The Ramp tabs due, both of whose groups are asked about (ADR 0108), that no round's draft
+ * holds yet. */
+function dueRamps() {
+  const held = new Set(
+    Object.values(page.rounds).flatMap(({ draft }) => (draft?.ramps ?? []).map((tab) => tab.id)),
+  );
+  const due = rampTabs(page.sections, page.groupsAsked, presets, page.defaults);
+  return due.filter((tab) => !held.has(tab.id));
+}
+
+/** Send a group's round's draft. Gives the echo, or the failed reply. */
+async function sendGroup(group, tabs, draft) {
+  const { controls, set } = groupControls(tabs, draft, groupContext(group));
   const replies = [];
   for (const { call, args } of groupCalls(controls)) {
     const reply = await ask(call, { session_id: page.session, ...args });
     if (failed(reply)) {
-      return "Not sent";
+      return reply;
     }
     replies.push(reply);
   }
-  page.answers[group] = round.answered;
   page.sent[group] = set;
   page.groupsAsked.add(group);
-  for (const tab of round.tabs) {
+  for (const tab of tabs) {
     page.asked.add(tab.id);
   }
-  const said = echo(replies, page.asked.size);
-  // A ramp question both of whose groups are now asked about joins this round, before Submit,
-  // and is sent with it next (ADR 0108); focus stays where it is.
+  // The sections as they now are, which say what ramp questions are due.
   const reply = await ask("get_sections", { session_id: page.session });
-  if (failed(reply)) {
-    return said;
+  if (!failed(reply)) {
+    page.sections = reply;
   }
-  page.sections = reply;
-  const joined = rampTabs(reply, page.groupsAsked, presets, page.defaults).filter(drawn.join);
-  const added = joined.map((tab) => ` A Ramp tab joins this round, before Submit: ${tab.question}`);
-  return said + added.join("");
+  return echo(replies, page.asked.size);
 }
 
 async function pick(start, focus) {
@@ -515,7 +605,8 @@ async function edit(op, event) {
   }
   const { sections } = page.sections;
   page.sent = keptAfterEdit(page.sent, sections, reply.sections);
-  const before = sections[sections.indexOf(section) - 1];
+  page.rounds = roundsAfterEdit(page.rounds, sections, reply.sections);
+  const before =sections[sections.indexOf(section) - 1];
   const start = { merge: before?.start, move: change.to }[op] ?? section.start;
   say(`The sections are changed: ${reply.sections.length} sections.`);
   await pick(start, () => $('#section-strip [aria-pressed="true"]'));
@@ -563,6 +654,28 @@ async function drawReview() {
     }),
   );
   $("#heard").replaceChildren(...listenFor().map((line) => element("li", {}, line)));
+  drawAnswers();
+}
+
+/** Each round's answers as applied, in words, with a way back to change them, and each group
+ * with questions not asked yet. */
+function drawAnswers() {
+  const asks = (group) => groupTabs(page.sections, group, presets, page.defaults).length > 0;
+  const keys = ["song", ...groupsOf(page.sections.sections).filter(asks)];
+  $("#answers").replaceChildren(
+    ...keys.map((key) => {
+      const { lines } = page.rounds[key] ?? {};
+      const whose = key === "song" ? "the drummer's" : `${key}'s`;
+      const back = lines ? `Change ${whose} answers` : `Answer ${whose} questions`;
+      const button = element("button", { type: "button", "data-round": key }, back);
+      const name = key === "song" ? "The drummer" : groupTitle(key);
+      if (!lines) {
+        return element("li", {}, element("p", {}, `${name}: not asked yet.`), button);
+      }
+      const answers = element("ul", {}, ...lines.map((line) => element("li", {}, line)));
+      return element("li", {}, element("p", {}, name), answers, button);
+    }),
+  );
 }
 
 function listenFor() {
@@ -611,12 +724,14 @@ function deleteFile() {
   }
   page = fresh();
   toChosen = false;
+  // A move the ended worker never answered would otherwise hold every later one.
+  moving = false;
   $("#midi").value = "";
   $("#chosen").textContent = "";
   $("#saved").textContent = "";
   $("#to-kits").disabled = true;
   $("#delete-box").hidden = true;
-  for (const filled of ["#requests", "#song-round", "#group-round", "#said", "#heard"]) {
+  for (const filled of ["#requests", "#song-round", "#group-round", "#said", "#heard", "#answers"]) {
     $(filled).replaceChildren();
   }
   // An opening the ended worker never answered leaves the button to open again.
@@ -635,7 +750,7 @@ $("#drop").addEventListener("drop", (event) => {
   event.preventDefault();
   choose(event.dataTransfer.files[0]);
 });
-$("#to-kits").addEventListener("click", () => go("kits"));
+$("#to-kits").addEventListener("click", () => moveOn(false, () => go("kits")));
 $("#from-map").addEventListener("change", () => {
   if (!toChosen) {
     $("#to-map").value = $("#from-map").value;
@@ -651,14 +766,16 @@ $("#kits-form").addEventListener("submit", (event) => {
 $("#check-form").addEventListener("submit", confirmCheck);
 $("#requests").addEventListener("click", (event) => {
   if (event.target.name === "kits") {
-    go("kits");
+    moveOn(false, () => go("kits"));
   }
 });
-$("#to-sections").addEventListener("click", () => go("sections"));
+// Moving on applies the round on screen (ADR 0124); its Next buttons stay for a Ramp question
+// the applying brings up, and move on at their next click.
+$("#to-sections").addEventListener("click", () => moveOn(true, () => go("sections")));
 $("#section-strip").addEventListener("click", (event) => {
   const start = event.target.closest("button")?.dataset.start;
   if (start !== undefined) {
-    pick(Number(start), () => $(`#section-strip [data-start="${start}"]`));
+    moveOn(false, () => pick(Number(start), () => $(`#section-strip [data-start="${start}"]`)));
   }
 });
 for (const op of ["split", "merge", "move", "rename"]) {
@@ -666,20 +783,31 @@ for (const op of ["split", "merge", "move", "rename"]) {
 }
 $("#another-take").addEventListener("click", anotherTake);
 $("#song-take").addEventListener("click", songTake);
-$("#next-group").addEventListener("click", () => {
-  const { sections } = page.sections;
-  const groups = groupsOf(sections);
-  const next = groups[groups.indexOf(selected().group) + 1];
-  pick(sections.find((section) => section.group === next).start, () => $("#group-title"));
+$("#next-group").addEventListener("click", () =>
+  moveOn(true, () => {
+    const { sections } = page.sections;
+    const groups = groupsOf(sections);
+    const next = groups[groups.indexOf(selected().group) + 1];
+    return pick(sections.find((section) => section.group === next).start, () => $("#group-title"));
+  }),
+);
+$("#to-review").addEventListener("click", () => moveOn(true, () => go("review")));
+$("#answers").addEventListener("click", (event) => {
+  const key = event.target.closest("button")?.dataset.round;
+  if (key === "song") {
+    moveOn(false, () => go("drummer"));
+  } else if (key) {
+    page.selected = membersOf(page.sections, key)[0].start;
+    moveOn(false, () => go("sections"));
+  }
 });
-$("#to-review").addEventListener("click", () => go("review"));
-$("#to-download").addEventListener("click", () => go("download"));
+$("#to-download").addEventListener("click", () => moveOn(false, () => go("download")));
 $("#get").addEventListener("click", download);
 $("#delete").addEventListener("click", deleteFile);
 $("#steps").addEventListener("click", (event) => {
   const step = event.target.closest("button")?.dataset.step;
   if (step) {
-    go(step);
+    moveOn(false, () => go(step));
   }
 });
 
