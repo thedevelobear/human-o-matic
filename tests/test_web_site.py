@@ -265,6 +265,23 @@ def test_the_page_s_own_files_name_only_google_fonts(site: Path) -> None:
     assert {path: found for path, found in named.items() if found} == {}
 
 
+def test_the_built_page_holds_the_feedback_form_netlify_reads(site: Path) -> None:
+    # Netlify's form detection parses the deployed index.html, which the build copies as it is:
+    # the form is in its HTML, though its step stays hidden until a download (ADR 0127). Its post
+    # to `/` is the site's own origin, which `connect-src 'self'` allows.
+    built = (site / "index.html").read_text(encoding="utf-8")
+
+    assert built == (static_dir() / "index.html").read_text(encoding="utf-8")
+    assert (
+        built.count(
+            '<form id="feedback-form" name="feedback" method="post" data-netlify="true" '
+            'netlify-honeypot="bot-field">'
+        )
+        == 1
+    )
+    assert "connect-src 'self';" in EVERY_PATH["Content-Security-Policy"]
+
+
 CLI = DOWNLOADS / read_pins().tailwind.file_name
 
 
