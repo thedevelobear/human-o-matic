@@ -1,6 +1,6 @@
 # 0120. The question window sends only the controls changed, and Enter on "Set it by hand" opens its controls
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-15
 
 - **Enter on "Set it by hand"** answers it and moves focus to the first of its controls, in the same tab, where Enter on any other answer opens the next tab. Enter in one of those controls opens the next tab, or Submit after the last question, as Enter on an answer does. A click on it answers it and stays, as any click does. Its controls show while the choice or the answer is on it, and the number keys stay ignored in them.
