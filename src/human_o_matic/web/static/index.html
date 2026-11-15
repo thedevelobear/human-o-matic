@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>human-o-matic</title>
+    <link rel="stylesheet" href="site.css">
+    <script type="module" src="js/app.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>human-o-matic</h1>
+      <nav aria-label="Steps">
+        <ol id="steps">
+          <li><button type="button" data-step="file">1 File</button></li>
+          <li><button type="button" data-step="kits">2 Kits</button></li>
+          <li><button type="button" data-step="check">3 Check</button></li>
+          <li><button type="button" data-step="drummer">4 Drummer</button></li>
+          <li><button type="button" data-step="sections">5 Sections</button></li>
+          <li><button type="button" data-step="review">6 Review</button></li>
+          <li><button type="button" data-step="download">7 Download</button></li>
+        </ol>
+      </nav>
+    </header>
+    <main>
+      <div class="engine">
+        <label for="engine">The engine</label>
+        <progress id="engine" max="1" value="0"></progress>
+      </div>
+      <p id="status" role="status">Loading the engine</p>
+      <p id="problem" role="alert"></p>
+
+      <section id="file" aria-labelledby="file-title">
+        <h2 id="file-title" tabindex="-1">Choose a file</h2>
+        <p>Choose a drum MIDI file, answer a few questions about it, and download it re-performed, to drag into your DAW.</p>
+        <div id="drop" class="drop">
+          <label for="midi">A drum MIDI file, .mid or .midi, up to 512 KB</label>
+          <input id="midi" type="file" accept=".mid,.midi">
+          <p>Or drop it here.</p>
+        </div>
+        <p id="chosen"></p>
+        <button type="button" id="to-kits" disabled>Next: kits</button>
+        <div class="notice">
+          <h3>Your file and your feedback</h3>
+          <p>Your MIDI file stays on your computer: it is processed in your browser and never uploaded. If you send feedback, we keep what you write and the kits and settings you used, until we delete it; the page never sends your file, its name or its notes. Your feedback is stored by our host, Netlify, which also records your IP address with it and checks it for spam with Akismet. Our host may keep request logs, under its own policy. Only use files you have the right to use.</p>
+          <p>This site is run by [TO FILL IN: who runs the site]. To have your feedback deleted, [TO FILL IN: how to ask for it].</p>
+        </div>
+      </section>
+
+      <section id="kits" aria-labelledby="kits-title" hidden>
+        <h2 id="kits-title" tabindex="-1">Kits</h2>
+        <form id="kits-form">
+          <div class="field">
+            <label for="from-map">Where did this MIDI come from?</label>
+            <select id="from-map" name="from_map"></select>
+          </div>
+          <div class="field">
+            <label for="to-map">Which drum instrument will play it?</label>
+            <select id="to-map" name="to_map"></select>
+          </div>
+          <p>Changing a kit opens the song again.</p>
+          <button id="open" disabled>Open the song</button>
+        </form>
+      </section>
+
+      <section id="check" aria-labelledby="check-title" hidden>
+        <h2 id="check-title" tabindex="-1">Check</h2>
+        <p>The sections found, and what the file leaves unclear. You can change the sections in step 5.</p>
+        <ol id="check-sections" class="strip"></ol>
+        <form id="check-form">
+          <div id="requests"></div>
+          <button>Confirm</button>
+        </form>
+      </section>
+
+      <section id="drummer" aria-labelledby="drummer-title" hidden>
+        <h2 id="drummer-title" tabindex="-1">Drummer</h2>
+        <div id="song-round" class="round"></div>
+        <button type="button" id="to-sections">Next: sections</button>
+      </section>
+
+      <section id="sections" aria-labelledby="sections-title" hidden>
+        <h2 id="sections-title" tabindex="-1">Sections</h2>
+        <ol id="section-strip" class="strip"></ol>
+        <div class="edits">
+          <h3>Change <span id="editing"></span></h3>
+          <form id="split-form">
+            <label for="split-at">Split it at bar</label>
+            <input id="split-at" name="at" type="number" required>
+            <button>Split</button>
+          </form>
+          <form id="merge-form">
+            <button id="merge">Merge it into the section before</button>
+          </form>
+          <form id="move-form">
+            <label for="move-to">Move its start to bar</label>
+            <input id="move-to" name="to" type="number" required>
+            <button id="move">Move</button>
+          </form>
+          <form id="rename-form">
+            <label for="rename-name">Name</label>
+            <input id="rename-name" name="name">
+            <label for="rename-group">Repeat group</label>
+            <input id="rename-group" name="group" required>
+            <button>Rename</button>
+          </form>
+          <p>Take <output id="take"></output> <button type="button" id="another-take">Another take of it</button></p>
+          <p>Seed <output id="seed"></output> <button type="button" id="song-take">A new take of the song</button></p>
+        </div>
+        <h3 id="group-title" tabindex="-1"></h3>
+        <div id="group-round" class="round"></div>
+        <button type="button" id="next-group">Next group</button>
+        <button type="button" id="to-review">Next: review</button>
+      </section>
+
+      <section id="review" aria-labelledby="review-title" hidden>
+        <h2 id="review-title" tabindex="-1">Review</h2>
+        <h3>Each section</h3>
+        <ol id="said"></ol>
+        <h3>What to listen for</h3>
+        <ul id="heard"></ul>
+        <button type="button" id="to-download">Next: download</button>
+      </section>
+
+      <section id="download" aria-labelledby="download-title" hidden>
+        <h2 id="download-title" tabindex="-1">Download</h2>
+        <button type="button" id="get">Download the file</button>
+        <p id="saved" role="status"></p>
+        <p id="listen"></p>
+        <!-- feat/web-feedback adds the feedback form here. -->
+      </section>
+    </main>
+    <footer id="delete-box" hidden>
+      <button type="button" id="delete" aria-describedby="delete-about">Delete my file now</button>
+      <p id="delete-about">Ends the engine, which holds your file and everything made from it, and starts again from step 1.</p>
+    </footer>
+  </body>
+</html>

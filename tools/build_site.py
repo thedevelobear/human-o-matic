@@ -9,7 +9,8 @@ list gives. It then writes `dist/site/`:
 - `wheels/`: the other wheels;
 - `app.zip`: `src/human_o_matic/`, `data/` and `skills/human-o-matic/references/vocabulary.md`
   at their repository paths, so `resources.data_dir()` and `resources.skill_dir()` find them;
-- the page's own files from `human_o_matic/web/static/`, as they are;
+- the page's own files from `human_o_matic/web/static/`, as they are: `index.html`, `site.css`
+  and the modules in `js/`, with the engine check's `check.html`;
 - `engine.json`, which tells the page's engine where each of these is and how big;
 - for the engine check, `check.html`: `check-song.mid`, a song built in code by `built_song`,
   and `check-flow.json`, the calls it makes on it and the SHA-256 of the file they give
@@ -326,7 +327,10 @@ class _Handler(SimpleHTTPRequestHandler):
 def serve(site: Path, host: str, port: int) -> None:
     handler = partial(_Handler, directory=str(site))
     with ThreadingHTTPServer((host, port), handler) as server:
-        print(f"serving {site} at http://{host}:{port}/check.html; stop with Ctrl+C")
+        print(
+            f"serving {site}: the page at http://{host}:{port}/ and the engine check at "
+            f"http://{host}:{port}/check.html; stop with Ctrl+C"
+        )
         server.serve_forever()
 
 

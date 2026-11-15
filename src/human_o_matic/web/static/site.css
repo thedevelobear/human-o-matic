@@ -1,0 +1,182 @@
+/* The page's layout and access, plain: feat/web-theme gives it its look (ADR 0110). The tokens
+   are the site plan's palette, so the theme restyles by them. */
+
+:root {
+  --window: #fbf7ff;
+  --ink: #1e1240;
+  --muted: #574b78;
+  --violet: #5b2bd1;
+  --lilac: #cdbeff;
+  --error: #b00020;
+  --ok: #0b7a4b;
+  color-scheme: light;
+  accent-color: var(--violet);
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+  background: var(--window);
+  color: var(--ink);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+:focus-visible {
+  outline: 0.1875rem solid var(--violet);
+  outline-offset: 0.125rem;
+}
+
+header,
+main,
+footer {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+header h1 {
+  margin: 1rem 0 0.5rem;
+  font-size: 1.75rem;
+}
+
+#steps,
+.strip,
+[role="tablist"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+#steps [aria-current="step"] {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.engine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#problem {
+  color: var(--error);
+}
+
+.drop {
+  padding: 1rem;
+  border: 0.125rem dashed var(--muted);
+}
+
+.notice {
+  color: var(--muted);
+}
+
+.field,
+.choice {
+  margin: 0 0 0.75rem;
+}
+
+.field label,
+.field select,
+.field input:not([type="checkbox"]) {
+  display: block;
+}
+
+.field.check label,
+.choice label {
+  display: inline;
+}
+
+.range {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 0.5rem;
+}
+
+.range label,
+.range .hint {
+  grid-column: 1 / -1;
+}
+
+.hint {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+
+fieldset {
+  margin: 0 0 1rem;
+  border: 0.0625rem solid var(--muted);
+}
+
+.request {
+  margin: 0 0 1.5rem;
+}
+
+.strip [aria-pressed="true"] {
+  font-weight: bold;
+}
+
+.edits form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+}
+
+.round {
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border: 0.0625rem solid var(--muted);
+}
+
+.tabbar {
+  display: flex;
+  align-items: start;
+  gap: 0.5rem;
+}
+
+.tabbar [role="tablist"] {
+  flex: 1;
+}
+
+[role="tab"][aria-selected="true"] {
+  background: var(--lilac);
+  color: var(--ink);
+}
+
+[role="tab"] .glyph {
+  margin-right: 0.25rem;
+}
+
+.answers legend {
+  font-weight: bold;
+}
+
+.answers pre {
+  overflow-x: auto;
+}
+
+.fine-tune {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 2rem;
+}
+
+@media (max-width: 45rem) {
+  .fine-tune {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+footer {
+  margin-top: 2rem;
+}
