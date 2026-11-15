@@ -335,6 +335,13 @@ body main select {
   text-overflow: ellipsis;
 }
 
+/* The file picker's button: cream, its border the main buttons' iridescent pill. */
+body #midi::file-selector-button {
+  border: 2px solid transparent;
+  background: linear-gradient(var(--surface-cream), var(--surface-cream)) padding-box,
+    linear-gradient(95deg, var(--pill-start) 0%, var(--sunset-orange) 35%, var(--vibrant-magenta) 72%, var(--pill-end) 100%) border-box;
+}
+
 body main select {
   -webkit-appearance: none;
   appearance: none;
