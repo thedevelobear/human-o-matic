@@ -39,6 +39,25 @@ export function readFields(parent) {
   return values;
 }
 
+/** Set each named control under `parent` to its value in `values`, but those in `skip`, as a
+ * change from the page rather than the user: a slider's shown value and words follow it. */
+export function writeFields(parent, values, skip = new Set()) {
+  for (const control of parent.querySelectorAll("input[name], select[name]")) {
+    if (skip.has(control.name) || !(control.name in values)) {
+      continue;
+    }
+    if (control.type === "checkbox") {
+      control.checked = values[control.name] === true;
+    } else {
+      control.value = String(values[control.name]);
+    }
+    if (control.type === "range") {
+      parent.querySelector(`output[for="${control.id}"]`).value = control.value;
+      control.setAttribute("aria-valuetext", words(control.name, control.value));
+    }
+  }
+}
+
 function drawField(field, prefix) {
   const id = `${prefix}-${field.name ?? field.legend ?? field.label}`.replace(/[^\w-]/g, "_");
   const hint = field.hint ? element("p", { id: `${id}-hint`, class: "hint" }, field.hint) : "";
