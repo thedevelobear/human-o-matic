@@ -301,6 +301,11 @@ body .request {
   margin: 0 0 1rem;
 }
 
+/* A request's message, 16 px above its form, such as the tempo's BPM field. */
+body .request > p {
+  margin-bottom: 1rem;
+}
+
 .field label,
 .field select,
 .field input:not([type="checkbox"]) {
