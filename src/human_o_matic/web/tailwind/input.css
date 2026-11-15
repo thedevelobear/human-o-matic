@@ -43,7 +43,7 @@ body {
 }
 
 body :focus-visible {
-  outline: 2px solid var(--vibrant-magenta);
+  outline: 2px solid var(--focus-violet);
   outline-offset: -2px;
 }
 
@@ -99,15 +99,6 @@ body :focus-visible {
 .halftone-subtle {
   background-image: radial-gradient(rgba(20, 18, 24, 0.16) 1px, transparent 1px);
   background-size: 7px 7px;
-}
-
-/* The grid floor at the page's foot */
-.perspective-floor {
-  background: linear-gradient(to bottom, rgba(232, 226, 213, 1) 0%, rgba(232, 226, 213, 0) 35%),
-    repeating-linear-gradient(90deg, transparent 0px, transparent 46px, rgba(20, 18, 24, 0.28) 46px, rgba(20, 18, 24, 0.28) 48px),
-    repeating-linear-gradient(0deg, transparent 0px, transparent 18px, rgba(20, 18, 24, 0.24) 18px, rgba(20, 18, 24, 0.24) 20px);
-  transform: perspective(260px) rotateX(48deg);
-  transform-origin: bottom center;
 }
 
 /* Every slider, the design's retro slider on the native input */
@@ -512,7 +503,7 @@ body main legend {
   border: 2px solid var(--ink-black);
   border-radius: 0.75rem;
   box-shadow: 3px 3px 0px var(--ink-black);
-  background: var(--surface-cream);
+  background: var(--bg-parchment);
 }
 
 .roll .names {
@@ -721,7 +712,7 @@ body main .segments legend {
 }
 
 .segments input:focus-visible + label {
-  outline: 2px solid var(--vibrant-magenta);
+  outline: 2px solid var(--focus-violet);
   outline-offset: 2px;
 }
 
