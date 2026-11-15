@@ -1,5 +1,5 @@
 // The tabs' keyboard and ARIA (ADR 0111), as the website plan's PR 3 lists them, on the pure
-// module the page draws, with questions made up here: the page's own come in feat/web-questions.
+// module the page draws, with questions made up here: questions.test.mjs tests the page's own.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";

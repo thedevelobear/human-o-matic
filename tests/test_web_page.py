@@ -1,6 +1,7 @@
-"""The page's own files, read as they are served (the website plan's PR 3): every decision request
-kind has a form, each HTML page has `lang`, a label on every input, alt text on every image and no
-inline script or style, and the page's JavaScript keeps nothing in the browser's storage."""
+"""The page's own files, read as they are served (the website plan's PRs 3 and 4): every decision
+request kind has a form, each HTML page has `lang`, a label on every input, alt text on every image
+and no inline script or style, the page's JavaScript keeps nothing in the browser's storage, writes
+no number of the vocabulary, and sends a round only from its Submit button."""
 
 import re
 from html.parser import HTMLParser
@@ -10,6 +11,7 @@ from typing import get_args
 import pytest
 
 from human_o_matic.decisions import DecisionKind
+from human_o_matic.presets import Span, read_vocabulary
 from human_o_matic.web import static_dir
 
 PAGES = sorted(static_dir().glob("*.html"))
@@ -128,9 +130,8 @@ STORAGE = re.compile(r"\b(localStorage|sessionStorage|indexedDB|caches)\b")
 
 
 def test_the_page_s_javascript_keeps_nothing_in_the_browser_s_storage() -> None:
-    assert {"app.js", "fields.js", "forms.js", "review.js", "round.js", "tabs.js"} <= {
-        path.name for path in MODULES
-    }
+    own = {"app.js", "fields.js", "forms.js", "questions.js", "review.js", "round.js", "tabs.js"}
+    assert own <= {path.name for path in MODULES}
     for path in MODULES:
         found = STORAGE.findall(path.read_text(encoding="utf-8"))
         assert found == [], path.name
@@ -143,3 +144,37 @@ STYLED = re.compile(r"\.style\s*[.=[]|setAttribute\(.style.|(?:inner|outer)HTML|
 def test_the_page_s_javascript_sets_no_style_and_writes_no_html() -> None:
     for path in MODULES:
         assert STYLED.findall(path.read_text(encoding="utf-8")) == [], path.name
+
+
+COMMENT = re.compile(r"/\*.*?\*/|//[^\n]*", re.DOTALL)
+DECIMAL = re.compile(r"(?<![\w.])\d*\.\d+")
+
+
+def test_the_page_writes_no_number_of_the_vocabulary() -> None:
+    # The rows' numbers reach the page through the worker's `presets` call alone (the website
+    # plan's section 6). Whole numbers such as 0, 1 and a ramp's bars are too common to tell
+    # apart, so the scan reads the numbers with a decimal point in each module's code.
+    numbers = {
+        number
+        for row in read_vocabulary().rows
+        for value in row.controls.values()
+        if isinstance(value, Span)
+        for number in (value.value, value.low, value.high)
+        if not float(number).is_integer()
+    }
+    assert numbers
+    for path in MODULES:
+        code = COMMENT.sub("", path.read_text(encoding="utf-8"))
+        found = {float(text) for text in DECIMAL.findall(code)}
+        assert found & {abs(number) for number in numbers} == set(), path.name
+
+
+def test_a_round_sends_only_from_its_submit_button() -> None:
+    # Only Submit sends (ADR 0111): the tabs, their keys and Next draw, and never call `send`.
+    text = (static_dir() / "js" / "round.js").read_text(encoding="utf-8")
+    submit = text[text.index("function submitPanel()") : text.index("function asked()")]
+
+    assert text.count("send(") == 1
+    assert 'button.addEventListener("click"' in submit
+    assert "await send(" in submit
+    assert "send" not in (static_dir() / "js" / "tabs.js").read_text(encoding="utf-8")
