@@ -51,8 +51,10 @@ ROOT = Path(__file__).resolve().parents[1]
 PINS = ROOT / "tools" / "build_site.toml"
 DOWNLOADS = ROOT / "build" / "site-downloads"
 SITE = ROOT / "dist" / "site"
-APP = ("src/human_o_matic", "data", "skills/human-o-matic/references/vocabulary.md")
-"""What the app's zip holds, at these repository paths."""
+SOURCE = "src/human_o_matic"
+APP = (SOURCE, "data", "skills/human-o-matic/references/vocabulary.md")
+"""What the app's zip holds, at these repository paths: of `SOURCE`, its Python modules alone, so
+no page or other file left in the source tree ships inside it."""
 LEFT_OUT = ("__pycache__", "static")
 """Folders the app's zip leaves out: compiled files, and the page's own, served beside it."""
 FLOW = ROOT / "tests" / "web" / "flow.json"
@@ -161,7 +163,8 @@ def _app_files(root: Path) -> Iterator[Path]:
             continue
         for found in path.rglob("*"):
             parts = found.relative_to(path).parts
-            if found.is_file() and not any(part in LEFT_OUT for part in parts):
+            source = name != SOURCE or found.suffix == ".py"
+            if found.is_file() and source and not any(part in LEFT_OUT for part in parts):
                 yield found
 
 

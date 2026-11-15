@@ -119,6 +119,27 @@ def test_the_app_zip_holds_the_source_data_and_vocabulary_at_their_paths() -> No
     assert "skills/human-o-matic/references/vocabulary.md" in names
     assert not [name for name in names if "__pycache__" in name or "/static/" in name]
     assert not [name for name in names if name.startswith(("private", "tests", "tools"))]
+    assert not [name for name in names if name.endswith(".html")]
+    source = [name for name in names if name.startswith("src/")]
+    assert source == [name for name in source if name.endswith(".py")]
+
+
+def test_the_app_zip_takes_only_python_from_the_source_tree(tmp_path: Path) -> None:
+    # A page, a design file or any other file left beside the source never ships in the zip.
+    package = tmp_path / "src" / "human_o_matic"
+    for name in ("service.py", "web/worker.py", "web/example.html", "web/static/index.html"):
+        (package / name).parent.mkdir(parents=True, exist_ok=True)
+        (package / name).write_text("", encoding="utf-8")
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "vocabulary.toml").write_text("", encoding="utf-8")
+
+    names = zipfile.ZipFile(io.BytesIO(app_zip(tmp_path))).namelist()
+
+    assert names == [
+        "data/vocabulary.toml",
+        "src/human_o_matic/service.py",
+        "src/human_o_matic/web/worker.py",
+    ]
 
 
 @pytest.fixture(scope="module")
