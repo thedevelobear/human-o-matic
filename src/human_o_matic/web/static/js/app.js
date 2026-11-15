@@ -91,6 +91,17 @@ function failed(reply) {
   return Boolean(reply.error);
 }
 
+const WAITING = "Some notes still wait for an answer: see step 3, Check.";
+
+/** Whether `reply` holds requests still open, so nothing rendered, which it shows. */
+function waits(reply) {
+  const open = Boolean(reply.decisions?.length);
+  if (open) {
+    problem(WAITING);
+  }
+  return open;
+}
+
 function say(text) {
   $("#status").textContent = text;
 }
@@ -148,8 +159,12 @@ async function choose(file) {
     problem(`${file.name} isn't a .mid or .midi file`);
     return;
   }
-  page = { ...fresh(), file: { name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) } };
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  // The downloads count this visit's, so another file, or the same again, never takes a name
+  // given before; only "Delete my file now" starts the count again.
+  page = { ...fresh(), downloads: page.downloads, file: { name: file.name, bytes } };
   problem("");
+  $("#deleted").textContent = "";
   $("#chosen").textContent = `Chosen: ${file.name}`;
   $("#to-kits").disabled = false;
   $("#delete-box").hidden = false;
@@ -175,13 +190,23 @@ async function loadKits() {
 
 /** Open the chosen file in a new session, with the kits chosen and any tempo or track given. */
 async function openSong() {
+  // One opening at a time, so two clicks can't interleave their reset and open_session.
+  if ($("#open").disabled) {
+    return;
+  }
+  $("#open").disabled = true;
   say("Opening the song");
-  await ask("reset");
-  const reply = await ask(
-    "open_session",
-    { name: page.file.name, from_map: $("#from-map").value, to_map: $("#to-map").value, ...page.open },
-    page.file.bytes,
-  );
+  let reply;
+  try {
+    await ask("reset");
+    reply = await ask(
+      "open_session",
+      { name: page.file.name, from_map: $("#from-map").value, to_map: $("#to-map").value, ...page.open },
+      page.file.bytes,
+    );
+  } finally {
+    $("#open").disabled = false;
+  }
   if (failed(reply)) {
     say("");
     return;
@@ -277,8 +302,8 @@ async function drawDrummer() {
 }
 
 async function sendSong({ values, touched }) {
-  const { style, tightness, ...controls } = touchedControls(values, touched);
-  // The round as it stands: its style, and the controls touched.
+  // The round as it stands: its style, and of the song's controls the ones touched.
+  const { tightness, feel } = touchedControls(values, touched);
   const styled = await ask("set_style", {
     session_id: page.session,
     style: values.style,
@@ -288,7 +313,8 @@ async function sendSong({ values, touched }) {
     return "Not sent";
   }
   remember(styled);
-  if (Object.keys(controls).length) {
+  if (feel !== undefined) {
+    const controls = { feel };
     const reply = await ask("set_section_controls", { session_id: page.session, controls });
     if (failed(reply)) {
       return "Not sent";
@@ -407,7 +433,7 @@ async function anotherTake() {
     section_ids: [section.start],
     take,
   });
-  if (failed(reply)) {
+  if (failed(reply) || waits(reply)) {
     return;
   }
   say(`Take ${take} of ${section.label}.`);
@@ -429,11 +455,7 @@ async function drawReview() {
   $("#said").replaceChildren();
   $("#heard").replaceChildren();
   const reply = await ask("render", { session_id: page.session });
-  if (failed(reply)) {
-    return;
-  }
-  if (reply.decisions.length) {
-    problem("Some notes still wait for an answer: see step 3, Check.");
+  if (failed(reply) || waits(reply)) {
     return;
   }
   page.summary = reply.summary;
@@ -465,8 +487,8 @@ function drawDownload() {
 async function download() {
   const out = await ask("download", { session_id: page.session });
   if (!(out instanceof Uint8Array)) {
-    if (!failed(out)) {
-      problem("Some notes still wait for an answer: see step 3, Check.");
+    if (!failed(out) && !waits(out)) {
+      problem("The engine gave no file; start over.");
     }
     return;
   }
@@ -500,10 +522,14 @@ function deleteFile() {
   for (const filled of ["#requests", "#song-round", "#group-round", "#said", "#heard"]) {
     $(filled).replaceChildren();
   }
+  // An opening the ended worker never answered leaves the button to open again.
+  $("#open").disabled = !$("#from-map").options.length;
   startEngine();
   show("file");
   problem("");
-  say("Your file is deleted: the engine that held it has ended, and starts again.");
+  // Apart from the status, which the new engine's progress takes over, until a file is chosen.
+  $("#deleted").textContent =
+    "Your file is deleted: the engine that held it has ended, and starts again.";
 }
 
 $("#midi").addEventListener("change", () => choose($("#midi").files[0]));
