@@ -166,28 +166,39 @@
             <ol id="section-strip" class="strip"></ol>
             <details class="edits">
               <summary>Change <span id="editing"></span>: split, merge, move, rename or take again</summary>
-              <form id="split-form">
-                <label for="split-at">Split it at bar</label>
-                <input id="split-at" name="at" type="number" required>
-                <button class="retro-btn btn">Split</button>
-              </form>
-              <form id="merge-form">
-                <button id="merge" class="retro-btn btn">Merge it into the section before</button>
-              </form>
-              <form id="move-form">
-                <label for="move-to">Move its start to bar</label>
-                <input id="move-to" name="to" type="number" required>
-                <button id="move" class="retro-btn btn">Move</button>
-              </form>
-              <form id="rename-form">
-                <label for="rename-name">Name</label>
-                <input id="rename-name" name="name">
-                <label for="rename-group">Repeat group</label>
-                <input id="rename-group" name="group" required>
-                <button class="retro-btn btn">Rename</button>
-              </form>
-              <p class="mb-2">Take <output id="take"></output> <button type="button" id="another-take" class="retro-btn btn">Another take of it</button></p>
-              <p>Seed <output id="seed"></output> <button type="button" id="song-take" class="retro-btn btn">A new take of the song</button></p>
+              <div class="edit-grid">
+                <form id="split-form" class="edit">
+                  <label for="split-at">Split it at bar</label>
+                  <input id="split-at" name="at" type="number" class="bar" required>
+                  <button class="retro-btn btn">Split</button>
+                </form>
+                <form id="merge-form" class="edit">
+                  <span class="edit-label">Merge it into the section before</span>
+                  <button id="merge" class="retro-btn btn">Merge</button>
+                </form>
+                <form id="move-form" class="edit">
+                  <label for="move-to">Move its start to bar</label>
+                  <input id="move-to" name="to" type="number" class="bar" required>
+                  <button id="move" class="retro-btn btn">Move</button>
+                </form>
+                <form id="rename-form" class="edit">
+                  <label for="rename-name">Name</label>
+                  <input id="rename-name" name="name" class="name">
+                  <label for="rename-group">Repeat group</label>
+                  <input id="rename-group" name="group" class="bar" required>
+                  <button class="retro-btn btn">Rename</button>
+                </form>
+                <p class="edit">
+                  <span class="edit-label">Take of this section</span>
+                  <output id="take" class="readout"></output>
+                  <button type="button" id="another-take" class="retro-btn btn">Another take</button>
+                </p>
+                <p class="edit">
+                  <span class="edit-label">Seed of the song</span>
+                  <output id="seed" class="readout"></output>
+                  <button type="button" id="song-take" class="retro-btn btn">New take of the song</button>
+                </p>
+              </div>
             </details>
             <div class="flex items-center gap-2.5 mt-6 mb-2">
               <h3 id="group-title" tabindex="-1" class="font-display text-xl sm:text-2xl font-bold text-ink tracking-tight"></h3>
