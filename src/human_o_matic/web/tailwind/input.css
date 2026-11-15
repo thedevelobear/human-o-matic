@@ -326,7 +326,8 @@ body .request > p {
 /* Every field fills its container and never runs past it; a select draws its own chevron, from
    chevron.svg, with room kept for it. */
 body main input:not([type="radio"], [type="checkbox"], [type="range"], [type="file"]),
-body main select {
+body main select,
+body main textarea {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -346,6 +347,26 @@ body #midi::file-selector-button {
   border: 2px solid transparent;
   background: linear-gradient(var(--surface-cream), var(--surface-cream)) padding-box,
     linear-gradient(95deg, var(--pill-start) 0%, var(--sunset-orange) 35%, var(--vibrant-magenta) 72%, var(--pill-end) 100%) border-box;
+}
+
+body main textarea {
+  display: block;
+  resize: vertical;
+}
+
+/* The settings the feedback form sends, as it sends them: their own box, scrolling when long. */
+body .settings {
+  max-height: 20rem;
+  margin: 0;
+  padding: 0.75rem;
+  overflow: auto;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.75rem;
+  background: var(--bg-parchment);
+  font-family: "Space Mono", monospace;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 body main select {
