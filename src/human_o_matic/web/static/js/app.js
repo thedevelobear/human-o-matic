@@ -232,8 +232,8 @@ function namesOf(key) {
 
 // The steps.
 
-/** Show `step` alone, the steps reached so far open in the top bar, and move focus to its
- * heading unless `focus` is false. */
+/** Show `step` alone, the steps reached so far open in the top bar, and unless `focus` is false,
+ * scroll to the top of it, its status and alert lines included, and move focus to its heading. */
 function show(step, focus = true) {
   for (const name of STEPS) {
     $(`#${name}`).hidden = name !== step;
@@ -248,7 +248,8 @@ function show(step, focus = true) {
     }
   }
   if (focus) {
-    $(`#${step}-title`).focus();
+    $("main").scrollIntoView({ block: "start" });
+    $(`#${step}-title`).focus({ preventScroll: true });
   }
 }
 

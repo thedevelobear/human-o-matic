@@ -47,6 +47,12 @@ body :focus-visible {
   outline-offset: -2px;
 }
 
+/* A heading the page moves focus to as it shows its step or group, focused only by script, so
+   it has no ring. */
+body [tabindex="-1"]:focus {
+  outline: none;
+}
+
 /* Hard retro borders and offset shadows */
 .retro-box {
   border: 2.5px solid var(--ink-black);
