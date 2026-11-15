@@ -1,6 +1,7 @@
 // The engine under Pyodide in Node: the calls of flow.json on the built site's test song give
 // the download whose SHA-256 the flow holds, as they do natively (ADRs 0100 and 0112), and the
-// page's forms, as it serves them, make calls the engine takes. It loads what
+// page's forms, as it serves them, make calls the engine takes, and the feedback's settings of a
+// song it opens hold only their allowed keys. It loads what
 // `uv run python tools/build_site.py build` wrote into dist/site/, so the build runs first.
 
 import assert from "node:assert/strict";
@@ -290,6 +291,57 @@ test("on a four-group song the flow asks each question get_sections gives, once,
   assert.equal(controls[18].energy, 0.9);
   assert.deepEqual(sections.controls, { tightness: 0.85 });
   assert.equal(sections.style, "tight");
+});
+
+test("the feedback's settings of a song opened under Pyodide hold only their keys and the takes", async () => {
+  const { call } = await engine();
+  const forms = await import(new URL("js/forms.js", site).href);
+  const { feedbackRequest, settingsOf } = await import(new URL("js/feedback.js", site).href);
+  const ask = (name, args, file) => {
+    const reply = JSON.parse(call({ call: name, args }, file));
+    assert.equal(reply.error, undefined, `${name}: ${reply.error}`);
+    return reply;
+  };
+  const kits = { from_map: "gm/default", to_map: "gm/default" };
+  const opened = ask("open_session", { name: "My Secret Song.mid", ...kits }, fourGroups());
+  const session_id = opened.session_id;
+  const fields = opened.decisions.flatMap((request) => forms.form(request));
+  const checked = forms.batch(opened.decisions, startingValues(fields));
+  assert.deepEqual(ask(checked.call, { session_id, ...checked.args }).decisions, []);
+  ask("set_style", { session_id, style: "loose", seed: 11 });
+  ask("set_section_controls", { session_id, controls: { feel: 0.3 } });
+  ask("set_section_controls", { session_id, controls: { energy: 0.9, creative: true }, section_ids: [4] });
+  ask("update_sections", { session_id, ops: [{ op: "rename", start: 4, name: "Big chorus" }] });
+  ask("render", { session_id, section_ids: [4], take: 2 });
+  const read = ask("get_sections", { session_id });
+
+  const settings = settingsOf(kits, read);
+  const sent = new URLSearchParams(feedbackRequest({ rating: "5" }, settings).body).get("settings");
+
+  assert.deepEqual(Object.keys(settings), [
+    "from_map",
+    "to_map",
+    "style",
+    "seed",
+    "bars",
+    "sections",
+    "song_controls",
+    "section_controls",
+    "takes",
+  ]);
+  assert.equal(settings.style, "loose");
+  assert.equal(settings.seed, 11);
+  assert.equal(settings.bars, read.bars);
+  assert.equal(settings.sections, read.sections.length);
+  assert.deepEqual(settings.song_controls, { feel: 0.3 });
+  assert.deepEqual(settings.section_controls[1], { energy: 0.9, creative: true });
+  assert.deepEqual(settings.takes, read.sections.map(({ start }) => (start === 4 ? 2 : 0)));
+  const names = [settings.song_controls, ...settings.section_controls].flatMap(Object.keys);
+  assert.ok(names.length > 0 && names.every((name) => forms.GROUP_CONTROLS.includes(name)), names);
+  assert.deepEqual(JSON.parse(sent), settings);
+  for (const left of ["My Secret Song", ".mid", "Big chorus", session_id, "pattern", "kick", "snare"]) {
+    assert.ok(!sent.includes(left), left);
+  }
 });
 
 test("a call off the allowlist is an error in plain words under Pyodide", async () => {

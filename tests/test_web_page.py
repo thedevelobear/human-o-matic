@@ -2,7 +2,8 @@
 request kind has a form, each HTML page has `lang`, a label on every input, alt text on every image
 and no inline script or style, the page's JavaScript keeps nothing in the browser's storage, writes
 no number of the vocabulary, applies a round only as the page moves on, and keeps its drafts
-until the song is opened again."""
+until the song is opened again; and the feedback form (PR 6), the page's only request with a body,
+has exactly the website plan's six fields in the copy Netlify Forms reads."""
 
 import gzip
 import re
@@ -12,6 +13,7 @@ from typing import get_args
 
 import pytest
 
+from human_o_matic.controls import ControlVector
 from human_o_matic.decisions import DecisionKind
 from human_o_matic.presets import Span, read_vocabulary
 from human_o_matic.web import static_dir
@@ -194,7 +196,7 @@ def test_the_page_shows_the_loading_view_alone_until_the_engine_is_ready() -> No
     assert "app" not in page.within["engine"]
     for inside in ("steps", "status", "file", "kits", "check", "drummer", "sections", "review"):
         assert "app" in page.within[inside], inside
-    for inside in ("download", "delete-box", "toast", "delete-dialog"):
+    for inside in ("download", "feedback", "feedback-form", "delete-box", "toast", "delete-dialog"):
         assert "app" in page.within[inside], inside
     assert '$("#app").inert = !ready;' in shown
     assert '$("#app").hidden = !ready;' in shown
@@ -303,6 +305,7 @@ STORAGE = re.compile(r"\b(localStorage|sessionStorage|indexedDB|caches)\b")
 def test_the_page_s_javascript_keeps_nothing_in_the_browser_s_storage() -> None:
     own = {
         "app.js",
+        "feedback.js",
         "fields.js",
         "forms.js",
         "loading.js",
@@ -421,3 +424,92 @@ def test_app_js_keeps_the_drafts_until_the_song_is_opened_again() -> None:
     sent = edit.find("page.sent = keptAfterEdit(page.sent, sections, reply.sections)")
     kept = edit.find("page.rounds = roundsAfterEdit(page.rounds, sections, reply.sections)")
     assert 0 <= edit.index('ask("update_sections"') < edit.index("if (failed(reply))") < sent < kept
+
+
+FEEDBACK = ["form-name", "bot-field", "rating", "comment", "contact", "settings"]
+"""The feedback form's fields, the website plan's section 6, in the page and in the request."""
+
+
+def feedback_form(text: str) -> Page:
+    """The feedback form of a page's HTML, parsed on its own."""
+    found = re.search(r'<form id="feedback-form".*?</form>', text, re.DOTALL)
+    assert found is not None
+    page = Page()
+    page.feed(found.group(0))
+    page.close()
+    return page
+
+
+def test_the_feedback_form_netlify_reads_has_exactly_section_6_s_fields() -> None:
+    # The page's form is the static copy Netlify's form detection reads from the built page, with
+    # its honeypot hidden from people, and the page's request posts the same six fields
+    # (ADR 0127); the limits are those feedback.js holds the request to.
+    text = INDEX.read_text(encoding="utf-8")
+    page = feedback_form(text)
+    [(tag, form), *rest] = page.elements
+    fields = [attributes for tag, attributes in rest if tag in ("input", "textarea", "select")]
+    by_name = {attributes["name"]: attributes for attributes in fields}
+    script = (static_dir() / "js" / "feedback.js").read_text(encoding="utf-8")
+    limits = re.search(r"LIMITS = \{ comment: (\d+), contact: (\d+) \}", script)
+    named = re.search(r"FIELDS = \[([^\]]*)\]", script)
+
+    assert text.count('<form id="feedback-form"') == text.count("data-netlify") == 1
+    assert (tag, form) == (
+        "form",
+        {
+            "id": "feedback-form",
+            "name": "feedback",
+            "method": "post",
+            "data-netlify": "true",
+            "netlify-honeypot": "bot-field",
+        },
+    )
+    assert list(dict.fromkeys(attributes["name"] for attributes in fields)) == FEEDBACK
+    assert named is not None
+    assert re.findall(r'"([\w-]+)"', named.group(1)) == FEEDBACK
+    assert by_name["form-name"] == {"type": "hidden", "name": "form-name", "value": "feedback"}
+    assert by_name["settings"] == {"type": "hidden", "name": "settings"}
+    assert "value" not in by_name["bot-field"]
+    assert re.search(r'<p hidden><label>[^<]*<input name="bot-field"', text)
+    ratings = [attributes for attributes in fields if attributes["name"] == "rating"]
+    assert [(rating["type"], rating["value"]) for rating in ratings] == [
+        ("radio", str(value)) for value in range(1, 6)
+    ]
+    assert "required" in ratings[0]
+    assert limits is not None
+    assert by_name["comment"]["maxlength"] == limits.group(1) == "2000"
+    assert by_name["contact"]["maxlength"] == limits.group(2) == "200"
+    assert [tag for tag, attributes in rest if attributes.get("name") == "comment"] == ["textarea"]
+
+
+def test_the_feedback_keeps_the_controls_by_controlvector_s_names() -> None:
+    # feedback.js keeps of each layer's controls only those a group's Fine-tune holds, which are
+    # every control of the engine's `ControlVector`, by its names.
+    text = (static_dir() / "js" / "forms.js").read_text(encoding="utf-8")
+    block = re.search(
+        r"^export const GROUP_CONTROLS = \[\n(.*?)^\];", text, re.MULTILINE | re.DOTALL
+    )
+    assert block is not None
+
+    assert sorted(re.findall(r'"(\w+)"', block.group(1))) == sorted(ControlVector.model_fields)
+
+
+def test_the_page_s_only_request_with_a_body_is_the_feedback_form() -> None:
+    # Every other fetch of the page's code takes a URL alone, a GET of the site's own files; the
+    # feedback form's is the one POST, its body URL-encoded by feedback.js (ADR 0127). Nothing
+    # else sends: no XMLHttpRequest, beacon, socket or form submitted by script.
+    posted: list[str] = []
+    for path in MODULES:
+        code = COMMENT.sub("", path.read_text(encoding="utf-8"))
+        every = len(re.findall(r"\bfetch\(", code))
+        plain = len(re.findall(r"\bfetch\([\w.\"-]+\)", code))
+        feedback = re.findall(r'\bfetch\("/", feedbackRequest\(values, page\.settings\)\)', code)
+        posted += [path.name] * len(feedback)
+
+        assert every == plain + len(feedback), path.name
+        assert not re.search(r"XMLHttpRequest|sendBeacon|WebSocket|EventSource|\.submit\(", code)
+        assert ("POST" in code) == (path.name == "feedback.js"), path.name
+    assert posted == ["app.js"]
+    script = (static_dir() / "js" / "feedback.js").read_text(encoding="utf-8")
+    assert '"Content-Type": "application/x-www-form-urlencoded"' in script
+    assert "body: body.toString()" in script

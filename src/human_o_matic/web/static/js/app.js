@@ -5,7 +5,8 @@
 // is closed (the website plan's section 8). The song-wide round and each repeat group's ask
 // their questions on one card, from questions.js, whose answers stay a draft in this page's
 // memory until the song is opened again, and a round is applied when the user moves on from it
-// (ADR 0124).
+// (ADR 0124). After a download, the page offers a feedback form, which posts what the user wrote
+// with the render's settings, never the file, its name or a note (ADRs 0099 and 0127).
 
 import { drawFields, element, readFields } from "./fields.js";
 import {
@@ -43,10 +44,11 @@ import {
   songTabs,
 } from "./questions.js";
 import { barsLabel, conversionLines, creativeLines, downloadName } from "./review.js";
+import { feedbackRequest, settingsOf } from "./feedback.js";
 import { engineState } from "./loading.js";
 import { drawRound } from "./round.js";
 
-const STEPS = ["file", "kits", "check", "drummer", "sections", "review", "download"];
+const STEPS = ["file", "kits", "check", "drummer", "sections", "review", "download", "feedback"];
 // How long a download's Blob URL lives after the download starts, and the toast stays.
 const REVOKE_MS = 10_000;
 const TOAST_MS = 6_000;
@@ -71,6 +73,10 @@ function fresh() {
     file: null,
     open: {},
     session: null,
+    // The kits the song was opened with, and the settings of its last download, which the
+    // feedback form sends.
+    kits: null,
+    settings: null,
     bars: 0,
     toKit: null,
     decisions: [],
@@ -259,6 +265,7 @@ const ENTER = {
   sections: drawSections,
   review: drawReview,
   download: drawDownload,
+  feedback: drawFeedback,
 };
 
 async function go(step) {
@@ -424,14 +431,11 @@ async function openSong() {
   }
   $("#open").disabled = true;
   say("Opening the song");
+  const kits = { from_map: $("#from-map").value, to_map: $("#to-map").value };
   let reply;
   try {
     await ask("reset");
-    reply = await ask(
-      "open_session",
-      { name: page.file.name, from_map: $("#from-map").value, to_map: $("#to-map").value, ...page.open },
-      page.file.bytes,
-    );
+    reply = await ask("open_session", { name: page.file.name, ...kits, ...page.open }, page.file.bytes);
   } finally {
     $("#open").disabled = false;
   }
@@ -440,6 +444,7 @@ async function openSong() {
     return;
   }
   page.session = reply.session_id ?? null;
+  page.kits = kits;
   page.bars = reply.summary?.bars ?? 0;
   page.toKit = reply.to_kit ?? null;
   Object.assign(page, { rounds: {}, sent: {}, groupsAsked: new Set() });
@@ -808,6 +813,7 @@ function listenFor() {
 // 7. Download.
 
 function drawDownload() {
+  $("#to-feedback").hidden = STEPS.indexOf(page.reached) < STEPS.indexOf("feedback");
   const kit = kitNames[page.toKit] ?? page.toKit;
   const listen = page.summary ? ` Listen for: ${listenFor().join("; ")}.` : "";
   $("#listen").textContent =
@@ -833,6 +839,44 @@ async function download() {
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), REVOKE_MS);
   $("#saved").textContent = `Saved as ${name}.`;
+  // The settings this render used, which the feedback form, open from now on, sends (ADR 0099).
+  const read = await ask("get_sections", { session_id: page.session });
+  if (!failed(read)) {
+    page.settings = settingsOf(page.kits, read);
+    page.reached = "feedback";
+    $('#steps [data-step="feedback"]').disabled = false;
+    $("#to-feedback").hidden = false;
+  }
+}
+
+// 8. Feedback.
+
+function drawFeedback() {
+  $("#feedback-settings").textContent = JSON.stringify(page.settings, null, 2);
+}
+
+/** Post the feedback form, URL-encoded, to the site's own `/`, where Netlify Forms takes it: the
+ * page's only request with a body (ADR 0127). */
+async function sendFeedback(event) {
+  event.preventDefault();
+  const form = event.target;
+  const values = Object.fromEntries(new FormData(form));
+  $("#send").disabled = true;
+  $("#sent").textContent = "Sending your feedback";
+  let sent = false;
+  try {
+    sent = (await fetch("/", feedbackRequest(values, page.settings))).ok;
+  } catch {
+    // No answer from the site: said below, as a refusal is.
+  } finally {
+    $("#send").disabled = false;
+  }
+  if (sent) {
+    form.reset();
+  }
+  $("#sent").textContent = sent
+    ? "Thank you: your feedback is sent."
+    : "Not sent: the site didn't take it just now. What you wrote is still here, to send again.";
 }
 
 // Delete my file now.
@@ -853,7 +897,9 @@ function deleteFile() {
   $("#saved").textContent = "";
   $("#to-kits").disabled = true;
   $("#delete-box").hidden = true;
-  for (const filled of ["#requests", "#song-round", "#group-round", "#said", "#heard", "#answers"]) {
+  $("#feedback-form").reset();
+  const drawn = ["#requests", "#song-round", "#group-round", "#said", "#heard", "#answers"];
+  for (const filled of [...drawn, "#feedback-settings", "#sent"]) {
     $(filled).replaceChildren();
   }
   // An opening the ended worker never answered leaves the button to open again.
@@ -925,6 +971,8 @@ $("#answers").addEventListener("click", (event) => {
 });
 $("#to-download").addEventListener("click", () => moveOn(false, () => go("download")));
 $("#get").addEventListener("click", download);
+$("#to-feedback").addEventListener("click", () => moveOn(false, () => go("feedback")));
+$("#feedback-form").addEventListener("submit", sendFeedback);
 $("#delete").addEventListener("click", () => {
   const { file, bars } = page;
   const song = bars ? `${file.name}, ${count(bars, "bar")}` : file.name;
