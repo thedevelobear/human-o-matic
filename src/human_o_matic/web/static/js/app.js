@@ -449,6 +449,8 @@ async function sendSong(tabs, draft) {
   }
   const [styled, tuned] = replies;
   remember({ ...styled, controls: tuned.song.controls });
+  // shortcut: groups applied before keep the rows they took over the song's tightness and feel
+  // then; apply them again here if they should follow a later song-wide answer.
   page.sent.song = set;
   for (const tab of tabs) {
     page.asked.add(tab.id);
