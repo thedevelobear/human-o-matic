@@ -1,6 +1,6 @@
 # 0120. The question window sends only the controls changed, and Enter on "Set it by hand" opens its controls
 
-- **Status:** Accepted. Its line that the page can't unset a control once it is sent is amended by [ADR 0122](0122-a-round-sent-again-takes-back-what-its-answers-set-before-and-set-no-longer.md)
+- **Status:** Accepted. Its line that the page can't unset a control once it is sent is amended by [ADR 0122](0122-a-round-sent-again-takes-back-what-its-answers-set-before-and-set-no-longer.md), and its Enter on "Set it by hand", its Submit tab and its round drawn again starting afresh by [ADR 0124](0124-the-page-asks-each-round-on-one-card-keeps-its-answers-as-a-draft-and-applies-it-when-the-user-moves-on.md)
 - **Date:** 2026-11-15
 
 - **Enter on "Set it by hand"** answers it and moves focus to the first of its controls, in the same tab, where Enter on any other answer opens the next tab. Enter in one of those controls opens the next tab, or Submit after the last question, as Enter on an answer does. A click on it answers it and stays, as any click does. Its controls show while the choice or the answer is on it, and the number keys stay ignored in them.

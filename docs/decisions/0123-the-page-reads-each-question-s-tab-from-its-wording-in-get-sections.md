@@ -1,6 +1,6 @@
 # 0123. The page reads each question's tab from its wording in `get_sections`
 
-- **Status:** Accepted
+- **Status:** Accepted. Its line on when a Ramp tab joins a round is amended by [ADR 0124](0124-the-page-asks-each-round-on-one-card-keeps-its-answers-as-a-draft-and-applies-it-when-the-user-moves-on.md)
 - **Date:** 2026-11-15
 
 - `get_sections` gives a section's questions as text, and its reply stays as it is. The page reads which tab a question is from its words: one beginning "What's the energy in" is Energy, "Should its soft notes be more present" Soft notes, "Steady and even, or more groove" Groove, "How hard should the fill" Fill and "Build up into" Ramp, and one ending "the same, or bigger, as the last time?" Last repeat.
