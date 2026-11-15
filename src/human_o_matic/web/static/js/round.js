@@ -66,32 +66,39 @@ export function drawRound(parent, { id, questions, fineTune, draft = {}, follow,
     if (tab.pattern) {
       box.append(element("pre", {}, tab.pattern.join("\n")));
     }
-    for (const [index, { label, description }] of answers.entries()) {
-      const radio = `${name}-${index}`;
-      box.append(
-        element(
-          "div",
-          { class: "choice" },
-          element("input", {
-            type: "radio",
-            id: radio,
-            name,
-            value: index,
-            checked: index === given,
-            "aria-describedby": `${radio}-about`,
-          }),
-          element("label", { for: radio }, `${index + 1}. ${capital(label)}`),
-          element("p", { id: `${radio}-about`, class: "hint" }, capital(description)),
-        ),
-      );
-    }
     const hand = element("div", { class: "hand", "data-tab": tab.id });
     drawFields(hand, tab.hand ?? [], name);
     writeFields(hand, draft.hand?.[tab.id] ?? {});
     handTouched[tab.id] = new Set(Object.keys(draft.hand?.[tab.id] ?? {}));
-    box.append(hand);
+    for (const [index, { label, description }] of answers.entries()) {
+      const radio = `${name}-${index}`;
+      const choice = element(
+        "div",
+        { class: "choice" },
+        element("input", {
+          type: "radio",
+          id: radio,
+          name,
+          value: index,
+          checked: index === given,
+          "aria-describedby": `${radio}-about`,
+        }),
+        element("label", { for: radio }, `${index + 1}. ${capital(label)}`),
+        element("p", { id: `${radio}-about`, class: "hint" }, capital(description)),
+      );
+      if (index === answers.length - 1) {
+        // "Set it by hand" holds its question's own controls, under a dashed line in its card.
+        choice.append(element("span", { class: "badge", "aria-hidden": "true" }, "Manual"), hand);
+      }
+      box.append(choice);
+    }
     cards.append(box);
     tabs.push(tab);
+  }
+
+  /** A question's answer chosen, its radio by name, never a radio of its own controls. */
+  function chosen(tab) {
+    return cards.querySelector(`input[name="${id}-${tab.id}"]:checked`);
   }
 
   /** The draft as it stands: each question's answer, the controls moved in field order, so the
@@ -101,7 +108,7 @@ export function drawRound(parent, { id, questions, fineTune, draft = {}, follow,
     const hand = {};
     for (const tab of tabs) {
       const box = cards.querySelector(`fieldset[data-tab="${tab.id}"]`);
-      answered[tab.id] = Number(box.querySelector("input[type=radio]:checked").value);
+      answered[tab.id] = Number(chosen(tab).value);
       const names = (tab.hand ?? []).map((field) => field.name).filter((each) => handTouched[tab.id].has(each));
       if (names.length) {
         hand[tab.id] = touchedControls(readFields(box.querySelector(".hand")), names);
@@ -134,12 +141,12 @@ export function drawRound(parent, { id, questions, fineTune, draft = {}, follow,
     cards.addEventListener(type, (event) => {
       const hand = event.target.closest(".hand");
       if (hand) {
-        handTouched[hand.dataset.tab].add(event.target.name);
+        handTouched[hand.dataset.tab].add(event.target.dataset.name ?? event.target.name);
       }
       update();
     });
     fine.addEventListener(type, (event) => {
-      touched.add(event.target.name);
+      touched.add(event.target.dataset.name ?? event.target.name);
       update();
     });
   }
@@ -151,7 +158,7 @@ export function drawRound(parent, { id, questions, fineTune, draft = {}, follow,
       if (joins) {
         add(question);
         update();
-        cards.querySelector(`fieldset[data-tab="${question.id}"] input:checked`).focus();
+        chosen(question).focus();
       }
       return joins;
     },

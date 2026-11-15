@@ -2,8 +2,9 @@
 // `node --test` loads it; fields.js draws the fields and reads their values back as text, or
 // true and false for a checkbox, by name.
 //
-// A field is `{type, name, label, ...}`: "number", "text", "select" and "radio" with `options`
-// of `{value, label}`, "checkbox", "range", "button", a "list" of `items` to show, or a "group"
+// A field is `{type, name, label, ...}`: "number", "text", "select", "radio" and "segments", a
+// row of option buttons, with `options` of `{value, label}`, "checkbox", "range", "button", a
+// "list" of `items` to show, or a "group"
 // of `fields` under a `legend`. Each may have a `hint`, shown under it and tied to it.
 
 /** How many of `noun`, as "1 note" or "12 notes". */
@@ -228,7 +229,7 @@ export function fineTune(names, resolved, ramp = MAX_RAMP) {
     const { kind, label, options, min, max, step } = FINE_TUNE[name];
     if (kind === "select") {
       const choices = options.map((value) => ({ value, label: value }));
-      return { type: "select", name, label, options: choices, value: resolved[name] };
+      return { type: "segments", name, label, options: choices, value: resolved[name] };
     }
     if (kind === "switch") {
       return { type: "checkbox", name, label, checked: resolved[name] === true };

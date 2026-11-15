@@ -23,6 +23,12 @@ export function drawFields(parent, fields, prefix) {
   parent.append(...fields.map((field) => drawField(field, prefix)));
 }
 
+/** A control's name: its field's, which a group of option buttons keeps in `data-name`, its own
+ * name being the group's alone on the page. */
+function nameOf(control) {
+  return control.dataset.name ?? control.name;
+}
+
 /**
  * The value of each named control under `parent`: a checkbox's as true or false, the checked
  * radio's of a group, and any other's as its text.
@@ -31,9 +37,9 @@ export function readFields(parent) {
   const values = {};
   for (const control of parent.querySelectorAll("input[name], select[name]")) {
     if (control.type === "checkbox") {
-      values[control.name] = control.checked;
+      values[nameOf(control)] = control.checked;
     } else if (control.type !== "radio" || control.checked) {
-      values[control.name] = control.value;
+      values[nameOf(control)] = control.value;
     }
   }
   return values;
@@ -43,13 +49,16 @@ export function readFields(parent) {
  * change from the page rather than the user: a slider's shown value and words follow it. */
 export function writeFields(parent, values, skip = new Set()) {
   for (const control of parent.querySelectorAll("input[name], select[name]")) {
-    if (skip.has(control.name) || !(control.name in values)) {
+    const name = nameOf(control);
+    if (skip.has(name) || !(name in values)) {
       continue;
     }
     if (control.type === "checkbox") {
-      control.checked = values[control.name] === true;
+      control.checked = values[name] === true;
+    } else if (control.type === "radio") {
+      control.checked = control.value === String(values[name]);
     } else {
-      control.value = String(values[control.name]);
+      control.value = String(values[name]);
     }
     if (control.type === "range") {
       parent.querySelector(`output[for="${control.id}"]`).value = fixed(control.name, control.value);
@@ -90,6 +99,30 @@ function drawField(field, prefix) {
             }),
             element("label", { for: `${id}-${index}` }, capital(option.label)),
           ),
+        ),
+      );
+    case "segments":
+      // A choice of a few as the design's row of option buttons: native radios, named after
+      // their own id so no other group on the page shares their name, and read by the field's.
+      return element(
+        "fieldset",
+        { class: "field segments", "aria-describedby": described },
+        element("legend", {}, capital(field.label)),
+        hint,
+        element(
+          "div",
+          { class: "options" },
+          ...field.options.flatMap((option, index) => [
+            element("input", {
+              type: "radio",
+              id: `${id}-${index}`,
+              name: id,
+              "data-name": field.name,
+              value: option.value,
+              checked: option.value === field.value,
+            }),
+            element("label", { for: `${id}-${index}` }, capital(option.label)),
+          ]),
         ),
       );
     case "checkbox":

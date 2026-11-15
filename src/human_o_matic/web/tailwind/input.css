@@ -495,7 +495,7 @@ body main legend {
 .choice {
   position: relative;
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   column-gap: 0.875rem;
   align-items: start;
   margin: 0 0 0.75rem;
@@ -511,12 +511,13 @@ body main legend {
   box-shadow: 3px 3px 0px var(--ink-black);
 }
 
-.choice label {
+.choice > label {
+  grid-column: 2;
   font-weight: 700;
   line-height: 1.35;
 }
 
-.choice label::after {
+.choice > label::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -524,17 +525,38 @@ body main legend {
   cursor: pointer;
 }
 
-.choice .hint {
-  grid-column: 2;
+.choice > .hint {
+  grid-column: 2 / -1;
 }
 
-.choice:has(input:checked) {
+.choice:has(> input:checked) {
   border: 2.5px solid var(--ink-black);
   box-shadow: 4px 4px 0px var(--ink-black);
   background: linear-gradient(125deg, var(--soft-1) 0%, var(--soft-2) 52%, var(--soft-3) 100%);
 }
 
-body .choice input[type="radio"] {
+/* A badge: "Manual" on "Set it by hand", "New" on a question that has just come up. */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.5rem;
+  background: var(--ink-black);
+  color: var(--surface-cream);
+  font-family: "Space Mono", monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.choice > .badge {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: start;
+}
+
+body .choice > input[type="radio"] {
   -webkit-appearance: none;
   appearance: none;
   width: 1.25rem;
@@ -545,19 +567,82 @@ body .choice input[type="radio"] {
   background: var(--bg-parchment);
 }
 
-body .choice input[type="radio"]:checked {
+body .choice > input[type="radio"]:checked {
   background: radial-gradient(circle, var(--surface-cream) 0 0.2rem, var(--ink-black) 0.2rem 0.28rem, transparent 0.28rem),
     linear-gradient(135deg, var(--sunset-orange), var(--vibrant-magenta));
 }
 
-/* "Set it by hand": the question's own controls, under it. */
+/* "Set it by hand": the question's own controls, in its card under a dashed line, side by side,
+   above the card's label so a click on them stays theirs. */
 .hand {
+  position: relative;
+  z-index: 1;
+  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
-  margin: 0.25rem 0 0.75rem;
+  margin: 0.875rem 0 0;
   padding: 0.875rem 0 0;
   border-top: 2px dashed rgba(20, 18, 24, 0.25);
+}
+
+/* A choice of a few, such as the drummer's style, as the design's row of option buttons over
+   visually hidden native radios. */
+body main fieldset.segments {
+  margin: 0;
+  padding: 0.75rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.75rem;
+  background: var(--surface-cream);
+}
+
+body main .segments legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: none;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.segments .options {
+  clear: both;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.segments input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segments label {
+  padding: 0.375rem 0.5rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.75rem;
+  box-shadow: 2px 2px 0px var(--ink-black);
+  background: var(--surface-cream);
+  font-family: "Space Mono", monospace;
+  font-size: 0.875rem;
+  text-align: center;
+  cursor: pointer;
+}
+
+.segments input:checked + label {
+  background: var(--sunset-orange);
+  box-shadow: 3px 3px 0px var(--ink-black);
+}
+
+.segments input:focus-visible + label {
+  outline: 2px solid var(--vibrant-magenta);
+  outline-offset: 2px;
 }
 
 .hand > div:not(.check),
@@ -801,7 +886,7 @@ body .state {
     background-image: none;
   }
 
-  .choice:has(input:checked) {
+  .choice:has(> input:checked) {
     border-width: 4px;
     background: var(--surface-cream);
   }
