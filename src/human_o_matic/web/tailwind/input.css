@@ -1,0 +1,1052 @@
+/* The input of static/tailwind.css, which `uv run python tools/build_site.py css` builds with
+   Tailwind's standalone CLI (ADR 0126): the owner's design's style block, then the styles of
+   what the page's scripts draw, the round's cards and the forms' fields, then Tailwind's own at
+   the end, in the order the page had them from Tailwind's Play CDN (ADR 0125). Tailwind's reset
+   comes after them, so a rule here that styles an element the reset also styles starts with
+   `body` to outrank it. Every animation and transition is inside
+   `prefers-reduced-motion: no-preference`. */
+
+:root {
+  --bg-parchment: #e8e2d5;
+  --surface-cream: #f7f3eb;
+  --surface-well: #efeadf;
+  --ink-black: #141218;
+  --ink-muted: #545051;
+  --cosmic-navy: #1c2340;
+  --sunset-orange: #f28d35;
+  --vibrant-magenta: #e2587a;
+  --soft-lavender: #d8ccf2;
+  --pill-start: #f6b96b;
+  --pill-end: #9878d0;
+  --soft-1: #f6e3ce;
+  --soft-2: #f4dad9;
+  --soft-3: #e0d5e3;
+  --error-red: #b91c3c;
+  --focus-violet: #5b2bd1;
+  color-scheme: light;
+  accent-color: var(--sunset-orange);
+}
+
+body {
+  background-color: var(--bg-parchment);
+  color: var(--ink-black);
+  font-family: "Space Grotesk", sans-serif;
+  /* Subtle vintage paper grain and a warm vignette */
+  background-image: radial-gradient(rgba(20, 18, 24, 0.045) 1px, transparent 0),
+    radial-gradient(circle at 50% 0%, rgba(255, 252, 245, 0.55), transparent 70%);
+  background-size: 18px 18px, 100% 100%;
+  overflow-x: hidden;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body :focus-visible {
+  outline: 2px solid var(--focus-violet);
+  outline-offset: -2px;
+}
+
+/* A heading the page moves focus to as it shows its step or group, focused only by script, so
+   it has no ring. */
+body [tabindex="-1"]:focus {
+  outline: none;
+}
+
+/* Hard retro borders and offset shadows */
+.retro-box {
+  border: 2.5px solid var(--ink-black);
+  box-shadow: 4px 4px 0px var(--ink-black);
+}
+
+.retro-box-lg {
+  border: 2.5px solid var(--ink-black);
+  box-shadow: 6px 6px 0px var(--ink-black);
+}
+
+.retro-btn {
+  border: 2px solid var(--ink-black);
+  box-shadow: 3px 3px 0px var(--ink-black);
+}
+
+.retro-btn:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px var(--ink-black);
+}
+
+.retro-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px var(--ink-black);
+}
+
+/* The iridescent mesh, pill and soft gradients. The pill's last stop is lighter than the
+   design's, so ink on it is at least 4.5:1. */
+.iridescent-mesh {
+  background: radial-gradient(circle at 18% 25%, #f28d35 0%, transparent 52%),
+    radial-gradient(circle at 82% 20%, #e2587a 0%, transparent 55%),
+    radial-gradient(circle at 55% 85%, #f6c270 0%, transparent 50%),
+    linear-gradient(135deg, #1c2340 0%, #4a2c5e 48%, #e2587a 100%);
+}
+
+.iridescent-pill {
+  background: linear-gradient(95deg, var(--pill-start) 0%, var(--sunset-orange) 35%, var(--vibrant-magenta) 72%, var(--pill-end) 100%);
+}
+
+.iridescent-soft {
+  background: linear-gradient(125deg, var(--soft-1) 0%, var(--soft-2) 52%, var(--soft-3) 100%);
+}
+
+/* Halftone dots, from the CRT's casing and the floppy disk */
+.halftone-dots {
+  background-image: radial-gradient(var(--ink-black) 1.15px, transparent 1.15px);
+  background-size: 6px 6px;
+}
+
+.halftone-subtle {
+  background-image: radial-gradient(rgba(20, 18, 24, 0.16) 1px, transparent 1px);
+  background-size: 7px 7px;
+}
+
+/* Every slider, the design's retro slider on the native input */
+body input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 12px;
+  background: var(--bg-parchment);
+  border: 2px solid var(--ink-black);
+  border-radius: 999px;
+}
+
+body input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f28d35, #e2587a);
+  border: 2.5px solid var(--ink-black);
+  box-shadow: 2px 2px 0px var(--ink-black);
+  cursor: pointer;
+}
+
+body input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f28d35, #e2587a);
+  border: 2.5px solid var(--ink-black);
+  box-shadow: 2px 2px 0px var(--ink-black);
+  cursor: pointer;
+}
+
+/* The drawings: a sprite used by reference, and the wordmark's shadow. */
+
+.sprite {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.wordmark {
+  text-shadow: 2px 2px 0px rgba(242, 141, 53, 0.45);
+}
+
+/* The engine's bar: the native progress element, its value the engine's real progress, with a
+   halftone track and the iridescent pill as its fill. */
+
+body progress.engine-bar {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 1rem;
+  overflow: hidden;
+  border: 2px solid var(--ink-black);
+  border-radius: 999px;
+  background-color: var(--bg-parchment);
+  background-image: radial-gradient(rgba(20, 18, 24, 0.16) 1px, transparent 1px);
+  background-size: 7px 7px;
+}
+
+progress.engine-bar::-webkit-progress-bar {
+  background: transparent;
+}
+
+progress.engine-bar::-webkit-progress-value {
+  border-right: 2px solid var(--ink-black);
+  background: linear-gradient(95deg, var(--pill-start) 0%, var(--sunset-orange) 35%, var(--vibrant-magenta) 72%, var(--pill-end) 100%);
+  background-size: 200% 200%;
+}
+
+progress.engine-bar::-moz-progress-bar {
+  background: linear-gradient(95deg, var(--pill-start) 0%, var(--sunset-orange) 35%, var(--vibrant-magenta) 72%, var(--pill-end) 100%);
+  background-size: 200% 200%;
+}
+
+/* Each step's card, with the design's halftone corner. */
+
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.5rem;
+  background-image: radial-gradient(rgba(20, 18, 24, 0.16) 1px, transparent 1px);
+  background-size: 7px 7px;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* The stepper: the current step iridescent and underlined, a step not reached yet dashed. */
+
+#steps .step[aria-current="step"] {
+  background: linear-gradient(95deg, var(--pill-start) 0%, var(--sunset-orange) 35%, var(--vibrant-magenta) 72%, var(--pill-end) 100%);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+#steps .step:disabled {
+  border-style: dashed;
+  box-shadow: none;
+  background: var(--bg-parchment);
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
+/* Each step's call to action, centred under its card, with its secondary actions beside it. */
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 1.5rem 0 0;
+}
+
+body .next:disabled,
+body .secondary:disabled {
+  border-style: dashed;
+  box-shadow: none;
+  background: var(--bg-parchment);
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
+/* What the scripts draw: buttons, the section strip and the review's answers. */
+
+/* The design's secondary button: parchment, one height and weight wherever it is. */
+.btn {
+  min-height: 2.25rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: 0.75rem;
+  background: var(--bg-parchment);
+  color: var(--ink-black);
+  font-weight: 700;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  background: #ffffff;
+}
+
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.25rem;
+}
+
+.strip li {
+  font-family: "Space Mono", monospace;
+  font-size: 0.8125rem;
+}
+
+#check-sections li {
+  padding: 0.25rem 0.625rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.75rem;
+  background: var(--bg-parchment);
+}
+
+.strip [aria-pressed="true"] {
+  background: linear-gradient(95deg, var(--pill-start) 0%, var(--sunset-orange) 35%, var(--vibrant-magenta) 72%, var(--pill-end) 100%);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.answered > li {
+  margin: 0 0 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 1rem;
+  background: var(--surface-well);
+}
+
+.answered ul {
+  margin: 0.25rem 0 0.75rem 1.25rem;
+  list-style: disc;
+  font-family: "Space Mono", monospace;
+  font-size: 0.8125rem;
+}
+
+/* The forms' fields, drawn by fields.js. */
+
+.field,
+body .request {
+  margin: 0 0 1rem;
+}
+
+/* A request's message, 16 px above its form, such as the tempo's BPM field. */
+body .request > p {
+  margin-bottom: 1rem;
+}
+
+.field label,
+.field select,
+.field input:not([type="checkbox"]) {
+  display: block;
+}
+
+.field label,
+.edits label {
+  font-weight: 700;
+}
+
+/* Every field fills its container and never runs past it; a select draws its own chevron, from
+   chevron.svg, with room kept for it. */
+body main input:not([type="radio"], [type="checkbox"], [type="range"], [type="file"]),
+body main select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.375rem 0.625rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.75rem;
+  background-color: var(--surface-cream);
+  color: var(--ink-black);
+  font-family: "Space Mono", monospace;
+  text-overflow: ellipsis;
+}
+
+/* The file picker's button: cream, its border the main buttons' iridescent pill. */
+body #midi::file-selector-button {
+  border: 2px solid transparent;
+  background: linear-gradient(var(--surface-cream), var(--surface-cream)) padding-box,
+    linear-gradient(95deg, var(--pill-start) 0%, var(--sunset-orange) 35%, var(--vibrant-magenta) 72%, var(--pill-end) 100%) border-box;
+}
+
+body main select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 2.75rem;
+  background-image: url("chevron.svg");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.125rem 1.125rem;
+  cursor: pointer;
+}
+
+/* A checkbox, the design's: a chunky ink box, filled sunset with a check mark from check.svg when
+   ticked, in a pill with a hard shadow whose whole area is its label. */
+body .check {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-self: start;
+  column-gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  border: 2.5px solid var(--ink-black);
+  border-radius: 1rem;
+  box-shadow: 4px 4px 0px var(--ink-black);
+  background: var(--surface-cream);
+}
+
+body .check:has(input:checked) {
+  background: linear-gradient(125deg, var(--soft-1) 0%, var(--soft-2) 52%, var(--soft-3) 100%);
+}
+
+/* It rises on hover and presses on a click as a button does, from its deeper shadow. */
+body .check:hover:not(:has(:disabled)) {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0px var(--ink-black);
+}
+
+body .check:active:not(:has(:disabled)) {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px var(--ink-black);
+}
+
+.check label {
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.check label::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  cursor: pointer;
+}
+
+.check .hint {
+  flex-basis: 100%;
+}
+
+body main input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  border: 2.5px solid var(--ink-black);
+  border-radius: 0.375rem;
+  background: var(--surface-cream) center / 1rem no-repeat;
+}
+
+body main input[type="checkbox"]:checked {
+  background-color: var(--sunset-orange);
+  background-image: url("check.svg");
+}
+
+/* A slider: its label and its value's pill on a row of one height, the slider under them at its
+   full width and its captions under it, so sliders side by side line up. */
+.range {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2rem;
+}
+
+.pill {
+  flex: none;
+  padding: 0.125rem 0.625rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.625rem;
+  background: var(--bg-parchment);
+  font-family: "Space Mono", monospace;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+body .scale {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--ink-muted);
+  font-family: "Space Mono", monospace;
+  font-size: 0.75rem;
+}
+
+/* The controls side by side in a card's grid keep no margin of their own. */
+.hand > *,
+.fine-tune > * {
+  margin: 0;
+}
+
+body .hint {
+  margin-top: 0.125rem;
+  color: var(--ink-muted);
+  font-family: "Space Mono", monospace;
+  font-size: 0.8125rem;
+}
+
+/* A question's card, the design's fieldset with its legend. */
+
+body main fieldset {
+  position: relative;
+  margin: 1.75rem 0 1.25rem;
+  padding: 1rem 1.25rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 1rem;
+  background: var(--surface-well);
+}
+
+body main legend {
+  max-width: 100%;
+  padding: 0.25rem 0.75rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.75rem;
+  box-shadow: 2px 2px 0px var(--ink-black);
+  background: var(--surface-cream);
+  font-family: "Fredoka", sans-serif;
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+.answers > p {
+  margin: 0.5rem 0;
+  color: var(--ink-muted);
+  font-family: "Space Mono", monospace;
+  font-size: 0.8125rem;
+}
+
+/* A section's most typical bar as a piano roll, in an ink frame with a hard shadow: a lane a drum,
+   a column a step, the beats' lines heavier, and a square a hit, an accent the largest in the
+   sunset-to-magenta gradient, a normal hit sunset and a soft one the smallest, in lavender. A
+   long bar scrolls sideways. */
+.roll {
+  margin: 0 0 0.75rem;
+  padding: 0 3px 3px 0;
+  overflow-x: auto;
+}
+
+.roll svg {
+  display: block;
+  overflow: hidden;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.75rem;
+  box-shadow: 3px 3px 0px var(--ink-black);
+  background: var(--bg-parchment);
+}
+
+.roll .names {
+  fill: var(--bg-parchment);
+}
+
+.roll .lane {
+  fill: var(--surface-cream);
+}
+
+.roll .lane.odd {
+  fill: var(--surface-well);
+}
+
+.roll .step {
+  stroke: rgba(20, 18, 24, 0.12);
+  stroke-width: 1px;
+}
+
+.roll .beat {
+  stroke: rgba(20, 18, 24, 0.5);
+  stroke-width: 1.5px;
+}
+
+.roll .drum {
+  fill: var(--ink-black);
+  font-family: "Space Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  text-anchor: end;
+  dominant-baseline: central;
+}
+
+.roll .shade {
+  fill: var(--ink-black);
+}
+
+.roll .hit {
+  stroke: var(--ink-black);
+  stroke-width: 1.5px;
+}
+
+.roll .normal {
+  fill: var(--sunset-orange);
+}
+
+.roll .soft {
+  fill: var(--soft-lavender);
+}
+
+/* Each answer is a selectable card around its native radio: the whole card is its label. */
+
+.choice {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: 0.875rem;
+  align-items: start;
+  margin: 0 0 0.75rem;
+  padding: 0.875rem 1rem;
+  border: 2px solid rgba(20, 18, 24, 0.8);
+  border-radius: 1rem;
+  box-shadow: 2px 2px 0px var(--ink-black);
+  background: var(--surface-cream);
+}
+
+.choice:hover {
+  border-color: var(--ink-black);
+  box-shadow: 3px 3px 0px var(--ink-black);
+}
+
+.choice > label {
+  grid-column: 2;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.choice > label::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  cursor: pointer;
+}
+
+.choice > .hint {
+  grid-column: 2 / -1;
+}
+
+.choice:has(> input:checked) {
+  border: 2.5px solid var(--ink-black);
+  box-shadow: 4px 4px 0px var(--ink-black);
+  background: linear-gradient(125deg, var(--soft-1) 0%, var(--soft-2) 52%, var(--soft-3) 100%);
+}
+
+/* A badge: "Manual" on "Set it by hand", "New" on a question that has just come up. */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.5rem;
+  background: var(--ink-black);
+  color: var(--surface-cream);
+  font-family: "Space Mono", monospace;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+legend .badge {
+  vertical-align: 0.125em;
+}
+
+.choice > .badge {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: start;
+}
+
+body .choice > input[type="radio"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0.125rem 0 0;
+  border: 2px solid var(--ink-black);
+  border-radius: 50%;
+  background: var(--bg-parchment);
+}
+
+body .choice > input[type="radio"]:checked {
+  background: radial-gradient(circle, var(--surface-cream) 0 0.2rem, var(--ink-black) 0.2rem 0.28rem, transparent 0.28rem),
+    linear-gradient(135deg, var(--sunset-orange), var(--vibrant-magenta));
+}
+
+/* "Set it by hand": the question's own controls, in its card under a dashed line, side by side,
+   above the card's label so a click on them stays theirs. */
+.hand {
+  position: relative;
+  z-index: 1;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0.875rem 0 0;
+  padding: 0.875rem 0 0;
+  border-top: 2px dashed rgba(20, 18, 24, 0.25);
+}
+
+/* A choice of a few, such as the drummer's style, as the design's row of option buttons over
+   visually hidden native radios. */
+body main fieldset.segments {
+  margin: 0;
+  padding: 0.75rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.75rem;
+  background: var(--surface-cream);
+}
+
+body main .segments legend {
+  float: left;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 2rem;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: none;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.segments .options {
+  clear: both;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.segments input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segments label {
+  padding: 0.375rem 0.5rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.75rem;
+  box-shadow: 2px 2px 0px var(--ink-black);
+  background: var(--surface-cream);
+  font-family: "Space Mono", monospace;
+  font-size: 0.875rem;
+  text-align: center;
+  cursor: pointer;
+}
+
+.segments input:checked + label {
+  background: var(--sunset-orange);
+  box-shadow: 3px 3px 0px var(--ink-black);
+}
+
+.segments input:focus-visible + label {
+  outline: 2px solid var(--focus-violet);
+  outline-offset: 2px;
+}
+
+.hand > div:not(.check),
+.fine-tune > div:not(.check) {
+  padding: 0.75rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.75rem;
+  background: var(--surface-cream);
+}
+
+/* A Fine-tune control "Leave this section as it is" has disabled: dashed and muted, as a disabled
+   button is, and not clickable. */
+body main .fine-tune > :has(:disabled) {
+  border-style: dashed;
+  box-shadow: none;
+  background: var(--bg-parchment);
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
+.fine-tune > :has(:disabled) * {
+  pointer-events: none;
+}
+
+body .round details,
+body .edits {
+  margin: 1rem 0;
+}
+
+body .round summary,
+body .edits summary {
+  display: inline-block;
+  margin: 0 0 0.75rem;
+  padding: 0.375rem 0.875rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.75rem;
+  box-shadow: 3px 3px 0px var(--ink-black);
+  background: var(--bg-parchment);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fine-tune {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+/* The section edits: one card a row, its label, a field of a fitting width and its button, each
+   in the same column, stacking on a phone. */
+.edit-grid {
+  display: grid;
+  gap: 0.625rem;
+}
+
+body .edit {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr) 11rem;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+  padding: 0.625rem 0.875rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.75rem;
+  background: var(--surface-cream);
+}
+
+.edit > label,
+.edit-label {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+body .edit input {
+  margin-top: 0;
+}
+
+body .edit input.bar {
+  max-width: 7rem;
+}
+
+#merge-form .edit-label {
+  grid-column: 1 / 3;
+}
+
+#rename-form .name {
+  grid-column: 2 / 4;
+}
+
+.edit .btn {
+  grid-column: 3;
+  justify-self: stretch;
+}
+
+.readout {
+  justify-self: start;
+  min-width: 3ch;
+  padding: 0.125rem 0.625rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.5rem;
+  background: var(--bg-parchment);
+  font-family: "Space Mono", monospace;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+@media (max-width: 40rem) {
+  body .edit {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .edit > label,
+  .edit-label,
+  #merge-form .edit-label,
+  #rename-form .name {
+    grid-column: 1 / -1;
+  }
+
+  .edit .btn {
+    grid-column: 2;
+  }
+
+  #merge-form .btn {
+    grid-column: 1;
+    justify-self: start;
+  }
+}
+
+/* A round's state line: applied, or not yet. */
+body .state {
+  margin: 1rem 0;
+  padding: 0.625rem 0.875rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 0.75rem;
+  background: var(--bg-parchment);
+  font-family: "Space Mono", monospace;
+  font-size: 0.8125rem;
+}
+
+/* The page's one dialog: its head and its buttons fixed and only what lies between them
+   scrolling, over the page blurred; Escape or a click on the blur closes it. */
+body .modal {
+  padding: 0;
+  overflow: hidden;
+}
+
+.modal::backdrop {
+  background: rgba(20, 18, 24, 0.45);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.modal > form {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+}
+
+.modal-head {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1.25rem 1.5rem 1rem;
+}
+
+body .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0 1.5rem;
+  overflow-y: auto;
+}
+
+.modal-foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.625rem;
+  margin-top: 20px;
+  padding: 1rem 1.5rem 1.25rem;
+  border-top: 2px dashed rgba(20, 18, 24, 0.25);
+}
+
+/* What "Last applied" opens: each round applied, in the sections' order, a line each. */
+.applied > li {
+  margin: 0 0 0.875rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--ink-black);
+  border-radius: 1rem;
+  background: var(--surface-well);
+}
+
+.applied h3 {
+  margin: 0 0 0.375rem;
+  font-family: "Fredoka", sans-serif;
+  font-weight: 700;
+}
+
+.applied ul {
+  margin: 0 0 0 1.25rem;
+  list-style: disc;
+  font-family: "Space Mono", monospace;
+  font-size: 0.8125rem;
+}
+
+/* The toast: the design's slide up from below. */
+#toast.shown {
+  transform: none;
+  opacity: 1;
+}
+
+/* Motion: the design's ambient loops and its buttons' press, only when the reader hasn't asked
+   for less (ADR 0125). Nothing moves a control's value. */
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes floatBob {
+    0%,
+    100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+
+    50% {
+      transform: translateY(-3px) rotate(3.5deg);
+    }
+  }
+
+  @keyframes pulseSparkle {
+    0%,
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 0.9;
+    }
+
+    50% {
+      transform: scale(1.2) rotate(12deg);
+      opacity: 1;
+    }
+  }
+
+  @keyframes engineShimmer {
+    0% {
+      background-position: 0% 50%;
+    }
+
+    50% {
+      background-position: 100% 50%;
+    }
+
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .animate-bob {
+    animation: floatBob 3.6s ease-in-out infinite;
+  }
+
+  .animate-sparkle {
+    animation: pulseSparkle 2.8s ease-in-out infinite;
+  }
+
+  progress.engine-bar::-webkit-progress-value {
+    animation: engineShimmer 5s ease infinite;
+  }
+
+  progress.engine-bar::-moz-progress-bar {
+    animation: engineShimmer 5s ease infinite;
+  }
+
+  .retro-btn,
+  .check {
+    transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.12s cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 0.15s ease;
+  }
+
+  #toast {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --ink-muted: var(--ink-black);
+  }
+
+  #steps .step:disabled,
+  body .next:disabled,
+  body .secondary:disabled,
+  body main .fine-tune > :has(:disabled) {
+    border-style: solid;
+  }
+
+  .card::before,
+  .halftone-subtle {
+    background-image: none;
+  }
+
+  .choice:has(> input:checked) {
+    border-width: 4px;
+    background: var(--surface-cream);
+  }
+}
+
+@media (max-width: 45rem) {
+  .fine-tune,
+  .hand {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

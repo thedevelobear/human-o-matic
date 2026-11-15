@@ -1,10 +1,12 @@
-// The rounds' questions (the website plan's section 6, ADR 0111): the Drummer step's round and
-// each repeat group's, their tabs from the questions `get_sections` gives, each tab's answers the
-// vocabulary's rows by their answer text, then "your call", and the controls a round's answers
-// set. The rows' controls come from the worker's `presets` call, so no number of the vocabulary
-// is written here. It touches no DOM, so `node --test` loads it; app.js draws the rounds.
+// The rounds' questions (the website plan's section 6, ADRs 0111 and 0124): the Drummer step's
+// round and each repeat group's, their questions from those `get_sections` gives, each one's
+// answers the vocabulary's rows by their answer text, then "your call", and the controls a
+// round's draft of answers sets; and when a round is applied, what an edit keeps of the drafts,
+// and the review's words. A question is a "tab" here, the word its data has kept. The rows'
+// controls come from the worker's `presets` call, so no number of the vocabulary is written
+// here. It touches no DOM, so `node --test` loads it; round.js and app.js draw the rounds.
 
-import { count, fineTune, mostRamp, touchedControls } from "./forms.js";
+import { capital, count, fineTune, fixed, mostRamp } from "./forms.js";
 
 export const YOUR_CALL = "your call";
 /** The section kinds the Energy tab offers, in the vocabulary's order. */
@@ -115,12 +117,13 @@ export function kindByName(name) {
   return found.length === 1 ? found[0] : null;
 }
 
-/** A row's controls in plain words, each name and value, a change with its sign. */
+/** A row's controls in plain words, each name and value, a number with two decimals and a change
+ * with its sign. */
 export function described(controls, change = false) {
   return Object.entries(controls)
     .map(([name, value]) => {
-      const shown = change && value > 0 ? `+${value}` : String(value);
-      return `${WORDS[name] ?? name} ${shown}`;
+      const number = typeof value === "number" ? fixed(name, value) : String(value);
+      return `${WORDS[name] ?? name} ${change && value > 0 ? "+" : ""}${number}`;
     })
     .join(", ");
 }
@@ -275,7 +278,7 @@ function given(tab, round, rows) {
     return rows[tab.rows[index]];
   }
   if (index !== undefined && index > tab.rows.length) {
-    return touchedControls(round.hand[tab.id] ?? {}, round.handTouched[tab.id] ?? new Set());
+    return round.hand?.[tab.id] ?? {};
   }
   if (tab.kind === "ramp") {
     return { ramp: 0 };
@@ -292,8 +295,8 @@ function given(tab, round, rows) {
  * longer set is null, so the round as it stands replaces what it set.
  *
  * @param {Array<object>} tabs The round's question tabs.
- * @param {object} round `{answered, hand, handTouched, fine}`: the answers by tab, "Set it by
- *   hand"'s values and the names moved by tab, and Fine-tune's moved controls.
+ * @param {object} round The round's draft, `{answered, hand, fine}`: the answers by tab, and the
+ *   controls moved, of "Set it by hand" by tab and of Fine-tune.
  * @param {object} context `{presets, song, defaults, members, before}`: the song's own controls,
  *   the style's defaults, the group's sections, and `{start: names}` the answers set last.
  * @returns {{controls: object, set: object}} Each section's controls, and the names its
@@ -423,12 +426,9 @@ export function shownSong(tabs, round, { presets, song, defaults, style, before 
   return { ...base, style, ...songControls(tabs, round, { presets }).controls };
 }
 
-const capital = (text) => text[0].toUpperCase() + text.slice(1);
-
-/** The words of a round's echo: each section's `expected` from the replies, or only those of the
- * sections `only` names, any control the engine clamped and the value it used, and the count of
- * questions so far. */
-export function echo(replies, asked, only = null) {
+/** The lines of a round's echo: each section's `expected` from the replies, or only those of the
+ * sections `only` names, and any control the engine clamped and the value it used. */
+export function echo(replies, only = null) {
   const sections = replies.flatMap((reply) => reply.sections ?? []);
   const labels = Object.fromEntries(sections.map(({ start, label }) => [start, label]));
   const lines = sections
@@ -438,7 +438,99 @@ export function echo(replies, asked, only = null) {
     .flatMap((reply) => reply.clamped ?? [])
     .map(({ control, given: was, used, section }) => {
       const where = section === undefined ? "" : ` in ${labels[section]}`;
-      return `${capital(WORDS[control] ?? control)} ${was} was taken as ${used}${where}.`;
+      const [given, taken] = [was, used].map((value) => fixed(control, value));
+      return `${capital(WORDS[control] ?? control)} ${given} was taken as ${taken}${where}.`;
     });
-  return [...lines, ...clamped, `Questions so far: ${asked}.`].join(" ");
+  return [...lines, ...clamped];
+}
+
+/** A section's pattern, the lines `get_sections` gives of its most typical bar, as a grid to
+ * draw: each row its drum and its steps, "." none, "o" a soft hit, "x" a normal one and "X" an
+ * accent, and how many steps a beat holds. */
+export function noteGrid(lines) {
+  const split = lines.map((line) => line.trim().split(/\s+/));
+  return {
+    rows: split.map(([drum, ...beats]) => ({ drum, cells: [...beats.join("")] })),
+    perBeat: split[0]?.[1]?.length ?? 1,
+  };
+}
+
+/** What the page's dialog says when applying a round brings up questions it didn't have, the Ramp
+ * tabs `joined` (ADR 0124): its title, why such a question comes up, and each question in the
+ * engine's own words with the sections it is set on. */
+export function cameUp(joined) {
+  return {
+    title: joined.length === 1 ? "One more question came up" : `${joined.length} more questions came up`,
+    lead:
+      "Your answers are applied. A section now leads into a louder one, so its last bars can " +
+      "build into it, each a little harder, or go straight in:",
+    asked: joined.map(({ question, plays }) => ({ question, where: `${plays}.` })),
+    after: "It is at the end of this round, and applies with it when you move on.",
+  };
+}
+
+/** The rounds applied, each `{said, ...}` by key, in the sections' order, as "Last applied" lists
+ * them: the song-wide round, then each repeat group's, `groups` naming them in song order. */
+export function inSongOrder(rounds, groups) {
+  return ["song", ...groups].map((key) => rounds[key]).filter((round) => round?.said);
+}
+
+/** A round's questions and draft as one text, so two rounds alike in both send the same. */
+export function signature(tabs, { answered = {}, hand = {}, fine = {} } = {}) {
+  return JSON.stringify([tabs.map((tab) => tab.id), answered, hand, fine]);
+}
+
+/**
+ * Apply a round as the page moves on from it (ADR 0124): `send` it when it was never applied or
+ * has changed since, `applied` being its signature when it last was. `send` gives the echo's
+ * lines, or the failed reply. A send that fails stays, with the draft as it was. One that succeeds moves on, unless `stay` is set and `due`, the Ramp
+ * tabs due once it is sent, brings up one the round doesn't show, which then joins it.
+ *
+ * @returns {Promise<{move: boolean, applied?: string, said?: Array<string>, error?: string,
+ *   joined: Array<object>}>} Whether to move on, the round's signature as applied, its echo's
+ *   lines or why it failed, and the Ramp tabs brought up.
+ */
+export async function applyRound({ tabs, draft, applied, send, due = () => [], stay = false }) {
+  const signed = signature(tabs, draft);
+  if (signed === applied) {
+    return { move: true, applied, joined: [] };
+  }
+  const said = await send(tabs, draft);
+  if (!Array.isArray(said)) {
+    return { move: false, applied, error: said.error, joined: [] };
+  }
+  const joined = due().filter((tab) => !tabs.some((shown) => shown.id === tab.id));
+  return { move: !(stay && joined.length), applied: signed, said, joined };
+}
+
+/** The rounds kept after a section edit, `before` against `after`, each `{draft, ...}` by key:
+ * the song's, and a group's whose sections, and its Ramp tabs' sections, the edit leaves as they
+ * were, with the same first bar, bars and group, and none joining it. The rest are forgotten, so
+ * a round drawn again over changed sections starts afresh (ADR 0124). */
+export function roundsAfterEdit(rounds, before, after) {
+  const shape = ({ start, bars, group }) => `${start} ${bars} ${group}`;
+  const same = new Set(after.map(shape));
+  const kept = new Set(before.filter((section) => same.has(shape(section))).map(({ start }) => start));
+  const members = (sections, group) => sections.filter((section) => section.group === group);
+  return Object.fromEntries(
+    Object.entries(rounds).filter(([key, { draft }]) => {
+      const ramps = (draft?.ramps ?? []).flatMap((tab) => tab.sections);
+      const covered = [...members(before, key).map(({ start }) => start), ...ramps];
+      const joined = members(after, key).length !== members(before, key).length;
+      return key === "song" || (covered.every((start) => kept.has(start)) && !joined);
+    }),
+  );
+}
+
+/** A round's answers in words, for the review: each question's, "Set it by hand" with the
+ * controls it moved, and the controls Fine-tune moved. */
+export function answerLines(tabs, { answered = {}, hand = {}, fine = {} } = {}) {
+  const lines = tabs.map((tab) => {
+    const index = answered[tab.id] ?? tab.rows.length;
+    const moved = described(hand[tab.id] ?? {}) || "nothing moved";
+    const answer = index > tab.rows.length ? `set by hand, ${moved}` : tab.answers[index].label;
+    return `${tab.label}: ${capital(answer)}`;
+  });
+  const tuned = described(fine);
+  return tuned ? [...lines, `Fine-tune: ${capital(tuned)}`] : lines;
 }

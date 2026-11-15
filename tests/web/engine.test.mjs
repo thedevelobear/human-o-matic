@@ -168,7 +168,7 @@ test("on a four-group song the flow asks each question get_sections gives, once,
 
   const styled = ask("set_style", { session_id });
   const songTabs = questions.songTabs(presets, { ...styled.defaults, style: styled.style });
-  const song = { answered: { drummer: 0 }, hand: {}, handTouched: {}, fine: {} };
+  const song = { answered: { drummer: 0 }, hand: {}, fine: {} };
   const { controls: wide } = questions.songControls(songTabs, song, { presets });
   send(questions.songCalls(wide, styled.style));
   songTabs.forEach((tab) => asked.add(tab.id));
@@ -188,15 +188,16 @@ test("on a four-group song the flow asks each question get_sections gives, once,
       const ready = after && groupsAsked.has(each.group) && groupsAsked.has(after.group);
       return ready ? each.questions.filter(isRamp).map((question) => `${each.start}: ${question}`) : [];
     });
-  const sendRound = (group, tabs, answered) => {
+  // A round's send, as the page's: its calls, the questions counted, and the sections again.
+  const sends = [];
+  const sendRound = (group, tabs, draft) => {
     const context = {
       presets,
       song: sections.controls,
       defaults: styled.defaults,
       members: questions.membersOf(sections, group),
     };
-    const round = { answered, hand: {}, handTouched: {}, fine: {} };
-    const calls = questions.groupCalls(questions.groupControls(tabs, round, context).controls);
+    const calls = questions.groupCalls(questions.groupControls(tabs, draft, context).controls);
     for (const tab of tabs.filter((each) => !asked.has(each.id))) {
       asked.add(tab.id);
       const leading = sections.sections.filter((each) => tab.sections.includes(each.start));
@@ -207,10 +208,11 @@ test("on a four-group song the flow asks each question get_sections gives, once,
       );
     }
     send(calls);
+    sends.push(calls);
     groupsAsked.add(group);
     sections = ask("get_sections", { session_id });
     given.push(...due());
-    return calls;
+    return [];
   };
   for (const group of order) {
     const members = questions.membersOf(sections, group);
@@ -227,25 +229,43 @@ test("on a four-group song the flow asks each question get_sections gives, once,
         answered[tab.id] = tab.rows.indexOf(name);
       }
     }
-    const first = sendRound(group, tabs, answered);
-    // A ramp question both of whose groups are asked about joins the round just sent, as a Ramp
-    // tab, and goes at its next Submit with the whole round again.
-    const joined = questions
-      .rampTabs(sections, groupsAsked, presets, styled.defaults)
-      .filter((tab) => !tabs.some((each) => each.id === tab.id));
-    if (joined.length) {
-      for (const tab of joined) {
+    // The group's round is applied as the page moves on by its Next button (ADR 0124): a Ramp
+    // question that brings up joins it and keeps it, and the next click applies the whole round
+    // again with it, then moves on.
+    const draft = { answered, hand: {}, fine: {} };
+    const sent = sends.length;
+    let shown = tabs;
+    let applied;
+    for (;;) {
+      const done = await questions.applyRound({
+        tabs: shown,
+        draft,
+        applied,
+        send: (each, given) => sendRound(group, each, given),
+        due: () => questions.rampTabs(sections, groupsAsked, presets, styled.defaults),
+        stay: true,
+      });
+      applied = done.applied;
+      if (done.move) {
+        break;
+      }
+      for (const tab of done.joined) {
         const most = tab.rows.indexOf(RAMP);
         if (most !== -1) {
           answered[tab.id] = most;
         }
       }
-      const again = sendRound(group, [...tabs, ...joined], answered);
-      assert.deepEqual(
-        again.filter((each) => !joined.some((tab) => tab.sections.includes(each.args.section_ids[0]))),
-        first,
-      );
+      shown = [...shown, ...done.joined];
     }
+    const [first, again] = sends.slice(sent);
+    if (again) {
+      const ramps = shown.filter((tab) => tab.kind === "ramp");
+      const own = again.filter((each) => !ramps.some((tab) => tab.sections.includes(each.args.section_ids[0])));
+      assert.deepEqual(own, first);
+    }
+    // Moving on again sends nothing: the round is as it was applied.
+    const left = await questions.applyRound({ tabs: shown, draft, applied, send: () => assert.fail("sent") });
+    assert.equal(left.move, true);
   }
 
   const ramps = sections.sections.flatMap((each) => each.questions).filter(isRamp);

@@ -17,7 +17,9 @@ const ready = startEngine({
   place: (url) => url.href,
   progress: (progress, step) => postMessage({ progress, step }),
 });
-ready.catch(() => postMessage({ failed: "the engine couldn't load; reload the page" }));
+ready.catch(() =>
+  postMessage({ failed: "its files stopped loading, which a lost connection can cause, so check it and reload the page" }),
+);
 
 let queue = Promise.resolve();
 

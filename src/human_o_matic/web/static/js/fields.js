@@ -1,8 +1,8 @@
 // Draws the fields of forms.js as the platform's own controls, each with its label and any hint
-// tied to it by `aria-describedby`, and reads their values back by name. It sets no style: the
-// CSP allows none but site.css's.
+// tied to it by `aria-describedby`, its words starting with a capital, and reads their values back
+// by name. It sets no style: the CSP allows none but tailwind.css's.
 
-import { words } from "./forms.js";
+import { capital, scale, words } from "./forms.js";
 
 /** An element named `name`, with `attributes`, true for one without a value, and `children`. */
 export function element(name, attributes = {}, ...children) {
@@ -23,17 +23,27 @@ export function drawFields(parent, fields, prefix) {
   parent.append(...fields.map((field) => drawField(field, prefix)));
 }
 
+/** A control's name: its field's, which a group of option buttons keeps in `data-name`, its own
+ * name being the group's alone on the page. */
+function nameOf(control) {
+  return control.dataset.name ?? control.name;
+}
+
 /**
- * The value of each named control under `parent`: a checkbox's as true or false, the checked
- * radio's of a group, and any other's as its text.
+ * The value of each named control under `parent` but a disabled one, which a form doesn't send
+ * either: a checkbox's as true or false, the checked radio's of a group, and any other's as its
+ * text.
  */
 export function readFields(parent) {
   const values = {};
   for (const control of parent.querySelectorAll("input[name], select[name]")) {
+    if (control.disabled) {
+      continue;
+    }
     if (control.type === "checkbox") {
-      values[control.name] = control.checked;
+      values[nameOf(control)] = control.checked;
     } else if (control.type !== "radio" || control.checked) {
-      values[control.name] = control.value;
+      values[nameOf(control)] = control.value;
     }
   }
   return values;
@@ -43,30 +53,38 @@ export function readFields(parent) {
  * change from the page rather than the user: a slider's shown value and words follow it. */
 export function writeFields(parent, values, skip = new Set()) {
   for (const control of parent.querySelectorAll("input[name], select[name]")) {
-    if (skip.has(control.name) || !(control.name in values)) {
+    const name = nameOf(control);
+    if (skip.has(name) || !(name in values)) {
       continue;
     }
     if (control.type === "checkbox") {
-      control.checked = values[control.name] === true;
+      control.checked = values[name] === true;
+    } else if (control.type === "radio") {
+      control.checked = control.value === String(values[name]);
     } else {
-      control.value = String(values[control.name]);
+      control.value = String(values[name]);
     }
     if (control.type === "range") {
-      parent.querySelector(`output[for="${control.id}"]`).value = control.value;
-      control.setAttribute("aria-valuetext", words(control.name, control.value));
+      showValue(control, parent.querySelector(`output[for="${control.id}"]`));
     }
   }
 }
 
+/** A slider's value in words, in its pill and for assistive technology: "0.80, very high". */
+function showValue(slider, shown) {
+  shown.value = capital(words(slider.name, slider.value));
+  slider.setAttribute("aria-valuetext", words(slider.name, slider.value));
+}
+
 function drawField(field, prefix) {
   const id = `${prefix}-${field.name ?? field.legend ?? field.label}`.replace(/[^\w-]/g, "_");
-  const hint = field.hint ? element("p", { id: `${id}-hint`, class: "hint" }, field.hint) : "";
+  const hint = field.hint ? element("p", { id: `${id}-hint`, class: "hint" }, capital(field.hint)) : "";
   const described = hint && `${id}-hint`;
-  const label = () => element("label", { for: id }, field.label);
+  const label = () => element("label", { for: id }, capital(field.label));
   switch (field.type) {
     case "group": {
       const group = element("fieldset", { "aria-describedby": described });
-      group.append(element("legend", {}, field.legend), hint);
+      group.append(element("legend", {}, capital(field.legend)), hint);
       drawFields(group, field.fields, id);
       return group;
     }
@@ -74,7 +92,7 @@ function drawField(field, prefix) {
       return element(
         "fieldset",
         { "aria-describedby": described },
-        element("legend", {}, field.label),
+        element("legend", {}, capital(field.label)),
         hint,
         ...field.options.map((option, index) =>
           element(
@@ -88,8 +106,32 @@ function drawField(field, prefix) {
               checked: option.value === field.value,
               required: field.required,
             }),
-            element("label", { for: `${id}-${index}` }, option.label),
+            element("label", { for: `${id}-${index}` }, capital(option.label)),
           ),
+        ),
+      );
+    case "segments":
+      // A choice of a few as the design's row of option buttons: native radios, named after
+      // their own id so no other group on the page shares their name, and read by the field's.
+      return element(
+        "fieldset",
+        { class: "field segments", "aria-describedby": described },
+        element("legend", {}, capital(field.label)),
+        hint,
+        element(
+          "div",
+          { class: "options" },
+          ...field.options.flatMap((option, index) => [
+            element("input", {
+              type: "radio",
+              id: `${id}-${index}`,
+              name: id,
+              "data-name": field.name,
+              value: option.value,
+              checked: option.value === field.value,
+            }),
+            element("label", { for: `${id}-${index}` }, capital(option.label)),
+          ]),
         ),
       );
     case "checkbox":
@@ -113,7 +155,7 @@ function drawField(field, prefix) {
         required: field.required,
         "aria-describedby": described,
       });
-      select.append(...field.options.map(({ value, label }) => new Option(label, value)));
+      select.append(...field.options.map(({ value, label }) => new Option(capital(label), value)));
       select.value = field.value ?? field.options[0]?.value ?? "";
       return element("div", { class: "field" }, label(), select, hint);
     }
@@ -126,24 +168,31 @@ function drawField(field, prefix) {
         max: field.max,
         step: field.step,
         value: field.value,
-        "aria-valuetext": words(field.name, field.value),
         "aria-describedby": described,
       });
-      const shown = element("output", { for: id }, field.value);
-      slider.addEventListener("input", () => {
-        shown.value = slider.value;
-        slider.setAttribute("aria-valuetext", words(field.name, slider.value));
-      });
-      return element("div", { class: "field range" }, label(), slider, shown, hint);
+      const shown = element("output", { for: id, class: "pill" });
+      showValue(slider, shown);
+      slider.addEventListener("input", () => showValue(slider, shown));
+      // Its label and value on one row of one height, so sliders side by side line up, and its
+      // ends' meaning under it, which its words already say to assistive technology.
+      const ends = scale(field.name);
+      return element(
+        "div",
+        { class: "field range" },
+        element("div", { class: "row" }, label(), shown),
+        slider,
+        element("p", { class: "scale", "aria-hidden": "true" }, ...ends.map((end) => element("span", {}, capital(end)))),
+        hint,
+      );
     }
     case "button":
-      return element("button", { type: "button", name: field.name }, field.label);
+      return element("button", { type: "button", class: "retro-btn btn", name: field.name }, field.label);
     case "list":
       return element(
         "div",
         {},
-        element("p", {}, field.label),
-        element("ul", {}, ...field.items.map((item) => element("li", {}, item))),
+        element("p", {}, capital(field.label)),
+        element("ul", {}, ...field.items.map((item) => element("li", {}, capital(item)))),
       );
     default:
       return element(

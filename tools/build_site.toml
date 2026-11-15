@@ -1,7 +1,8 @@
-# What tools/build_site.py downloads for the site's engine, each at an exact version and checked
-# by its SHA-256 before it is used (ADRs 0004 and 0100). The browser loads them from the site's
-# own origin, never from where they were downloaded. Upgrade Pyodide and numpy together, and the
-# fixed hash of tests/web/flow.json tells whether the bytes still match (ADR 0100).
+# What tools/build_site.py downloads for the site's engine, and the CLI that builds its CSS, each
+# at an exact version and checked by its SHA-256 before it is used (ADRs 0004, 0100 and 0126).
+# The browser loads the engine's from the site's own origin, never from where they were
+# downloaded. Upgrade Pyodide and numpy together, and the fixed hash of tests/web/flow.json tells
+# whether the bytes still match (ADR 0100).
 
 # Pyodide's core release, from its GitHub release, whose SHA-256 GitHub publishes as the asset's
 # digest. The build takes the runtime's files from it.
@@ -69,3 +70,13 @@ name = "packaging"
 version = "26.3"
 url = "https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl"
 sha256 = "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"
+
+# Tailwind's standalone CLI for macOS on Apple silicon, from its GitHub release, at the version of
+# the Play CDN the page had first, which `css` runs to build static/tailwind.css and the site
+# never serves (ADR 0126). GitHub gives no digest for this asset: the SHA-256 is of the file
+# downloaded on 2026-11-15, whose size, 48,071,552 bytes, is the release's.
+[tailwind]
+name = "tailwindcss"
+version = "3.4.17"
+url = "https://github.com/tailwindlabs/tailwindcss/releases/download/v3.4.17/tailwindcss-macos-arm64"
+sha256 = "a1d0c7985759accca0bf12e51ac1dcbf0f6cf2fffb62e6e0f62d091c477a10a3"

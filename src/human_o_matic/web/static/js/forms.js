@@ -2,13 +2,20 @@
 // `node --test` loads it; fields.js draws the fields and reads their values back as text, or
 // true and false for a checkbox, by name.
 //
-// A field is `{type, name, label, ...}`: "number", "text", "select" and "radio" with `options`
-// of `{value, label}`, "checkbox", "range", "button", a "list" of `items` to show, or a "group"
+// A field is `{type, name, label, ...}`: "number", "text", "select", "radio" and "segments", a
+// row of option buttons, with `options` of `{value, label}`, "checkbox", "range", "button", a
+// "list" of `items` to show, or a "group"
 // of `fields` under a `legend`. Each may have a `hint`, shown under it and tied to it.
 
 /** How many of `noun`, as "1 note" or "12 notes". */
 export function count(number, noun) {
   return `${number} ${noun}${number === 1 ? "" : "s"}`;
+}
+
+/** `text` with a capital first letter, as the page shows every sentence and option, while the
+ * vocabulary and every value keep their own case. */
+export function capital(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 // Each decision request kind's form (the website plan's section 6), from the request's
@@ -186,25 +193,26 @@ export const FINE_TUNE = {
   groove: { ...UNIT, label: "Groove" },
   dynamic_range: { ...UNIT, label: "Dynamic range" },
   tightness: { ...UNIT, label: "Tightness" },
-  feel: { ...UNIT, label: "Feel, from pushed to laid back", min: -1 },
+  feel: { ...UNIT, label: "Feel", min: -1 },
   arc: { kind: "select", label: "Arc", options: ["steady", "build", "drop"] },
   fill_intensity: { ...UNIT, label: "Fills" },
   ghost_level: { ...UNIT, label: "Soft notes" },
-  ramp: { ...UNIT, label: "Ramp, in bars", step: 1 },
+  ramp: { ...UNIT, label: "Ramp", step: 1 },
   skip: { kind: "switch", label: "Leave this section as it is" },
   creative: { kind: "switch", label: ADD_NOTES },
 };
 export const SONG_CONTROLS = ["style", "tightness", "feel"];
+// In Fine-tune's rows of two, the arc beside the ramp: both shape a section's energy over its bars.
 export const GROUP_CONTROLS = [
   "energy",
   "groove",
   "dynamic_range",
   "tightness",
-  "feel",
   "arc",
+  "ramp",
+  "feel",
   "fill_intensity",
   "ghost_level",
-  "ramp",
   "skip",
   "creative",
 ];
@@ -222,7 +230,7 @@ export function fineTune(names, resolved, ramp = MAX_RAMP) {
     const { kind, label, options, min, max, step } = FINE_TUNE[name];
     if (kind === "select") {
       const choices = options.map((value) => ({ value, label: value }));
-      return { type: "select", name, label, options: choices, value: resolved[name] };
+      return { type: "segments", name, label, options: choices, value: resolved[name] };
     }
     if (kind === "switch") {
       return { type: "checkbox", name, label, checked: resolved[name] === true };
@@ -233,10 +241,11 @@ export function fineTune(names, resolved, ramp = MAX_RAMP) {
   });
 }
 
-/** What the controls `touched` were set to, from Fine-tune's values: each number as a number. */
+/** What the controls `touched` were set to, from Fine-tune's values, each number as a number: a
+ * control with no value read, a disabled one, is left out. */
 export function touchedControls(values, touched) {
   return Object.fromEntries(
-    [...touched].map((name) => [
+    [...touched].filter((name) => name in values).map((name) => [
       name,
       FINE_TUNE[name].kind === "range" ? Number(values[name]) : values[name],
     ]),
@@ -245,16 +254,44 @@ export function touchedControls(values, touched) {
 
 const LEVELS = ["very low", "low", "medium", "high", "very high"];
 
-/** A slider's value in words, for its `aria-valuetext`, such as "0.8, very high". */
+/** A control's number as the page shows it: with two decimals, "0.50" or "-1.00", but a ramp's
+ * bars, a whole number, as they are. */
+export function fixed(name, value) {
+  return name === "ramp" ? String(value) : Number(value).toFixed(2);
+}
+
+/** A slider's value in words, for its `aria-valuetext`, such as "0.80, very high". */
 export function words(name, value) {
   const number = Number(value);
   if (name === "ramp") {
     return number ? count(number, "bar") : "no ramp";
   }
+  const shown = fixed(name, number);
   if (name === "feel") {
-    return `${number}, ${number < 0 ? "pushed" : number > 0 ? "laid back" : "on the beat"}`;
+    return `${shown}, ${number < 0 ? "pushed" : number > 0 ? "laid back" : "on the beat"}`;
   }
-  return `${number}, ${LEVELS[Math.min(Math.floor(number * LEVELS.length), LEVELS.length - 1)]}`;
+  return `${shown}, ${LEVELS[Math.min(Math.floor(number * LEVELS.length), LEVELS.length - 1)]}`;
+}
+
+// What each slider's ends mean, from the controls' descriptions in the engine and the
+// vocabulary's words for them.
+const ENDS = {
+  energy: ["quiet", "full power"],
+  groove: ["steady", "more groove"],
+  dynamic_range: ["flat", "wide"],
+  tightness: ["loosest", "tightest"],
+  feel: ["pushed", "laid back"],
+  fill_intensity: ["small", "big"],
+  ghost_level: ["tucked away", "present"],
+  ramp: ["no ramp", "longest"],
+};
+
+/** A slider's captions under it, at its least, middle and most, in words alone, its number being
+ * in its pill: what each end means, "quiet" and "full power", and a middle only for feel, "on the
+ * beat". */
+export function scale(name) {
+  const [low, high] = ENDS[name] ?? ["", ""];
+  return [low, name === "feel" ? "on the beat" : "", high];
 }
 
 /** The section edit `op` on `section`, with bars as the page shows them, from 1, given as the

@@ -1,284 +1,246 @@
-// The question window (ADR 0111): a round's strip of tabs between two arrow buttons, each
-// question's panel with its numbered answers and "Set it by hand", and the Submit tab with
-// Fine-tune, drawn over the pure state of tabs.js. A round's questions are data, from
-// questions.js. The tabs and Next send nothing; only Submit's button does, through `send`.
-// Elements are made once and then updated in place, so focus stays where it is unless the state
-// says to move it.
+// A round of questions on one card (ADR 0124): each question a fieldset of numbered native
+// radios with their one-line descriptions, "your call" chosen until another answer is, and "Set
+// it by hand" opening that question's own controls under it; then the round's Fine-tune and a
+// line that says whether the round is applied. A round's questions are data, from questions.js,
+// whose words it shows starting with a capital.
+// It sends nothing: its answers are a draft, which `keep` hands the page on every change, and the
+// page applies the round when the user moves on.
 
 import { drawFields, element, readFields, writeFields } from "./fields.js";
-import {
-  SUBMIT,
-  answer,
-  aria,
-  byHand,
-  choose,
-  join,
-  key,
-  round,
-  select,
-  setByHand,
-  step,
-} from "./tabs.js";
+import { capital, touchedControls } from "./forms.js";
+import { noteGrid } from "./questions.js";
+
+export const BY_HAND = {
+  label: "Set it by hand",
+  description: "this question's controls, from where the section is now",
+};
+
+const SVG = "http://www.w3.org/2000/svg";
+// A hit's kind by its pattern's letter, and how far its square sits inside its step, in twelfths:
+// an accent the largest, a soft hit the smallest, so size tells them apart beside colour.
+const HITS = { X: ["accent", 1], x: ["normal", 2], o: ["soft", 3] };
+
+/** An SVG element named `name`, with `attributes` and `children`. */
+function svg(name, attributes, ...children) {
+  const made = document.createElementNS(SVG, name);
+  for (const [attribute, value] of Object.entries(attributes)) {
+    made.setAttribute(attribute, String(value));
+  }
+  made.append(...children);
+  return made;
+}
+
+/** A section's pattern, its most typical bar from `get_sections`, as a piano roll: a lane a drum,
+ * a column a step, the beats' lines heavier, and a square a hit. Its colours are tailwind.css's;
+ * the accent's gradient is the page's sprite's. */
+function roll(lines) {
+  const { rows, perBeat } = noteGrid(lines);
+  const steps = Math.max(1, ...rows.map(({ cells }) => cells.length));
+  const size = Math.max(10, Math.min(20, Math.floor(480 / steps)));
+  const names = 12 + 7 * Math.max(0, ...rows.map(({ drum }) => drum.length));
+  const [width, height] = [names + steps * size, rows.length * size];
+  const lanes = rows.flatMap(({ drum }, row) => [
+    svg("rect", { class: row % 2 ? "lane odd" : "lane", x: names, y: row * size, width: steps * size, height: size }),
+    svg("text", { class: "drum", x: names - 6, y: row * size + size / 2 }, drum),
+  ]);
+  const grid = Array.from({ length: steps + 1 }, (_, step) => {
+    const x = names + step * size;
+    return svg("line", { class: step % perBeat ? "step" : "beat", x1: x, y1: 0, x2: x, y2: height });
+  });
+  const hits = rows.flatMap(({ cells }, row) =>
+    cells.flatMap((cell, step) => {
+      if (!HITS[cell]) {
+        return [];
+      }
+      const [kind, twelfths] = HITS[cell];
+      const inset = Math.round((size * twelfths) / 12);
+      const [x, y, side] = [names + step * size + inset, row * size + inset, size - 2 * inset];
+      const square = { x, y, width: side, height: side, rx: 2 };
+      const fill = kind === "accent" ? { fill: "url(#roll-accent)" } : {};
+      return [
+        svg("rect", { ...square, class: "shade", x: x + 2, y: y + 2 }),
+        svg("rect", { ...square, ...fill, class: `hit ${kind}` }),
+      ];
+    }),
+  );
+  const label = `Its most typical bar: ${lines.map((line) => line.trim()).join("; ")}`;
+  return element(
+    "div",
+    { class: "roll" },
+    svg(
+      "svg",
+      { viewBox: `0 0 ${width} ${height}`, width, height, role: "img", "aria-label": label },
+      svg("rect", { class: "names", x: 0, y: 0, width: names, height }),
+      ...lanes,
+      ...grid,
+      ...hits,
+    ),
+  );
+}
 
 /**
- * Draw a round in `parent`, replacing what it held.
+ * Draw a round in `parent`, replacing what it held, with the answers of `draft`.
  *
  * @param {HTMLElement} parent
  * @param {object} options
  * @param {string} options.id What its elements' ids start with.
- * @param {string} options.name The round's name, which labels its strip.
- * @param {Array<object>} options.questions As tabs.js's `round` takes them, each with its
- *   `question`, and what its section `plays`, its `pattern`'s lines, and `hand`, the fields of
- *   its own controls, where it has them.
- * @param {Array<object>} options.fineTune The Submit tab's fields.
- * @param {(round: object) => object} [options.follow] What Fine-tune shows for the round as it
- *   stands, `{tabs, answered, hand, handTouched}`, in each control not moved yet.
- * @param {() => number} [options.count] The count of questions so far, shown on Submit.
- * @param {(round: {tabs: Array<object>, answered: object, hand: object, handTouched: object,
- *   values: object, touched: Set<string>}) => Promise<string>} options.send Sends the round as it
- *   stands, and gives what to say.
- * @returns {{join: (question: object) => boolean}} `join` adds a question before Submit, unless
- *   the round has it, and says whether it did.
+ * @param {Array<object>} options.questions questions.js's tabs, each with its `question`, its
+ *   `answers` but "Set it by hand", and what its section `plays`, its `pattern`'s lines, and
+ *   `hand`, the fields of its own controls, where it has them.
+ * @param {Array<object>} options.fineTune The round's Fine-tune fields.
+ * @param {object} [options.draft] `{answered, hand, fine}`, as `keep` was last handed it.
+ * @param {(tabs: Array<object>, draft: object) => object} [options.follow] What Fine-tune shows
+ *   for the round as it stands, in each control not moved yet.
+ * @param {(tabs: Array<object>, draft: object) => string} options.keep Takes the draft, with its
+ *   Ramp tabs as `ramps`, and gives the line to show.
+ * @returns {{tabs: () => Array<object>, join: (question: object) => boolean,
+ *   answer: (tabId: string) => void, say: (text: string) => void}} The questions shown; `join`
+ *   adds a question, unless the round has it, marked "New" until it is answered, and says whether
+ *   it did; `answer` scrolls to a question and moves focus to its answer; `say` shows a line.
  */
-export function drawRound(parent, { id, name, questions, fineTune, follow, count, send }) {
-  let state = round(name, questions);
-  let byPointer = false;
-  let sending = false;
-  const touched = new Set();
-  // The controls of "Set it by hand" moved, by tab: only those are its answer (ADR 0120).
+export function drawRound(parent, { id, questions, fineTune, draft = {}, follow, keep }) {
+  const tabs = [];
+  const cards = element("div");
+  const fine = element("div", { class: "fine-tune" });
+  drawFields(fine, fineTune, `${id}-fine`);
+  const moved = Object.keys(draft.fine ?? {});
+  const tune = element(
+    "details",
+    { open: moved.length > 0 },
+    element("summary", {}, "Fine-tune: every control of this round"),
+    fine,
+  );
+  const said = element("p", { class: "state", role: "status" });
+  parent.replaceChildren(cards, tune, said);
+  // The controls moved, of Fine-tune and of each question's own: only those are sent (ADR 0120).
+  const touched = new Set(moved);
   const handTouched = {};
-  const drawn = new Map();
-  const strip = element("div");
-  const panels = element("div");
-  const previous = arrow("Previous question", "←");
-  const following = arrow("Next question", "→");
-  // The round's own element, which takes its keys, so a round drawn again leaves none behind.
-  const frame = element("div", {}, element("div", { class: "tabbar" }, previous, strip, following));
-  frame.append(panels);
-  parent.replaceChildren(frame);
+  writeFields(fine, draft.fine ?? {});
 
-  function questionPanel(tab) {
-    const answers = element("fieldset", { class: "answers" }, element("legend", {}, tab.question));
+  function add(tab, fresh = false) {
+    const answers = [...tab.answers, BY_HAND];
+    // The draft's answer, or else "your call", the last answer before "Set it by hand".
+    const kept = draft.answered?.[tab.id];
+    const given = answers[kept] ? kept : answers.length - 2;
+    const name = `${id}-${tab.id}`;
+    const box = element("fieldset", { class: "answers", "data-tab": tab.id });
+    const badge = fresh ? [element("span", { class: "badge new" }, "New"), " "] : [];
+    box.append(element("legend", {}, ...badge, capital(tab.question)));
     if (tab.plays) {
-      answers.append(element("p", {}, tab.plays));
+      box.append(element("p", {}, capital(tab.plays)));
     }
     if (tab.pattern) {
-      answers.append(element("pre", {}, tab.pattern.join("\n")));
+      box.append(roll(tab.pattern));
     }
-    for (const [index, { label, description }] of tab.answers.entries()) {
-      const radio = `${id}-${tab.id}-${index}`;
-      answers.append(
-        element(
-          "div",
-          { class: "choice" },
-          element("input", {
-            type: "radio",
-            id: radio,
-            name: `${id}-${tab.id}`,
-            value: index,
-            "aria-describedby": `${radio}-about`,
-          }),
-          element("label", { for: radio }, `${index + 1}. ${label}`),
-          element("p", { id: `${radio}-about`, class: "hint" }, description),
-        ),
-      );
-    }
-    const hand = element("div", { class: "hand" });
-    drawFields(hand, tab.hand ?? [], `${id}-${tab.id}`);
-    return element("div", { "data-tab": tab.id }, answers, hand);
-  }
-
-  function submitPanel() {
-    const fine = element("div", { class: "fine-tune" });
-    drawFields(fine, fineTune, `${id}-fine`);
-    const button = element("button", { type: "button", class: "send" }, "Submit");
-    const said = element("p", { role: "status" });
-    button.addEventListener("click", async () => {
-      if (sending) {
-        return;
-      }
-      sending = true;
-      said.textContent = "Sending";
-      try {
-        said.textContent = await send({ ...asked(), values: readFields(fine), touched });
-      } finally {
-        sending = false;
-        update({ ...state, focus: null });
-      }
-    });
-    const summary = element("ul", { class: "summary" });
-    const heading = element("h3", {}, "Fine-tune");
-    const counted = element("p", { class: "count" });
-    return element("div", { "data-tab": SUBMIT }, summary, heading, fine, counted, button, said);
-  }
-
-  /** The round's answers as they stand, with "Set it by hand"'s values by tab. */
-  function asked() {
-    const tabs = state.tabs.filter((tab) => tab.id !== SUBMIT);
-    const hand = Object.fromEntries(
-      tabs.map((tab) => [tab.id, readFields(drawn.get(tab.id).panel.querySelector(".hand"))]),
-    );
-    return { tabs, answered: state.answered, hand, handTouched };
-  }
-
-  function update(next) {
-    state = next;
-    for (const [index, tab] of state.tabs.entries()) {
-      if (drawn.has(tab.id)) {
-        continue;
-      }
-      const glyph = element("span", { class: "glyph", "aria-hidden": "true" });
-      const made = {
-        button: element("button", { type: "button" }, glyph, tab.label),
-        panel: tab.id === SUBMIT ? submitPanel() : questionPanel(tab),
-      };
-      // A tab that joins goes before the first tab already drawn after it: Submit.
-      const after = state.tabs.slice(index + 1).find((later) => drawn.has(later.id));
-      strip.insertBefore(made.button, after ? drawn.get(after.id).button : null);
-      panels.insertBefore(made.panel, after ? drawn.get(after.id).panel : null);
-      drawn.set(tab.id, made);
-    }
-    const attributes = aria(state, id);
-    setAttributes(strip, attributes.tablist);
-    for (const [index, { answered, tab, panel }] of attributes.tabs.entries()) {
-      const shown = state.tabs[index];
-      const { button, panel: box } = drawn.get(shown.id);
-      setAttributes(button, tab);
-      setAttributes(box, panel);
-      button.querySelector(".glyph").textContent =
-        shown.id === SUBMIT ? "" : answered ? "✓" : "□";
-      if (shown.id !== SUBMIT) {
-        const choice = state.choice[shown.id];
-        box.querySelectorAll(".answers input")[choice].checked = true;
-        const opened = byHand(shown, choice) || byHand(shown, state.answered[shown.id]);
-        box.querySelector(".hand").hidden = !opened;
-      }
-    }
-    drawSummary();
-    const submit = drawn.get(SUBMIT).panel;
-    if (follow) {
-      writeFields(submit.querySelector(".fine-tune"), follow(asked()), touched);
-    }
-    if (count) {
-      submit.querySelector(".count").textContent = `Questions so far: ${count()}`;
-    }
-    moveFocus();
-  }
-
-  /** Each answer and what it sets, a question left unanswered as "your call", the answer before
-   * "Set it by hand". */
-  function drawSummary() {
-    const questions = state.tabs.filter((tab) => tab.id !== SUBMIT);
-    drawn
-      .get(SUBMIT)
-      .panel.querySelector(".summary")
-      .replaceChildren(
-        ...questions.map((tab) => {
-          const given = state.answered[tab.id] ?? tab.answers.length - 2;
-          const { label, description } = tab.answers[given];
-          return element("li", {}, `${tab.label}: ${label}, ${description}`);
+    const hand = element("div", { class: "hand", "data-tab": tab.id });
+    drawFields(hand, tab.hand ?? [], name);
+    writeFields(hand, draft.hand?.[tab.id] ?? {});
+    handTouched[tab.id] = new Set(Object.keys(draft.hand?.[tab.id] ?? {}));
+    for (const [index, { label, description }] of answers.entries()) {
+      const radio = `${name}-${index}`;
+      const choice = element(
+        "div",
+        { class: "choice" },
+        element("input", {
+          type: "radio",
+          id: radio,
+          name,
+          value: index,
+          checked: index === given,
+          "aria-describedby": `${radio}-about`,
         }),
+        element("label", { for: radio }, `${index + 1}. ${capital(label)}`),
+        element("p", { id: `${radio}-about`, class: "hint" }, capital(description)),
       );
-  }
-
-  function moveFocus() {
-    const tab = state.tabs[state.current];
-    const { button, panel } = drawn.get(tab.id);
-    const controls = "input, select, button";
-    const target = {
-      tab: button,
-      answer: panel.querySelector(".answers input:checked"),
-      hand: panel.querySelector(`.hand :is(${controls})`),
-      submit: panel.querySelector(controls),
-    }[state.focus];
-    target?.focus();
-  }
-
-  function where(target) {
-    if (target.getAttribute("role") === "tab") {
-      return "tab";
-    }
-    if (target.closest(".hand")) {
-      return "hand";
-    }
-    if (target.type === "radio" && target.closest(".answers")) {
-      return "answer";
-    }
-    return target.closest(`[data-tab="${SUBMIT}"]`) ? "submit" : null;
-  }
-
-  previous.addEventListener("click", () => update(step(state, -1)));
-  following.addEventListener("click", () => update(step(state, 1)));
-  strip.addEventListener("click", (event) => {
-    const button = event.target.closest('[role="tab"]');
-    if (button) {
-      update(select(state, [...strip.children].indexOf(button)));
-    }
-  });
-  // A click answers and the keyboard's own clicks on a radio don't: a click follows a press of
-  // the pointer, and any key since cancels it.
-  panels.addEventListener("pointerdown", () => {
-    byPointer = true;
-  });
-  frame.addEventListener("keydown", (event) => {
-    byPointer = false;
-    const found = where(event.target);
-    if (!found || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
-      return;
-    }
-    const next = key(state, event.key, found);
-    if (next !== state) {
-      event.preventDefault();
-      update(next);
-    }
-  });
-  panels.addEventListener("click", (event) => {
-    if (where(event.target) === "answer" && byPointer) {
-      byPointer = false;
-      update(answer(state, Number(event.target.value)));
-    }
-  });
-  for (const type of ["input", "change"]) {
-    panels.addEventListener(type, (event) => {
-      const found = where(event.target);
-      if (found === "answer" && type === "change") {
-        update(choose(state, Number(event.target.value)));
-      } else if (found === "hand") {
-        const { id: tab } = state.tabs[state.current];
-        (handTouched[tab] ??= new Set()).add(event.target.name);
-        update(setByHand(state));
-      } else if (event.target.closest(".fine-tune")) {
-        touched.add(event.target.name);
+      if (index === answers.length - 1) {
+        // "Set it by hand" holds its question's own controls, under a dashed line in its card.
+        choice.append(element("span", { class: "badge", "aria-hidden": "true" }, "Manual"), hand);
       }
+      box.append(choice);
+    }
+    cards.append(box);
+    tabs.push(tab);
+  }
+
+  /** A question's answer chosen, its radio by name, never a radio of its own controls. */
+  function chosen(tabId) {
+    return cards.querySelector(`input[name="${id}-${tabId}"]:checked`);
+  }
+
+  /** The draft as it stands: each question's answer, the controls moved in field order, so the
+   * same values give the same draft, and the Ramp tabs shown. */
+  function current() {
+    const answered = {};
+    const hand = {};
+    for (const tab of tabs) {
+      const box = cards.querySelector(`fieldset[data-tab="${tab.id}"]`);
+      answered[tab.id] = Number(chosen(tab.id).value);
+      const names = (tab.hand ?? []).map((field) => field.name).filter((each) => handTouched[tab.id].has(each));
+      if (names.length) {
+        hand[tab.id] = touchedControls(readFields(box.querySelector(".hand")), names);
+      }
+    }
+    const names = fineTune.map((field) => field.name).filter((each) => touched.has(each));
+    const ramps = tabs.filter((tab) => tab.kind === "ramp");
+    return { answered, hand, fine: touchedControls(readFields(fine), names), ramps };
+  }
+
+  function update() {
+    // "Leave this section as it is" leaves Fine-tune's other controls nothing to set: while it is
+    // ticked they are disabled, and readFields reads, so the draft holds, none of them.
+    const skip = fine.querySelector('input[name="skip"]');
+    for (const control of fine.querySelectorAll("input")) {
+      control.disabled = control !== skip && Boolean(skip?.checked);
+    }
+    const now = current();
+    for (const tab of tabs) {
+      const box = cards.querySelector(`fieldset[data-tab="${tab.id}"]`);
+      box.querySelector(".hand").hidden = now.answered[tab.id] !== tab.answers.length;
+    }
+    if (follow) {
+      writeFields(fine, follow(tabs, now), touched);
+    }
+    const line = keep(tabs, now);
+    if (said.textContent !== line) {
+      said.textContent = line;
+    }
+  }
+
+  for (const question of questions) {
+    add(question);
+  }
+  for (const type of ["input", "change"]) {
+    cards.addEventListener(type, (event) => {
+      const hand = event.target.closest(".hand");
+      if (hand) {
+        handTouched[hand.dataset.tab].add(event.target.dataset.name ?? event.target.name);
+      }
+      // A question that came up is new until it is answered.
+      event.target.closest("fieldset.answers")?.querySelector("legend .new")?.remove();
+      update();
+    });
+    fine.addEventListener(type, (event) => {
+      touched.add(event.target.dataset.name ?? event.target.name);
+      update();
     });
   }
-  update(state);
+  update();
   return {
+    tabs: () => [...tabs],
     join: (question) => {
-      const joins = !state.tabs.some((tab) => tab.id === question.id);
+      const joins = !tabs.some((tab) => tab.id === question.id);
       if (joins) {
-        update(join(state, question));
+        add(question, true);
+        update();
       }
       return joins;
     },
+    answer: (tabId) => {
+      cards.querySelector(`fieldset[data-tab="${tabId}"]`).scrollIntoView({ block: "center" });
+      chosen(tabId).focus({ preventScroll: true });
+    },
+    say: (text) => {
+      said.textContent = text;
+    },
   };
-}
-
-function arrow(label, glyph) {
-  return element(
-    "button",
-    { type: "button", class: "arrow", "aria-label": label },
-    element("span", { "aria-hidden": "true" }, glyph),
-  );
-}
-
-/** Set each attribute, `hidden` as the attribute it is. */
-function setAttributes(target, attributes) {
-  for (const [name, value] of Object.entries(attributes)) {
-    if (name === "hidden") {
-      target.hidden = value;
-    } else {
-      target.setAttribute(name, value);
-    }
-  }
 }

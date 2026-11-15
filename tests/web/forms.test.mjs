@@ -12,11 +12,14 @@ import {
   REQUESTS,
   SONG_CONTROLS,
   batch,
+  capital,
   editBars,
   fineTune,
+  fixed,
   form,
   kitOptions,
   mostRamp,
+  scale,
   sectionEdit,
   touchedControls,
   words,
@@ -291,7 +294,7 @@ test("Fine-tune starts each control at its resolved value, a ramp up to what the
   assert.deepEqual(
     song.map(({ type, name, value }) => [type, name, value]),
     [
-      ["select", "style", "medium"],
+      ["segments", "style", "medium"],
       ["range", "tightness", "0.75"],
       ["range", "feel", "-0.2"],
     ],
@@ -299,7 +302,10 @@ test("Fine-tune starts each control at its resolved value, a ramp up to what the
   const by = Object.fromEntries(group.map((field) => [field.name, field]));
   assert.deepEqual([by.feel.min, by.feel.max, by.energy.min, by.energy.max], [-1, 1, 0, 1]);
   assert.deepEqual([by.ramp.max, by.ramp.step, by.ramp.value], [4, 1, "4"]);
-  assert.deepEqual([by.arc.type, by.arc.value], ["select", "build"]);
+  assert.deepEqual([by.arc.type, by.arc.value], ["segments", "build"]);
+  // The arc and the ramp share one of Fine-tune's rows of two.
+  const arc = GROUP_CONTROLS.indexOf("arc");
+  assert.deepEqual([arc % 2, GROUP_CONTROLS[arc + 1]], [0, "ramp"]);
   assert.deepEqual(
     [by.skip.type, by.skip.checked, by.creative.checked, by.creative.label],
     ["checkbox", false, true, ADD_NOTES],
@@ -319,16 +325,51 @@ test("only the controls touched are sent, numbers as numbers", () => {
     skip: true,
   });
   assert.deepEqual(touchedControls(values, new Set()), {});
+  // "Leave this section as it is" disables the others, which then have no value read.
+  assert.deepEqual(touchedControls({ skip: true }, new Set(["energy", "arc", "skip"])), { skip: true });
+});
+
+test("the page shows a sentence or an option with a capital first letter, and changes nothing else", () => {
+  assert.equal(capital("loose"), "Loose");
+  assert.equal(capital("your call"), "Your call");
+  assert.equal(capital("nothing new: the song's controls stay"), "Nothing new: the song's controls stay");
+  assert.equal(capital("Set it by hand"), "Set it by hand");
+  assert.equal(capital("4 bars"), "4 bars");
+  assert.equal(capital(""), "");
+});
+
+test("a slider's number shows two decimals, but a ramp's whole bars", () => {
+  assert.equal(fixed("energy", "1"), "1.00");
+  assert.equal(fixed("energy", 0.5), "0.50");
+  assert.equal(fixed("feel", "-1"), "-1.00");
+  assert.equal(fixed("feel", "0.25"), "0.25");
+  assert.equal(fixed("ramp", "4"), "4");
+});
+
+test("a slider's captions say in words alone what its ends mean, and feel's middle", () => {
+  assert.deepEqual(scale("energy"), ["quiet", "", "full power"]);
+  assert.deepEqual(scale("tightness"), ["loosest", "", "tightest"]);
+  assert.deepEqual(scale("feel"), ["pushed", "on the beat", "laid back"]);
+  assert.deepEqual(scale("ghost_level"), ["tucked away", "", "present"]);
+  assert.deepEqual(scale("ramp"), ["no ramp", "", "longest"]);
+  for (const name of GROUP_CONTROLS) {
+    const field = fineTune([name], { energy: 0, groove: 0, dynamic_range: 0, tightness: 0, feel: 0, fill_intensity: 0, ghost_level: 0, ramp: 0 })[0];
+    if (field.type === "range") {
+      const [low, , high] = scale(name);
+      assert.ok(low && high, name);
+      assert.doesNotMatch(scale(name).join(" "), /\d/, name);
+    }
+  }
 });
 
 test("a slider's value is said in words", () => {
-  assert.equal(words("energy", "0.8"), "0.8, very high");
-  assert.equal(words("energy", "1"), "1, very high");
-  assert.equal(words("ghost_level", "0"), "0, very low");
-  assert.equal(words("groove", "0.5"), "0.5, medium");
-  assert.equal(words("feel", "-0.3"), "-0.3, pushed");
-  assert.equal(words("feel", "0"), "0, on the beat");
-  assert.equal(words("feel", "0.4"), "0.4, laid back");
+  assert.equal(words("energy", "0.8"), "0.80, very high");
+  assert.equal(words("energy", "1"), "1.00, very high");
+  assert.equal(words("ghost_level", "0"), "0.00, very low");
+  assert.equal(words("groove", "0.5"), "0.50, medium");
+  assert.equal(words("feel", "-0.3"), "-0.30, pushed");
+  assert.equal(words("feel", "0"), "0.00, on the beat");
+  assert.equal(words("feel", "0.4"), "0.40, laid back");
   assert.equal(words("ramp", "0"), "no ramp");
   assert.equal(words("ramp", "1"), "1 bar");
   assert.equal(words("ramp", "4"), "4 bars");

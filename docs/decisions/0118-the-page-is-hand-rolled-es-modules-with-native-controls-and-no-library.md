@@ -1,6 +1,6 @@
 # 0118. The page is hand-rolled ES modules with native controls and no library
 
-- **Status:** Accepted
+- **Status:** Accepted. Its line that the page uses no library, vendored or fetched, is amended by [ADR 0125](0125-the-page-takes-the-owner-s-design-in-tailwind-from-its-play-cdn-with-google-fonts-the-mascot-as-its-logo-and-a-loading-view.md) and [ADR 0126](0126-the-page-s-tailwind-css-is-built-by-tailwind-s-standalone-cli-pinned-like-pyodide-into-a-committed-file.md)
 - **Date:** 2026-11-14
 
 - The page is one HTML file, one stylesheet and a few small ES modules of its own, with the platform's native form controls: option (a) of the site plan's comparison of frontends. Its modules update the DOM themselves. It uses no JavaScript library, vendored or fetched, and has no build step, no import map and no npm package ([ADR 0112](0112-node-with-no-npm-package-runs-the-pyodide-test-and-the-page-s-pure-module-tests.md)).

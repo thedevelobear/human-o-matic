@@ -15,6 +15,7 @@ from typing import Any
 import pytest
 
 from build_site import (
+    DOWNLOADS,
     FLOW,
     MAX_FILE_BYTES,
     ROOT,
@@ -24,6 +25,7 @@ from build_site import (
     Pins,
     app_zip,
     build,
+    built_css,
     built_song,
     check_sizes,
     fetched,
@@ -119,6 +121,27 @@ def test_the_app_zip_holds_the_source_data_and_vocabulary_at_their_paths() -> No
     assert "skills/human-o-matic/references/vocabulary.md" in names
     assert not [name for name in names if "__pycache__" in name or "/static/" in name]
     assert not [name for name in names if name.startswith(("private", "tests", "tools"))]
+    assert not [name for name in names if name.endswith(".html")]
+    source = [name for name in names if name.startswith("src/")]
+    assert source == [name for name in source if name.endswith(".py")]
+
+
+def test_the_app_zip_takes_only_python_from_the_source_tree(tmp_path: Path) -> None:
+    # A page, a design file or any other file left beside the source never ships in the zip.
+    package = tmp_path / "src" / "human_o_matic"
+    for name in ("service.py", "web/worker.py", "web/example.html", "web/static/index.html"):
+        (package / name).parent.mkdir(parents=True, exist_ok=True)
+        (package / name).write_text("", encoding="utf-8")
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "vocabulary.toml").write_text("", encoding="utf-8")
+
+    names = zipfile.ZipFile(io.BytesIO(app_zip(tmp_path))).namelist()
+
+    assert names == [
+        "data/vocabulary.toml",
+        "src/human_o_matic/service.py",
+        "src/human_o_matic/web/worker.py",
+    ]
 
 
 @pytest.fixture(scope="module")
@@ -145,6 +168,7 @@ def site(tmp_path_factory: pytest.TempPathFactory) -> Path:
         pyodide=stand_in(pins.pyodide, release.getvalue()),
         packages=tuple(stand_in(pin, pin.name.encode()) for pin in pins.packages),
         wheels=tuple(stand_in(pin, pin.name.encode()) for pin in pins.wheels),
+        tailwind=pins.tailwind,
     )
     return build(folder / "site", folder / "downloads", stand_ins)
 
@@ -170,8 +194,9 @@ def headers_for(text: str, path: str) -> list[tuple[str, str]]:
 EVERY_PATH = {
     "Content-Security-Policy": (
         "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; "
-        "connect-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; "
-        "form-action 'self'; base-uri 'none'; frame-ancestors 'none'"
+        "connect-src 'self'; style-src 'self' https://fonts.googleapis.com; img-src 'self'; "
+        "font-src 'self' https://fonts.gstatic.com; form-action 'self'; base-uri 'none'; "
+        "frame-ancestors 'none'"
     ),
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "no-referrer",
@@ -202,27 +227,58 @@ def test_every_path_of_the_built_site_gets_the_csp_and_headers_and_its_type_and_
         assert immutable == path.startswith(("/pyodide/314.0.7/", "/wheels/")), path
 
 
-ANOTHER_ORIGIN = re.compile(rb"[a-z][a-z0-9+.-]*://|[\"'(=]\s*//\w", re.IGNORECASE)
-"""A URL with a scheme, or one that starts `//`, which names another host."""
+URL = re.compile(rb"([a-z][a-z0-9+.-]*://[^/\s\"'();*]*)|[\"'(=]\s*(//\w)", re.IGNORECASE)
+"""A URL's origin, with a scheme, or the start of one that starts `//`, which names another host."""
+GOOGLE_FONTS = {b"https://fonts.googleapis.com", b"https://fonts.gstatic.com"}
+"""The only other origins the page loads from (ADR 0126)."""
 
 
-def test_none_of_the_page_s_own_files_names_another_origin(site: Path) -> None:
+def origins(data: bytes) -> set[bytes]:
+    return {found.group(1) or found.group(2) for found in URL.finditer(data)}
+
+
+def test_the_page_s_own_files_name_only_google_fonts(site: Path) -> None:
     # Pyodide's files, the wheels and the app's zip may hold URLs of their own, which the CSP
-    # keeps from being fetched (the website plan's section 12).
+    # keeps from being fetched (the website plan's section 12). Of the page's own, the page names
+    # Google Fonts' stylesheet, the headers the two hosts the CSP allows, Tailwind's CSS its
+    # project in the licence it keeps, and the two SVG files and round.js the SVG namespace, none
+    # fetched, and nothing else another origin.
     own = [
         path
         for path in site.rglob("*")
         if path.is_file()
         and path.relative_to(site).parts[0] not in ("pyodide", "wheels", "app.zip", SONG)
     ]
+    named = {path.relative_to(site).as_posix(): origins(path.read_bytes()) for path in own}
 
     page = {path.relative_to(static_dir()).as_posix() for path in static_dir().rglob("*.*")}
-    assert {"index.html", "site.css", "check.html", "js/app.js", "js/tabs.js"} <= page
-    assert page | {"_headers", "engine.json", "check-flow.json"} == {
-        path.relative_to(site).as_posix() for path in own
-    }
-    for path in own:
-        assert not ANOTHER_ORIGIN.search(path.read_bytes()), path
+    assert {"index.html", "tailwind.css", "check.html", "js/app.js", "js/round.js"} <= page
+    assert page | {"_headers", "engine.json", "check-flow.json"} == set(named)
+    assert named.pop("index.html") == {b"https://fonts.googleapis.com"}
+    assert named.pop("_headers") == GOOGLE_FONTS
+    assert named.pop("tailwind.css") == {b"https://tailwindcss.com"}
+    # An SVG file names its namespace, which is never fetched, as round.js does to draw a
+    # section's pattern.
+    assert named.pop("chevron.svg") == {b"http://www.w3.org"}
+    assert named.pop("check.svg") == {b"http://www.w3.org"}
+    assert named.pop("js/round.js") == {b"http://www.w3.org"}
+    assert {path: found for path, found in named.items() if found} == {}
+
+
+CLI = DOWNLOADS / read_pins().tailwind.file_name
+
+
+@pytest.mark.skipif(
+    not CLI.is_file(),
+    reason="Tailwind's CLI isn't in build/site-downloads/: `uv run python tools/build_site.py css` "
+    "downloads it, on macOS on Apple silicon",
+)
+def test_the_css_command_gives_the_committed_tailwind_css_byte_for_byte(tmp_path: Path) -> None:
+    out = tmp_path / "tailwind.css"
+
+    built_css(out)
+
+    assert out.read_bytes() == (static_dir() / "tailwind.css").read_bytes()
 
 
 def test_the_build_fails_on_a_file_of_10_mb_or_more(tmp_path: Path) -> None:
