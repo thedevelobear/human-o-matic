@@ -202,16 +202,17 @@ export const FINE_TUNE = {
   creative: { kind: "switch", label: ADD_NOTES },
 };
 export const SONG_CONTROLS = ["style", "tightness", "feel"];
+// In Fine-tune's rows of two, the arc beside the ramp: both shape a section's energy over its bars.
 export const GROUP_CONTROLS = [
   "energy",
   "groove",
   "dynamic_range",
   "tightness",
-  "feel",
   "arc",
+  "ramp",
+  "feel",
   "fill_intensity",
   "ghost_level",
-  "ramp",
   "skip",
   "creative",
 ];

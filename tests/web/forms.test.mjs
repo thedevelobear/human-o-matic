@@ -303,6 +303,9 @@ test("Fine-tune starts each control at its resolved value, a ramp up to what the
   assert.deepEqual([by.feel.min, by.feel.max, by.energy.min, by.energy.max], [-1, 1, 0, 1]);
   assert.deepEqual([by.ramp.max, by.ramp.step, by.ramp.value], [4, 1, "4"]);
   assert.deepEqual([by.arc.type, by.arc.value], ["segments", "build"]);
+  // The arc and the ramp share one of Fine-tune's rows of two.
+  const arc = GROUP_CONTROLS.indexOf("arc");
+  assert.deepEqual([arc % 2, GROUP_CONTROLS[arc + 1]], [0, "ramp"]);
   assert.deepEqual(
     [by.skip.type, by.skip.checked, by.creative.checked, by.creative.label],
     ["checkbox", false, true, ADD_NOTES],
