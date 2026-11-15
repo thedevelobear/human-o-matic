@@ -12,6 +12,7 @@ import {
   GROUP_CONTROLS,
   SONG_CONTROLS,
   batch,
+  count,
   editBars,
   fineTune,
   form,
@@ -39,11 +40,13 @@ import {
   songTabs,
 } from "./questions.js";
 import { barsLabel, conversionLines, creativeLines, downloadName } from "./review.js";
+import { engineState } from "./loading.js";
 import { drawRound } from "./round.js";
 
 const STEPS = ["file", "kits", "check", "drummer", "sections", "review", "download"];
-// How long a download's Blob URL lives after the download starts.
+// How long a download's Blob URL lives after the download starts, and the toast stays.
 const REVOKE_MS = 10_000;
+const TOAST_MS = 6_000;
 const $ = (selector) => document.querySelector(selector);
 
 let worker;
@@ -56,6 +59,7 @@ let presets = null;
 let toChosen = false;
 // Whether the page is moving on, so a second click can't apply a round twice.
 let moving = false;
+let toastTimer;
 let page = fresh();
 
 /** What the page holds of one file, from choosing it to deleting it. */
@@ -64,6 +68,7 @@ function fresh() {
     file: null,
     open: {},
     session: null,
+    bars: 0,
     toKit: null,
     decisions: [],
     table: [],
@@ -94,19 +99,39 @@ function fresh() {
 // The engine.
 
 function startEngine() {
-  $("#engine").value = 0;
+  loading(engineState({}));
   worker = new Worker(new URL("worker.js", import.meta.url), { type: "module" });
+  worker.onerror = () => loading(engineState({ failed: "this browser couldn't start it" }));
   worker.onmessage = ({ data }) => {
-    if ("progress" in data) {
-      $("#engine").value = data.progress;
-      say(data.progress === 1 ? "The engine is ready." : `Loading the engine: ${data.step} loaded`);
-    } else if ("failed" in data) {
-      problem(data.failed);
+    if ("progress" in data || "failed" in data) {
+      loading(engineState(data));
     } else {
       waiting.get(data.id)?.(data);
       waiting.delete(data.id);
     }
   };
+}
+
+/** The loading view, alone while the engine loads, with its real progress, and the page in its
+ * place once it is ready: hidden and inert until then (ADR 0125). */
+function loading({ phase, text, value }) {
+  const bar = $("#engine");
+  if (value === null) {
+    bar.removeAttribute("value");
+  } else {
+    bar.value = value;
+  }
+  const ready = phase === "ready";
+  bar.hidden = phase === "failed";
+  $("#engine-status").textContent = text;
+  $("#reload").hidden = phase !== "failed";
+  $("#loading").hidden = ready;
+  $("#app").hidden = !ready;
+  $("#app").inert = !ready;
+  if (ready) {
+    say(text);
+    $("#file-title").focus();
+  }
 }
 
 /** One call of the worker API: its reply, a download's bytes, or `{error}`. */
@@ -145,6 +170,24 @@ function say(text) {
 
 function problem(text) {
   $("#problem").textContent = text;
+}
+
+/** What the page has just applied, in the toast for a while and in the status line. */
+function toast(title, body) {
+  say(`${title}. ${body}`);
+  $("#toast-title").textContent = title;
+  $("#toast-body").textContent = body;
+  $("#toast").classList.add("shown");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $("#toast").classList.remove("shown"), TOAST_MS);
+}
+
+/** The song opened, in the top bar: its bars and sections, or nothing before a song opens. */
+function drawOpened() {
+  $("#opened").hidden = !page.session;
+  $("#opened").textContent = page.session
+    ? `Opened: ${count(page.bars, "bar")} in ${count(page.table.length, "section")}.`
+    : "";
 }
 
 // The steps.
@@ -227,6 +270,9 @@ async function leave(stay) {
     Object.assign(kept, { applied: done.applied, said: done.said, lines: answerLines(tabs, kept.draft) });
   }
   if (done.move) {
+    if (done.said !== undefined) {
+      toast(`Applied: ${shown.key === "song" ? "the drummer" : groupTitle(shown.key)}`, done.said);
+    }
     return true;
   }
   // A Ramp question both of whose groups are now asked about joins this round (ADR 0108), which
@@ -278,6 +324,7 @@ async function choose(file) {
   problem("");
   $("#deleted").textContent = "";
   $("#chosen").textContent = `Chosen: ${file.name}`;
+  drawOpened();
   $("#to-kits").disabled = false;
   $("#delete-box").hidden = false;
   show("file", false);
@@ -324,6 +371,7 @@ async function openSong() {
     return;
   }
   page.session = reply.session_id ?? null;
+  page.bars = reply.summary?.bars ?? 0;
   page.toKit = reply.to_kit ?? null;
   Object.assign(page, { rounds: {}, sent: {}, groupsAsked: new Set() });
   if (page.session) {
@@ -332,6 +380,7 @@ async function openSong() {
   page.decisions = reply.decisions;
   page.table = reply.sections ?? [];
   page.reached = "kits";
+  drawOpened();
   say(page.session ? `Opened: ${reply.summary.bars} bars in ${page.table.length} sections.` : "");
   await go("check");
 }
@@ -346,7 +395,7 @@ function drawStrip(list, sections, pick) {
         return element("li", {}, text);
       }
       const pressed = String(section.start === page.selected);
-      const button = element("button", { type: "button", "aria-pressed": pressed }, text);
+      const button = element("button", { type: "button", class: "retro-btn btn", "aria-pressed": pressed }, text);
       button.dataset.start = section.start;
       return element("li", {}, button);
     }),
@@ -478,6 +527,7 @@ async function drawSections() {
   }
   page.sections = reply;
   page.table = reply.sections;
+  drawOpened();
   const { sections } = reply;
   if (!sections.some((section) => section.start === page.selected)) {
     page.selected = sections[0].start;
@@ -669,7 +719,7 @@ function drawAnswers() {
       const { lines } = page.rounds[key] ?? {};
       const whose = key === "song" ? "the drummer's" : `${key}'s`;
       const back = lines ? `Change ${whose} answers` : `Answer ${whose} questions`;
-      const button = element("button", { type: "button", "data-round": key }, back);
+      const button = element("button", { type: "button", class: "retro-btn btn", "data-round": key }, back);
       const name = key === "song" ? "The drummer" : groupTitle(key);
       if (!lines) {
         return element("li", {}, element("p", {}, `${name}: not asked yet.`), button);
@@ -725,6 +775,7 @@ function deleteFile() {
     URL.revokeObjectURL(page.url);
   }
   page = fresh();
+  drawOpened();
   toChosen = false;
   // A move the ended worker never answered would otherwise hold every later one.
   moving = false;
@@ -805,7 +856,22 @@ $("#answers").addEventListener("click", (event) => {
 });
 $("#to-download").addEventListener("click", () => moveOn(false, () => go("download")));
 $("#get").addEventListener("click", download);
-$("#delete").addEventListener("click", deleteFile);
+$("#delete").addEventListener("click", () => {
+  const { file, bars } = page;
+  const song = bars ? `${file.name}, ${count(bars, "bar")}` : file.name;
+  $("#delete-what").textContent =
+    `This ends the engine, which holds your file, ${song}, and everything made from it, and ` +
+    "starts again from step 1.";
+  // Escape closes the dialog without a value, so a choice made before never counts again.
+  $("#delete-dialog").returnValue = "";
+  $("#delete-dialog").showModal();
+});
+$("#delete-dialog").addEventListener("close", () => {
+  if ($("#delete-dialog").returnValue === "delete") {
+    deleteFile();
+  }
+});
+$("#reload").addEventListener("click", () => location.reload());
 $("#steps").addEventListener("click", (event) => {
   const step = event.target.closest("button")?.dataset.step;
   if (step) {

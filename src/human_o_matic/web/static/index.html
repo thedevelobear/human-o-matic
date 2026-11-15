@@ -4,139 +4,266 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>human-o-matic</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script src="js/tailwind-config.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;family=Space+Mono:ital,wght@0,400;0,700;1,400&amp;display=swap">
     <link rel="stylesheet" href="site.css">
     <script type="module" src="js/app.js"></script>
   </head>
-  <body>
-    <header>
-      <h1>human-o-matic</h1>
-      <nav aria-label="Steps">
-        <ol id="steps">
-          <li><button type="button" data-step="file">1 File</button></li>
-          <li><button type="button" data-step="kits">2 Kits</button></li>
-          <li><button type="button" data-step="check">3 Check</button></li>
-          <li><button type="button" data-step="drummer">4 Drummer</button></li>
-          <li><button type="button" data-step="sections">5 Sections</button></li>
-          <li><button type="button" data-step="review">6 Review</button></li>
-          <li><button type="button" data-step="download">7 Download</button></li>
-        </ol>
-      </nav>
-    </header>
-    <main>
-      <div class="engine">
-        <label for="engine">The engine</label>
-        <progress id="engine" max="1" value="0"></progress>
+  <body class="min-h-screen flex flex-col justify-between selection:bg-[#F28D35] selection:text-[#141218]">
+    <!-- The page's drawings, used by reference: the owner's mascot, a four-point star and an atom. -->
+    <svg class="sprite" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="crt-screen" x1="15" y1="29" x2="41" y2="46" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#F28D35"/>
+          <stop offset="55%" stop-color="#E2587A"/>
+          <stop offset="100%" stop-color="#76C893"/>
+        </linearGradient>
+      </defs>
+      <symbol id="mascot" viewBox="0 0 64 68" fill="none">
+        <path d="M43 37C48 33 50 27 49 21" stroke="#141218" stroke-width="3.5" stroke-linecap="round"/>
+        <rect x="41" y="6" width="16" height="16" rx="2" fill="#F7F3EB" stroke="#141218" stroke-width="2"/>
+        <rect x="45" y="6" width="7" height="5" fill="#141218"/>
+        <rect x="44" y="14" width="10" height="7" rx="1" fill="#E8E2D5" stroke="#141218" stroke-width="1.2"/>
+        <circle cx="48" cy="22" r="3.5" fill="#FFFFFF" stroke="#141218" stroke-width="1.8"/>
+        <rect x="11" y="25" width="34" height="27" rx="6" fill="#FFFFFF" stroke="#141218" stroke-width="2.3"/>
+        <rect x="15" y="29" width="26" height="16" rx="3.5" fill="url(#crt-screen)" stroke="#141218" stroke-width="2"/>
+        <ellipse cx="24" cy="36.5" rx="2.6" ry="4.2" fill="#141218"/>
+        <path d="M24.8 34.2L26.5 35.5L24.8 36.8Z" fill="#FFFFFF"/>
+        <ellipse cx="32" cy="36.5" rx="2.6" ry="4.2" fill="#141218"/>
+        <path d="M32.8 34.2L34.5 35.5L32.8 36.8Z" fill="#FFFFFF"/>
+        <path d="M26.5 41.5C27.5 42.8 29.5 42.8 30.5 41.5" stroke="#141218" stroke-width="1.6" stroke-linecap="round"/>
+        <line x1="16" y1="48.5" x2="25" y2="48.5" stroke="#141218" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="34" cy="48.5" r="1.3" fill="#141218"/>
+        <circle cx="38" cy="48.5" r="1.3" fill="#141218"/>
+        <rect x="14" y="52" width="28" height="8" rx="2.5" fill="#F7F3EB" stroke="#141218" stroke-width="2"/>
+        <line x1="18" y1="55.5" x2="29" y2="55.5" stroke="#141218" stroke-width="2" stroke-linecap="round"/>
+        <rect x="33" y="54.5" width="4" height="2.5" rx="0.8" fill="#52B788" stroke="#141218" stroke-width="1"/>
+      </symbol>
+      <symbol id="star" viewBox="0 0 24 24">
+        <path d="M12 2L14.2 9.8L22 12L14.2 14.2L12 22L9.8 14.2L2 12L9.8 9.8L12 2Z" fill="#F7F3EB" stroke="#141218" stroke-width="1.8"/>
+      </symbol>
+      <symbol id="sun-star" viewBox="0 0 24 24">
+        <path d="M12 1L14.5 9.5L23 12L14.5 14.5L12 23L9.5 14.5L1 12L9.5 9.5L12 1Z" fill="#F28D35"/>
+      </symbol>
+      <symbol id="atom" viewBox="0 0 64 64" fill="none">
+        <ellipse cx="32" cy="32" rx="26" ry="10" transform="rotate(-25 32 32)" stroke="#141218" stroke-width="2"/>
+        <ellipse cx="32" cy="32" rx="26" ry="10" transform="rotate(35 32 32)" stroke="#141218" stroke-width="2"/>
+        <ellipse cx="32" cy="32" rx="26" ry="10" transform="rotate(90 32 32)" stroke="#141218" stroke-width="2"/>
+        <circle cx="32" cy="32" r="3" fill="#F28D35" stroke="#141218" stroke-width="1.5"/>
+      </symbol>
+      <symbol id="next" viewBox="0 0 24 24" fill="none" stroke="#141218" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="5" y1="12" x2="19" y2="12"/>
+        <polyline points="12 5 19 12 12 19"/>
+      </symbol>
+    </svg>
+
+    <!-- Shown alone until the engine is ready, then replaced by the page (ADR 0125). -->
+    <div id="loading" class="min-h-screen flex flex-col items-center justify-center gap-5 px-4 text-center">
+      <div class="relative w-28 h-32 rounded-t-full rounded-b-2xl iridescent-mesh border-2 border-ink shadow-[4px_4px_0px_#141218] flex items-center justify-center overflow-hidden">
+        <div class="absolute -top-1 -right-1 w-14 h-14 rounded-full bg-cream/35 blur-[1px]"></div>
+        <svg class="w-24 h-24 animate-bob relative z-10" aria-hidden="true" focusable="false"><use href="#mascot"/></svg>
       </div>
-      <p id="status" role="status">Loading the engine</p>
-      <p id="problem" role="alert"></p>
+      <p class="wordmark font-display text-4xl sm:text-5xl font-bold tracking-tight text-ink leading-none">human-o-matic</p>
+      <div class="w-full max-w-xs">
+        <label for="engine" class="sr-only">The engine</label>
+        <progress id="engine" max="1" class="engine-bar"></progress>
+      </div>
+      <p id="engine-status" role="status" class="font-mono text-sm text-ink/75">Loading the engine</p>
+      <button type="button" id="reload" class="retro-btn iridescent-pill text-ink font-display font-bold text-base px-6 py-2.5 rounded-2xl" hidden>Reload the page</button>
+    </div>
 
-      <section id="file" aria-labelledby="file-title">
-        <h2 id="file-title" tabindex="-1">Choose a file</h2>
-        <p id="deleted" role="status"></p>
-        <p>Choose a drum MIDI file, answer a few questions about it, and download it re-performed, to drag into your DAW.</p>
-        <div id="drop" class="drop">
-          <label for="midi">A drum MIDI file, .mid or .midi, up to 512 KB</label>
-          <input id="midi" type="file" accept=".mid,.midi">
-          <p>Or drop it here.</p>
-        </div>
-        <p id="chosen"></p>
-        <button type="button" id="to-kits" disabled>Next: kits</button>
-        <div class="notice">
-          <h3>Your file and your feedback</h3>
-          <p>Your MIDI file stays on your computer: it is processed in your browser and never uploaded. If you send feedback, we keep what you write and the kits and settings you used, until we delete it; the page never sends your file, its name or its notes. Your feedback is stored by our host, Netlify, which also records your IP address with it and checks it for spam with Akismet. Our host may keep request logs, under its own policy. Only use files you have the right to use.</p>
-          <p>This site is run by [TO FILL IN: who runs the site]. To have your feedback deleted, [TO FILL IN: how to ask for it].</p>
-        </div>
-      </section>
+    <div id="app" class="flex-1 flex flex-col" hidden inert>
+      <div class="w-full max-w-4xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-12 flex-1 relative">
+        <svg class="hidden lg:block w-14 h-14 absolute -left-12 top-16 pointer-events-none" aria-hidden="true" focusable="false"><use href="#atom"/></svg>
+        <svg class="hidden lg:block w-8 h-8 absolute -right-8 top-44 animate-sparkle pointer-events-none" aria-hidden="true" focusable="false"><use href="#star"/></svg>
 
-      <section id="kits" aria-labelledby="kits-title" hidden>
-        <h2 id="kits-title" tabindex="-1">Kits</h2>
-        <form id="kits-form">
-          <div class="field">
-            <label for="from-map">Where did this MIDI come from?</label>
-            <select id="from-map" name="from_map"></select>
+        <header class="mb-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+            <div class="flex items-center gap-3.5">
+              <div class="relative w-14 h-16 sm:w-16 sm:h-[72px] rounded-t-full rounded-b-xl iridescent-mesh border-2 border-ink shadow-[3px_3px_0px_#141218] flex items-center justify-center overflow-hidden shrink-0">
+                <div class="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-cream/35 blur-[1px]"></div>
+                <svg class="w-12 h-12 animate-bob relative z-10" aria-hidden="true" focusable="false"><use href="#mascot"/></svg>
+              </div>
+              <div>
+                <h1 class="wordmark font-display text-3xl sm:text-4xl font-bold tracking-tight text-ink leading-none">human-o-matic</h1>
+                <p class="text-xs sm:text-sm font-mono text-ink/75 mt-1">Organic groove &amp; timing engine for robotic drum tracks</p>
+              </div>
+            </div>
+            <p id="opened" class="self-start sm:self-center bg-cream border-2 border-ink rounded-xl px-3.5 py-2 shadow-[3px_3px_0px_#141218] text-xs font-mono font-bold" hidden></p>
           </div>
-          <div class="field">
-            <label for="to-map">Which drum instrument will play it?</label>
-            <select id="to-map" name="to_map"></select>
-          </div>
-          <p>Changing a kit opens the song again.</p>
-          <button id="open" disabled>Open the song</button>
-        </form>
-      </section>
 
-      <section id="check" aria-labelledby="check-title" hidden>
-        <h2 id="check-title" tabindex="-1">Check</h2>
-        <p>The sections found, and what the file leaves unclear. You can change the sections in step 5.</p>
-        <ol id="check-sections" class="strip"></ol>
-        <form id="check-form">
-          <div id="requests"></div>
-          <button>Confirm</button>
-        </form>
-      </section>
+          <nav aria-label="Steps" class="mb-5">
+            <ol id="steps" class="flex flex-wrap items-center gap-2">
+              <li><button type="button" data-step="file" class="step retro-btn bg-cream hover:bg-white text-ink font-semibold text-xs sm:text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" focusable="false"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>1 File</button></li>
+              <li><button type="button" data-step="kits" class="step retro-btn bg-cream hover:bg-white text-ink font-semibold text-xs sm:text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" focusable="false"><ellipse cx="12" cy="7" rx="9" ry="4"/><path d="M3 7v10c0 2.2 4 4 9 4s9-1.8 9-4V7"/><line x1="7" y1="10.5" x2="7" y2="19.5"/><line x1="17" y1="10.5" x2="17" y2="19.5"/></svg>2 Kits</button></li>
+              <li><button type="button" data-step="check" class="step retro-btn bg-cream hover:bg-white text-ink font-semibold text-xs sm:text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" focusable="false"><polyline points="20 6 9 17 4 12"/></svg>3 Check</button></li>
+              <li><button type="button" data-step="drummer" class="step retro-btn bg-cream hover:bg-white text-ink font-semibold text-xs sm:text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" aria-hidden="true" focusable="false"><path d="M4 4l16 12M20 4L4 16"/><circle cx="12" cy="18" r="3"/></svg>4 Drummer</button></li>
+              <li><button type="button" data-step="sections" class="step retro-btn bg-cream hover:bg-white text-ink font-semibold text-xs sm:text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" focusable="false"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="16" y="4" width="5" height="16" rx="1"/></svg>5 Sections</button></li>
+              <li><button type="button" data-step="review" class="step retro-btn bg-cream hover:bg-white text-ink font-semibold text-xs sm:text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" focusable="false"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>6 Review</button></li>
+              <li><button type="button" data-step="download" class="step retro-btn bg-cream hover:bg-white text-ink font-semibold text-xs sm:text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" focusable="false"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>7 Download</button></li>
+            </ol>
+          </nav>
+        </header>
 
-      <section id="drummer" aria-labelledby="drummer-title" hidden>
-        <h2 id="drummer-title" tabindex="-1">Drummer</h2>
-        <div id="song-round" class="round"></div>
-        <button type="button" id="to-sections">Next: sections</button>
-      </section>
+        <main>
+          <p id="status" role="status" class="font-mono text-sm text-ink/75 empty:hidden mb-3"></p>
+          <p id="problem" role="alert" class="font-bold text-[#B91C3C] empty:hidden mb-3"></p>
 
-      <section id="sections" aria-labelledby="sections-title" hidden>
-        <h2 id="sections-title" tabindex="-1">Sections</h2>
-        <ol id="section-strip" class="strip"></ol>
-        <div class="edits">
-          <h3>Change <span id="editing"></span></h3>
-          <form id="split-form">
-            <label for="split-at">Split it at bar</label>
-            <input id="split-at" name="at" type="number" required>
-            <button>Split</button>
-          </form>
-          <form id="merge-form">
-            <button id="merge">Merge it into the section before</button>
-          </form>
-          <form id="move-form">
-            <label for="move-to">Move its start to bar</label>
-            <input id="move-to" name="to" type="number" required>
-            <button id="move">Move</button>
-          </form>
-          <form id="rename-form">
-            <label for="rename-name">Name</label>
-            <input id="rename-name" name="name">
-            <label for="rename-group">Repeat group</label>
-            <input id="rename-group" name="group" required>
-            <button>Rename</button>
-          </form>
-          <p>Take <output id="take"></output> <button type="button" id="another-take">Another take of it</button></p>
-          <p>Seed <output id="seed"></output> <button type="button" id="song-take">A new take of the song</button></p>
+          <section id="file" aria-labelledby="file-title" class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative">
+            <h2 id="file-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Choose a file</h2>
+            <p id="deleted" role="status" class="font-mono text-sm mb-3 empty:hidden"></p>
+            <p class="mb-4">Choose a drum MIDI file, answer a few questions about it, and download it re-performed, to drag into your DAW.</p>
+            <div id="drop" class="border-2 border-dashed border-ink rounded-2xl p-4 sm:p-5 bg-parchment/55 halftone-subtle mb-4">
+              <label for="midi" class="block font-bold mb-2">A drum MIDI file, .mid or .midi, up to 512 KB</label>
+              <input id="midi" type="file" accept=".mid,.midi" class="font-mono text-sm file:mr-3 file:rounded-xl file:border-2 file:border-ink file:bg-cream file:px-3 file:py-1.5 file:font-bold file:text-ink">
+              <p class="font-mono text-xs text-ink/75 mt-2">Or drop it here.</p>
+            </div>
+            <p id="chosen" class="font-mono text-sm mb-4 empty:hidden"></p>
+            <button type="button" id="to-kits" class="next retro-btn iridescent-pill text-ink font-display font-bold text-base sm:text-lg px-6 py-2.5 rounded-2xl inline-flex items-center gap-2.5" disabled>Next: kits <svg class="w-5 h-5" aria-hidden="true" focusable="false"><use href="#next"/></svg></button>
+            <div class="mt-6 pt-4 border-t-2 border-dashed border-ink/25 text-sm text-ink/75">
+              <h3 class="font-display font-bold text-lg text-ink mb-2">Your file and your feedback</h3>
+              <p class="mb-2">Your MIDI file stays on your computer: it is processed in your browser and never uploaded. If you send feedback, we keep what you write and the kits and settings you used, until we delete it; the page never sends your file, its name or its notes. Your feedback is stored by our host, Netlify, which also records your IP address with it and checks it for spam with Akismet. Our host may keep request logs, under its own policy. The page loads its styles from Tailwind's server and its fonts from Google Fonts, which see your IP address when they send them. Only use files you have the right to use.</p>
+              <p>This site is run by [TO FILL IN: who runs the site]. To have your feedback deleted, [TO FILL IN: how to ask for it].</p>
+            </div>
+          </section>
+
+          <section id="kits" aria-labelledby="kits-title" class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative" hidden>
+            <h2 id="kits-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Kits</h2>
+            <form id="kits-form">
+              <div class="field">
+                <label for="from-map">Where did this MIDI come from?</label>
+                <select id="from-map" name="from_map"></select>
+              </div>
+              <div class="field">
+                <label for="to-map">Which drum instrument will play it?</label>
+                <select id="to-map" name="to_map"></select>
+              </div>
+              <p class="font-mono text-xs text-ink/75 mb-4">Changing a kit opens the song again.</p>
+              <button id="open" class="next retro-btn iridescent-pill text-ink font-display font-bold text-base sm:text-lg px-6 py-2.5 rounded-2xl inline-flex items-center gap-2.5" disabled>Open the song <svg class="w-5 h-5" aria-hidden="true" focusable="false"><use href="#next"/></svg></button>
+            </form>
+          </section>
+
+          <section id="check" aria-labelledby="check-title" class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative" hidden>
+            <h2 id="check-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Check</h2>
+            <p class="mb-3">The sections found, and what the file leaves unclear. You can change the sections in step 5.</p>
+            <ol id="check-sections" class="strip"></ol>
+            <form id="check-form">
+              <div id="requests"></div>
+              <button class="next retro-btn iridescent-pill text-ink font-display font-bold text-base sm:text-lg px-6 py-2.5 rounded-2xl inline-flex items-center gap-2.5">Confirm <svg class="w-5 h-5" aria-hidden="true" focusable="false"><use href="#next"/></svg></button>
+            </form>
+          </section>
+
+          <section id="drummer" aria-labelledby="drummer-title" class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative" hidden>
+            <div class="flex items-center gap-2.5 mb-2">
+              <h2 id="drummer-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight">Drummer</h2>
+              <svg class="w-5 h-5 animate-sparkle" aria-hidden="true" focusable="false"><use href="#sun-star"/></svg>
+            </div>
+            <div id="song-round" class="round"></div>
+            <button type="button" id="to-sections" class="next retro-btn iridescent-pill text-ink font-display font-bold text-base sm:text-lg px-6 py-2.5 rounded-2xl inline-flex items-center gap-2.5">Next: sections <svg class="w-5 h-5" aria-hidden="true" focusable="false"><use href="#next"/></svg></button>
+          </section>
+
+          <section id="sections" aria-labelledby="sections-title" class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative" hidden>
+            <h2 id="sections-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Sections</h2>
+            <ol id="section-strip" class="strip"></ol>
+            <details class="edits">
+              <summary>Change <span id="editing"></span>: split, merge, move, rename or take again</summary>
+              <form id="split-form">
+                <label for="split-at">Split it at bar</label>
+                <input id="split-at" name="at" type="number" required>
+                <button class="retro-btn btn">Split</button>
+              </form>
+              <form id="merge-form">
+                <button id="merge" class="retro-btn btn">Merge it into the section before</button>
+              </form>
+              <form id="move-form">
+                <label for="move-to">Move its start to bar</label>
+                <input id="move-to" name="to" type="number" required>
+                <button id="move" class="retro-btn btn">Move</button>
+              </form>
+              <form id="rename-form">
+                <label for="rename-name">Name</label>
+                <input id="rename-name" name="name">
+                <label for="rename-group">Repeat group</label>
+                <input id="rename-group" name="group" required>
+                <button class="retro-btn btn">Rename</button>
+              </form>
+              <p class="mb-2">Take <output id="take"></output> <button type="button" id="another-take" class="retro-btn btn">Another take of it</button></p>
+              <p>Seed <output id="seed"></output> <button type="button" id="song-take" class="retro-btn btn">A new take of the song</button></p>
+            </details>
+            <div class="flex items-center gap-2.5 mt-6 mb-2">
+              <h3 id="group-title" tabindex="-1" class="font-display text-xl sm:text-2xl font-bold text-ink tracking-tight"></h3>
+              <svg class="w-5 h-5 animate-sparkle shrink-0" aria-hidden="true" focusable="false"><use href="#sun-star"/></svg>
+            </div>
+            <div id="group-round" class="round"></div>
+            <div class="flex flex-wrap items-center gap-3">
+              <button type="button" id="next-group" class="next retro-btn iridescent-pill text-ink font-display font-bold text-base sm:text-lg px-6 py-2.5 rounded-2xl inline-flex items-center gap-2.5">Next group <svg class="w-5 h-5" aria-hidden="true" focusable="false"><use href="#next"/></svg></button>
+              <button type="button" id="to-review" class="next retro-btn iridescent-pill text-ink font-display font-bold text-base sm:text-lg px-6 py-2.5 rounded-2xl inline-flex items-center gap-2.5">Next: review <svg class="w-5 h-5" aria-hidden="true" focusable="false"><use href="#next"/></svg></button>
+            </div>
+          </section>
+
+          <section id="review" aria-labelledby="review-title" class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative" hidden>
+            <h2 id="review-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Review</h2>
+            <h3 class="font-display font-bold text-xl mb-2">Your answers</h3>
+            <ol id="answers" class="answered"></ol>
+            <h3 class="font-display font-bold text-xl mt-6 mb-2">Each section</h3>
+            <ol id="said" class="list-decimal pl-6 space-y-1"></ol>
+            <h3 class="font-display font-bold text-xl mt-6 mb-2">What to listen for</h3>
+            <ul id="heard" class="list-disc pl-6 space-y-1"></ul>
+            <p id="asked" class="font-mono text-sm my-4"></p>
+            <button type="button" id="to-download" class="next retro-btn iridescent-pill text-ink font-display font-bold text-base sm:text-lg px-6 py-2.5 rounded-2xl inline-flex items-center gap-2.5">Next: download <svg class="w-5 h-5" aria-hidden="true" focusable="false"><use href="#next"/></svg></button>
+          </section>
+
+          <section id="download" aria-labelledby="download-title" class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative" hidden>
+            <h2 id="download-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Download</h2>
+            <button type="button" id="get" class="next retro-btn iridescent-pill text-ink font-display font-bold text-base sm:text-lg px-6 py-2.5 rounded-2xl inline-flex items-center gap-2.5">Download the file</button>
+            <p id="saved" role="status" class="font-mono text-sm mt-3 empty:hidden"></p>
+            <p id="listen" class="mt-3"></p>
+            <!-- feat/web-feedback adds the feedback form here. -->
+          </section>
+        </main>
+
+        <footer id="delete-box" class="mt-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4" hidden>
+          <p id="delete-about" class="text-sm text-ink/75 max-w-md">Ends the engine, which holds your file and everything made from it, and starts again from step 1.</p>
+          <button type="button" id="delete" class="retro-btn bg-cream hover:bg-[#FDE8EC] text-ink hover:text-[#B91C3C] font-mono font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2" aria-describedby="delete-about">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+            <span>Delete my file now</span>
+          </button>
+        </footer>
+      </div>
+
+      <div class="w-full h-14 overflow-hidden pointer-events-none relative mt-2 border-t-2 border-ink/20" aria-hidden="true">
+        <div class="w-[140%] -left-[20%] h-24 perspective-floor absolute bottom-0"></div>
+      </div>
+
+      <!-- What the page has just applied; #status says it to assistive technology. -->
+      <div id="toast" class="toast fixed bottom-5 right-5 z-50 translate-y-24 opacity-0 pointer-events-none bg-cream retro-box rounded-2xl px-4 py-3 max-w-sm flex items-center gap-3" aria-hidden="true">
+        <div class="w-8 h-8 rounded-xl iridescent-mesh border-2 border-ink flex items-center justify-center shrink-0">
+          <svg class="w-4 h-4" aria-hidden="true" focusable="false"><use href="#star"/></svg>
         </div>
-        <h3 id="group-title" tabindex="-1"></h3>
-        <div id="group-round" class="round"></div>
-        <button type="button" id="next-group">Next group</button>
-        <button type="button" id="to-review">Next: review</button>
-      </section>
+        <div class="text-xs sm:text-sm">
+          <p id="toast-title" class="font-bold text-ink"></p>
+          <p id="toast-body" class="font-mono text-xs text-ink/80 line-clamp-4"></p>
+        </div>
+      </div>
 
-      <section id="review" aria-labelledby="review-title" hidden>
-        <h2 id="review-title" tabindex="-1">Review</h2>
-        <h3>Your answers</h3>
-        <ol id="answers"></ol>
-        <h3>Each section</h3>
-        <ol id="said"></ol>
-        <h3>What to listen for</h3>
-        <ul id="heard"></ul>
-        <p id="asked"></p>
-        <button type="button" id="to-download">Next: download</button>
-      </section>
-
-      <section id="download" aria-labelledby="download-title" hidden>
-        <h2 id="download-title" tabindex="-1">Download</h2>
-        <button type="button" id="get">Download the file</button>
-        <p id="saved" role="status"></p>
-        <p id="listen"></p>
-        <!-- feat/web-feedback adds the feedback form here. -->
-      </section>
-    </main>
-    <footer id="delete-box" hidden>
-      <button type="button" id="delete" aria-describedby="delete-about">Delete my file now</button>
-      <p id="delete-about">Ends the engine, which holds your file and everything made from it, and starts again from step 1.</p>
-    </footer>
+      <dialog id="delete-dialog" aria-labelledby="delete-title" class="bg-cream retro-box-lg rounded-2xl max-w-md w-[calc(100%-2rem)] p-5 sm:p-6 text-ink backdrop:bg-ink/45">
+        <form method="dialog">
+          <div class="flex items-start gap-3.5 mb-4">
+            <div class="w-11 h-11 rounded-2xl bg-[#FDE8EC] border-2 border-ink shadow-[2px_2px_0px_#141218] flex items-center justify-center text-[#B91C3C] shrink-0">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" aria-hidden="true" focusable="false"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div>
+              <h2 id="delete-title" class="font-display text-xl font-bold text-ink">Delete your file now?</h2>
+              <p id="delete-what" class="text-xs sm:text-sm text-ink/80 mt-1"></p>
+            </div>
+          </div>
+          <div class="flex items-center justify-end gap-2.5 pt-2">
+            <button value="keep" class="retro-btn bg-parchment hover:bg-white text-ink font-bold text-xs sm:text-sm px-4 py-2 rounded-xl" autofocus>Keep my file</button>
+            <button value="delete" class="retro-btn bg-[#E2587A] text-ink font-bold text-xs sm:text-sm px-4 py-2 rounded-xl">Yes, delete it</button>
+          </div>
+        </form>
+      </dialog>
+    </div>
   </body>
 </html>

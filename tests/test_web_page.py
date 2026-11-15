@@ -4,6 +4,7 @@ and no inline script or style, the page's JavaScript keeps nothing in the browse
 no number of the vocabulary, applies a round only as the page moves on, and keeps its drafts
 until the song is opened again."""
 
+import gzip
 import re
 from html.parser import HTMLParser
 from pathlib import Path
@@ -17,6 +18,8 @@ from human_o_matic.web import static_dir
 
 PAGES = sorted(static_dir().glob("*.html"))
 MODULES = sorted((static_dir() / "js").glob("*.js"))
+VOID = {"meta", "link", "input", "br", "hr", "img", "source", "wbr"}
+"""Elements with no end tag, so never anyone's ancestor."""
 UNLABELLED = {"hidden", "submit", "button", "reset", "image"}
 """Input types that are buttons or hold nothing to fill in, so need no label."""
 
@@ -47,12 +50,19 @@ class Page(HTMLParser):
         """The inputs inside a `<label>`."""
         self.scripts: list[str] = []
         """The text inside each `<script>`."""
+        self.within: dict[str, list[str]] = {}
+        """Each id's ancestors' ids."""
+        self.open: list[str] = []
         self.labels = 0
         self.script = False
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         attributes = {name: value or "" for name, value in attrs}
         self.elements.append((tag, attributes))
+        if "id" in attributes:
+            self.within[attributes["id"]] = [found for found in self.open if found]
+        if tag not in VOID:
+            self.open.append(attributes.get("id", ""))
         if tag == "label":
             self.labels += 1
             if "for" in attributes:
@@ -64,6 +74,8 @@ class Page(HTMLParser):
             self.scripts.append("")
 
     def handle_endtag(self, tag: str) -> None:
+        if tag not in VOID:
+            self.open.pop()
         if tag == "label":
             self.labels -= 1
         if tag == "script":
@@ -109,21 +121,177 @@ def test_a_page_has_lang_a_label_on_every_input_and_alt_text_on_every_image(path
             assert attributes.get("alt"), (path.name, attributes)
 
 
+TAILWIND = "https://cdn.tailwindcss.com/3.4.17"
+FONTS = (
+    "https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Space+Grotesk:wght@500;"
+    "600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+)
+SCRIPTS = {
+    "check.html": [{"type": "module", "src": "js/check.js"}],
+    "index.html": [
+        {"src": TAILWIND},
+        {"src": "js/tailwind-config.js"},
+        {"type": "module", "src": "js/app.js"},
+    ],
+}
+LINKS = {
+    "check.html": [],
+    "index.html": [{"rel": "stylesheet", "href": FONTS}, {"rel": "stylesheet", "href": "site.css"}],
+}
+"""What each page loads (ADR 0125): of others', Tailwind's Play CDN at its pinned version and
+Google Fonts' stylesheet alone, and the rest its own files."""
+
+
 @pytest.mark.parametrize("path", PAGES, ids=lambda path: path.name)
-def test_a_page_has_no_inline_script_or_style(path: Path) -> None:
+def test_a_page_loads_only_its_own_tailwind_s_and_google_fonts_and_holds_no_inline_code(
+    path: Path,
+) -> None:
     page = parsed(path)
 
-    assert page.scripts, path.name
     assert [text.strip() for text in page.scripts] == [""] * len(page.scripts)
+    assert [attributes for tag, attributes in page.elements if tag == "script"] == SCRIPTS[
+        path.name
+    ]
+    assert [attributes for tag, attributes in page.elements if tag == "link"] == LINKS[path.name]
     for tag, attributes in page.elements:
         assert tag != "style", path.name
         assert "style" not in attributes, (path.name, tag)
         assert not [name for name in attributes if name.startswith("on")], (path.name, tag)
-        if tag == "script":
-            assert attributes.get("type") == "module", path.name
-            assert attributes["src"].startswith("js/"), path.name
-        if tag == "link":
-            assert attributes == {"rel": "stylesheet", "href": "site.css"}, path.name
+
+
+INDEX = static_dir() / "index.html"
+
+
+def test_every_drawing_of_the_page_is_hidden_from_assistive_technology() -> None:
+    page = parsed(INDEX)
+    drawings = [attributes for tag, attributes in page.elements if tag == "svg"]
+    uses = [attributes["href"] for tag, attributes in page.elements if tag == "use"]
+
+    assert drawings
+    assert [attributes for attributes in drawings if attributes.get("aria-hidden") != "true"] == []
+    # The owner's mascot, defined once, on the loading view and in the top bar.
+    assert uses.count("#mascot") == 2
+
+
+def test_the_page_shows_the_loading_view_alone_until_the_engine_is_ready() -> None:
+    page = parsed(INDEX)
+    by_id = {
+        attributes["id"]: (tag, attributes)
+        for tag, attributes in page.elements
+        if "id" in attributes
+    }
+    loading = (static_dir() / "js" / "app.js").read_text(encoding="utf-8")
+    shown = loading[
+        loading.index("function loading(") : loading.index("/** One call of the worker API")
+    ]
+
+    assert "hidden" not in by_id["loading"][1]
+    assert {"hidden", "inert"} <= set(by_id["app"][1])
+    # The bar is indeterminate until the engine's first step says how far it is.
+    assert by_id["engine"][0] == "progress"
+    assert "value" not in by_id["engine"][1]
+    assert "app" not in page.within["engine"]
+    for inside in ("steps", "status", "file", "kits", "check", "drummer", "sections", "review"):
+        assert "app" in page.within[inside], inside
+    for inside in ("download", "delete-box", "toast", "delete-dialog"):
+        assert "app" in page.within[inside], inside
+    assert '$("#app").inert = !ready;' in shown
+    assert '$("#app").hidden = !ready;' in shown
+    assert loading.count(".inert") == 1
+
+
+def luminance(colour: str) -> float:
+    channels = [int(colour[at : at + 2], 16) / 255 for at in (1, 3, 5)]
+    linear = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def contrast(one: str, other: str) -> float:
+    light, dark = sorted((luminance(one), luminance(other)), reverse=True)
+    return (light + 0.05) / (dark + 0.05)
+
+
+def over(colour: str, under: str, alpha: float) -> str:
+    mixed = [
+        round(alpha * int(colour[at : at + 2], 16) + (1 - alpha) * int(under[at : at + 2], 16))
+        for at in (1, 3, 5)
+    ]
+    return "#" + "".join(f"{channel:02x}" for channel in mixed)
+
+
+def test_the_palette_s_text_is_at_least_4_5_to_1_and_its_focus_ring_3_to_1() -> None:
+    # WCAG 2's contrast of each text colour on each surface it sits on, from the tokens of
+    # site.css and the colours of the Tailwind configuration (ADR 0125).
+    css = (static_dir() / "site.css").read_text(encoding="utf-8")
+    root = re.search(r":root \{(.*?)\}", css, re.DOTALL)
+    assert root is not None
+    token = {
+        name: value.lower()
+        for name, value in re.findall(r"--([\w-]+): (#[0-9a-f]{6});", root.group(1))
+    }
+    config = (static_dir() / "js" / "tailwind-config.js").read_text(encoding="utf-8")
+    tailwind = {
+        name: value.lower() for name, value in re.findall(r'(\w+): "(#[0-9A-F]{6})"', config)
+    }
+    ink = tailwind["ink"]
+    surfaces = ["bg-parchment", "surface-cream", "surface-well", "soft-1", "soft-2", "soft-3"]
+    opacities = {
+        int(found) for found in re.findall(r"text-ink/(\d+)", INDEX.read_text(encoding="utf-8"))
+    }
+
+    assert ink == token["ink-black"]
+    for surface in (token[name] for name in surfaces):
+        assert contrast(ink, surface) >= 4.5, surface
+        assert contrast(token["ink-muted"], surface) >= 4.5, surface
+        assert contrast(token["focus-violet"], surface) >= 3, surface
+        for alpha in opacities:
+            assert contrast(over(ink, surface, alpha / 100), surface) >= 4.5, (surface, alpha)
+    for under in ("pill-start", "sunset-orange", "vibrant-magenta", "pill-end"):
+        assert contrast(ink, token[under]) >= 4.5, under
+    for surface in (token["surface-cream"], token["bg-parchment"], "#fde8ec"):
+        assert contrast(token["error-red"], surface) >= 4.5, surface
+    assert opacities
+    assert min(opacities) >= 75
+
+
+REDUCED = "@media (prefers-reduced-motion: no-preference) {"
+
+
+def without_block(text: str, opening: str) -> str:
+    """`text` without the block that `opening` starts, to its matching brace."""
+    start = text.index(opening)
+    depth = 0
+    for end, char in enumerate(text[start:], start):
+        depth += {"{": 1, "}": -1}.get(char, 0)
+        if char == "}" and depth == 0:
+            return text[:start] + text[end + 1 :]
+    raise ValueError(opening)
+
+
+def test_nothing_moves_unless_the_reader_allows_motion() -> None:
+    # Every animation and transition is inside `prefers-reduced-motion: no-preference`, in
+    # site.css, and the page uses none of Tailwind's own (ADR 0125).
+    css = (static_dir() / "site.css").read_text(encoding="utf-8")
+    outside = without_block(css, REDUCED)
+    classes = re.findall(r'class="([^"]*)"', INDEX.read_text(encoding="utf-8"))
+    tailwind = [
+        name
+        for found in classes
+        for name in found.split()
+        if re.match(r"(animate|transition|duration)-", name)
+    ]
+
+    assert css.count(REDUCED) == 1
+    assert not re.search(r"\b(animation|transition)\s*:|@keyframes", COMMENT.sub("", outside))
+    assert set(tailwind) == {"animate-bob", "animate-sparkle"}
+
+
+def test_the_page_s_own_files_are_within_300_kb_compressed() -> None:
+    # Tailwind's script and Google's fonts come from their hosts, outside this count (ADR 0125).
+    own = [path for path in static_dir().rglob("*") if path.is_file()]
+    compressed = sum(len(gzip.compress(path.read_bytes(), 9)) for path in own)
+
+    assert compressed <= 300_000, compressed
 
 
 STORAGE = re.compile(r"\b(localStorage|sessionStorage|indexedDB|caches)\b")
@@ -131,7 +299,16 @@ STORAGE = re.compile(r"\b(localStorage|sessionStorage|indexedDB|caches)\b")
 
 
 def test_the_page_s_javascript_keeps_nothing_in_the_browser_s_storage() -> None:
-    own = {"app.js", "fields.js", "forms.js", "questions.js", "review.js", "round.js"}
+    own = {
+        "app.js",
+        "fields.js",
+        "forms.js",
+        "loading.js",
+        "questions.js",
+        "review.js",
+        "round.js",
+        "tailwind-config.js",
+    }
     assert own <= {path.name for path in MODULES}
     for path in MODULES:
         found = STORAGE.findall(path.read_text(encoding="utf-8"))

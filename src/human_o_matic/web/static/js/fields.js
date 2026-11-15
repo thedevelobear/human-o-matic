@@ -137,7 +137,7 @@ function drawField(field, prefix) {
       return element("div", { class: "field range" }, label(), slider, shown, hint);
     }
     case "button":
-      return element("button", { type: "button", name: field.name }, field.label);
+      return element("button", { type: "button", class: "retro-btn btn", name: field.name }, field.label);
     case "list":
       return element(
         "div",
