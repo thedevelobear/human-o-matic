@@ -88,7 +88,7 @@
                 <p class="text-xs sm:text-sm font-mono text-ink/75 mt-1">Organic groove &amp; timing engine for robotic drum tracks</p>
               </div>
             </div>
-            <p id="opened" class="self-start sm:self-center bg-cream border-2 border-ink rounded-xl px-3.5 py-2 shadow-[3px_3px_0px_#141218] text-xs font-mono font-bold" hidden></p>
+            <button type="button" id="last-applied" class="retro-btn self-start sm:self-center bg-cream hover:bg-white text-ink rounded-xl px-3.5 py-2 text-xs font-mono font-bold" hidden>Nothing applied yet</button>
           </div>
 
           <nav aria-label="Steps" class="mb-5">
@@ -144,6 +144,7 @@
 
           <section id="check" aria-labelledby="check-title" class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative" hidden>
             <h2 id="check-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Check</h2>
+            <p id="opened-facts" class="font-mono text-sm font-bold mb-2"></p>
             <p class="mb-3">The sections found, and what the file leaves unclear. You can change the sections in step 5.</p>
             <ol id="check-sections" class="strip"></ol>
             <form id="check-form">
@@ -256,6 +257,23 @@
         </div>
       </div>
 
+      <dialog id="applied-dialog" aria-labelledby="applied-title" class="bg-cream retro-box-lg rounded-2xl max-w-lg w-[calc(100%-2rem)] max-h-[85vh] p-5 sm:p-6 text-ink backdrop:bg-ink/45">
+        <form method="dialog">
+          <div class="flex items-start gap-3.5 mb-4">
+            <div class="w-11 h-11 rounded-2xl iridescent-mesh border-2 border-ink shadow-[2px_2px_0px_#141218] flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5" aria-hidden="true" focusable="false"><use href="#star"/></svg>
+            </div>
+            <div>
+              <h2 id="applied-title" class="font-display text-xl font-bold text-ink">What's applied</h2>
+              <p id="applied-count" class="font-mono text-xs text-ink/80 mt-1"></p>
+            </div>
+          </div>
+          <ol id="applied-list" class="applied"></ol>
+          <div class="flex items-center justify-end pt-2">
+            <button value="close" class="retro-btn bg-parchment hover:bg-white text-ink font-bold text-xs sm:text-sm px-4 py-2 rounded-xl" autofocus>Close</button>
+          </div>
+        </form>
+      </dialog>
       <dialog id="delete-dialog" aria-labelledby="delete-title" class="bg-cream retro-box-lg rounded-2xl max-w-md w-[calc(100%-2rem)] p-5 sm:p-6 text-ink backdrop:bg-ink/45">
         <form method="dialog">
           <div class="flex items-start gap-3.5 mb-4">

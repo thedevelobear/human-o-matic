@@ -427,10 +427,9 @@ export function shownSong(tabs, round, { presets, song, defaults, style, before 
 
 const capital = (text) => text[0].toUpperCase() + text.slice(1);
 
-/** The words of a round's echo: each section's `expected` from the replies, or only those of the
- * sections `only` names, any control the engine clamped and the value it used, and the count of
- * questions so far. */
-export function echo(replies, asked, only = null) {
+/** The lines of a round's echo: each section's `expected` from the replies, or only those of the
+ * sections `only` names, and any control the engine clamped and the value it used. */
+export function echo(replies, only = null) {
   const sections = replies.flatMap((reply) => reply.sections ?? []);
   const labels = Object.fromEntries(sections.map(({ start, label }) => [start, label]));
   const lines = sections
@@ -442,7 +441,7 @@ export function echo(replies, asked, only = null) {
       const where = section === undefined ? "" : ` in ${labels[section]}`;
       return `${capital(WORDS[control] ?? control)} ${was} was taken as ${used}${where}.`;
     });
-  return [...lines, ...clamped, `Questions so far: ${asked}.`].join(" ");
+  return [...lines, ...clamped];
 }
 
 /** A round's questions and draft as one text, so two rounds alike in both send the same. */
@@ -452,13 +451,13 @@ export function signature(tabs, { answered = {}, hand = {}, fine = {} } = {}) {
 
 /**
  * Apply a round as the page moves on from it (ADR 0124): `send` it when it was never applied or
- * has changed since, `applied` being its signature when it last was. A send that fails stays,
- * with the draft as it was. One that succeeds moves on, unless `stay` is set and `due`, the Ramp
+ * has changed since, `applied` being its signature when it last was. `send` gives the echo's
+ * lines, or the failed reply. A send that fails stays, with the draft as it was. One that succeeds moves on, unless `stay` is set and `due`, the Ramp
  * tabs due once it is sent, brings up one the round doesn't show, which then joins it.
  *
- * @returns {Promise<{move: boolean, applied?: string, said?: string, error?: string,
- *   joined: Array<object>}>} Whether to move on, the round's signature as applied, what its send
- *   said or why it failed, and the Ramp tabs brought up.
+ * @returns {Promise<{move: boolean, applied?: string, said?: Array<string>, error?: string,
+ *   joined: Array<object>}>} Whether to move on, the round's signature as applied, its echo's
+ *   lines or why it failed, and the Ramp tabs brought up.
  */
 export async function applyRound({ tabs, draft, applied, send, due = () => [], stay = false }) {
   const signed = signature(tabs, draft);
@@ -466,7 +465,7 @@ export async function applyRound({ tabs, draft, applied, send, due = () => [], s
     return { move: true, applied, joined: [] };
   }
   const said = await send(tabs, draft);
-  if (typeof said !== "string") {
+  if (!Array.isArray(said)) {
     return { move: false, applied, error: said.error, joined: [] };
   }
   const joined = due().filter((tab) => !tabs.some((shown) => shown.id === tab.id));

@@ -380,7 +380,7 @@ test("a ramp question on the last section, with nothing after it, joins no round
   assert.deepEqual(rampTabs(found, new Set(["A", "B"]), presets, DEFAULTS), []);
 });
 
-test("the echo says what each section plays, what the engine clamped, and the count", () => {
+test("the echo says what each section plays and what the engine clamped, a line each", () => {
   const replies = [
     {
       sections: [
@@ -391,15 +391,12 @@ test("the echo says what each section plays, what the engine clamped, and the co
     },
   ];
 
-  assert.equal(
-    echo(replies, 6),
-    "Bars 1 to 4: kick about 100. Bars 5 to 8: kick about 110. Ramp 4 was taken as 2 in bars 1 " +
-      "to 4. Questions so far: 6.",
-  );
-  assert.equal(
-    echo(replies, 6, [4]),
-    "Bars 5 to 8: kick about 110. Ramp 4 was taken as 2 in bars 1 to 4. Questions so far: 6.",
-  );
+  assert.deepEqual(echo(replies), [
+    "Bars 1 to 4: kick about 100.",
+    "Bars 5 to 8: kick about 110.",
+    "Ramp 4 was taken as 2 in bars 1 to 4.",
+  ]);
+  assert.deepEqual(echo(replies, [4]), ["Bars 5 to 8: kick about 110.", "Ramp 4 was taken as 2 in bars 1 to 4."]);
 });
 
 test("a section edit keeps what a round set only on the sections it leaves as they were", () => {
@@ -445,7 +442,7 @@ function applying(tabs, draft, { applied, due = [], stay = true, fails = false }
   const sent = [];
   const send = async (shown, given) => {
     sent.push(structuredClone(given));
-    return fails ? { error: "the engine said no" } : "Bars 1 to 4: kick about 100.";
+    return fails ? { error: "the engine said no" } : ["Bars 1 to 4: kick about 100."];
   };
   return applyRound({ tabs, draft, applied, send, due: () => due, stay }).then((done) => ({ ...done, sent }));
 }
@@ -460,7 +457,7 @@ test("a round is applied when the page moves on only if it was never applied or 
   const again = await applying(tabs, untouched, { applied: first.applied });
   const changed = await applying(tabs, round({ [energy.id]: 1 }), { applied: first.applied });
 
-  assert.deepEqual([first.move, first.sent.length, first.said], [true, 1, "Bars 1 to 4: kick about 100."]);
+  assert.deepEqual([first.move, first.sent.length, first.said], [true, 1, ["Bars 1 to 4: kick about 100."]]);
   assert.equal(first.applied, signature(tabs, untouched));
   assert.deepEqual([again.move, again.sent.length, again.applied], [true, 0, first.applied]);
   assert.deepEqual([changed.move, changed.sent.length], [true, 1]);

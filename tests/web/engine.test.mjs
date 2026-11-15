@@ -212,7 +212,7 @@ test("on a four-group song the flow asks each question get_sections gives, once,
     groupsAsked.add(group);
     sections = ask("get_sections", { session_id });
     given.push(...due());
-    return "sent";
+    return [];
   };
   for (const group of order) {
     const members = questions.membersOf(sections, group);

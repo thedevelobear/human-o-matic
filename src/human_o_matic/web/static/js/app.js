@@ -78,12 +78,13 @@ function fresh() {
     // The session's style, which the Drummer step's "your call" keeps.
     drummer: null,
     seed: 0,
-    // Each round, "song" or a group's, as `{draft, applied, said, lines}`: its draft of
-    // answers, its signature and echo when last applied, and its answers in words for the
-    // review; the round on screen, `{key, drawn, send, due}`; the controls each round's
+    // Each round, "song" or a group's, as `{draft, applied, said, lines, at, name, title}`: its
+    // draft of answers, its signature and echo's lines when last applied, its answers in words
+    // for the review, and when it was applied, by `applies`, and its names, for "Last applied"; the round on screen, `{key, drawn, send, due}`; the controls each round's
     // answers set at its last send, by section; and the groups whose rounds were sent, all of
     // the song as opened; and the questions asked.
     rounds: {},
+    applies: 0,
     round: null,
     sent: {},
     groupsAsked: new Set(),
@@ -182,12 +183,44 @@ function toast(title, body) {
   toastTimer = setTimeout(() => $("#toast").classList.remove("shown"), TOAST_MS);
 }
 
-/** The song opened, in the top bar: its bars and sections, or nothing before a song opens. */
-function drawOpened() {
-  $("#opened").hidden = !page.session;
-  $("#opened").textContent = page.session
-    ? `Opened: ${count(page.bars, "bar")} in ${count(page.table.length, "section")}.`
-    : "";
+/** The rounds applied, newest first. */
+function applied() {
+  return Object.values(page.rounds)
+    .filter(({ said }) => said)
+    .sort((a, b) => b.at - a.at);
+}
+
+/** "Last applied", in the top bar: the round applied last, by a short name, once a song is open. */
+function drawApplied() {
+  const [last] = applied();
+  $("#last-applied").hidden = !page.session;
+  $("#last-applied").textContent = last ? `Last applied: ${last.name}` : "Nothing applied yet";
+}
+
+/** The dialog behind "Last applied": each round applied, newest first, its echo a line each, and
+ * the count of questions so far. */
+function showApplied() {
+  const blocks = applied().map(({ title, said }) =>
+    element(
+      "li",
+      {},
+      element("h3", {}, title),
+      element("ul", {}, ...(said.length ? said : ["Nothing new: the song's controls stay."]).map((line) => element("li", {}, line))),
+    ),
+  );
+  const none = element("li", {}, "Nothing is applied yet: a round applies when you move on from it.");
+  $("#applied-list").replaceChildren(...(blocks.length ? blocks : [none]));
+  $("#applied-count").textContent = `Questions so far: ${page.asked.size}`;
+  $("#applied-dialog").showModal();
+}
+
+/** A round's names: short, for "Last applied" and the toast, and whole, for its dialog. */
+function namesOf(key) {
+  if (key === "song") {
+    return { name: "the drummer", title: "The drummer" };
+  }
+  const [first] = membersOf(page.sections, key);
+  return { name: `${first.label} (${key})`, title: groupTitle(key) };
 }
 
 // The steps.
@@ -267,11 +300,13 @@ async function leave(stay) {
     return false;
   }
   if (done.said !== undefined) {
-    Object.assign(kept, { applied: done.applied, said: done.said, lines: answerLines(tabs, kept.draft) });
+    const lines = answerLines(tabs, kept.draft);
+    Object.assign(kept, { applied: done.applied, said: done.said, lines, at: ++page.applies, ...namesOf(shown.key) });
+    drawApplied();
   }
   if (done.move) {
     if (done.said !== undefined) {
-      toast(`Applied: ${shown.key === "song" ? "the drummer" : groupTitle(shown.key)}`, done.said);
+      toast(`Applied: ${kept.name}`, "What it set is under \u201cLast applied\u201d, at the top.");
     }
     return true;
   }
@@ -281,16 +316,14 @@ async function leave(stay) {
     shown.drawn.join(tab);
   }
   const more = done.joined.map((tab) => tab.question).join(" ");
-  shown.drawn.say(`Applied. ${done.said} One more question came up, below: ${more} It applies when you move on.`);
+  shown.drawn.say(`\u2713 Applied. One more question came up, below: ${more} It applies when you move on.`);
   return false;
 }
 
-/** The line a round shows: applied, with its echo, or not yet. */
+/** The line a round shows: applied or not yet; what it applied is behind "Last applied". */
 function stateOf(key, tabs) {
-  const { draft, applied, said } = page.rounds[key];
-  return applied === signature(tabs, draft)
-    ? `Applied. ${said}`
-    : `Not applied yet: it applies when you move on. Questions so far: ${page.asked.size}.`;
+  const { draft, applied } = page.rounds[key];
+  return applied === signature(tabs, draft) ? "\u2713 Applied" : "Not applied yet: applies when you move on.";
 }
 
 /** Draw the round of `key` in `parent` from its draft, as the round on screen. */
@@ -324,7 +357,7 @@ async function choose(file) {
   problem("");
   $("#deleted").textContent = "";
   $("#chosen").textContent = `Chosen: ${file.name}`;
-  drawOpened();
+  drawApplied();
   $("#to-kits").disabled = false;
   $("#delete-box").hidden = false;
   show("file", false);
@@ -380,7 +413,7 @@ async function openSong() {
   page.decisions = reply.decisions;
   page.table = reply.sections ?? [];
   page.reached = "kits";
-  drawOpened();
+  drawApplied();
   say(page.session ? `Opened: ${reply.summary.bars} bars in ${page.table.length} sections.` : "");
   await go("check");
 }
@@ -403,6 +436,7 @@ function drawStrip(list, sections, pick) {
 }
 
 async function drawCheck() {
+  $("#opened-facts").textContent = `${count(page.bars, "bar")} in ${count(page.table.length, "section")}.`;
   drawStrip($("#check-sections"), page.table, false);
   const box = $("#requests");
   box.replaceChildren();
@@ -507,7 +541,7 @@ async function sendSong(tabs, draft) {
   const firsts = groupsOf(page.table).map(
     (group) => page.table.find((section) => section.group === group).start,
   );
-  return echo(replies, page.asked.size, firsts);
+  return echo(replies, firsts);
 }
 
 // 5. Sections, their edits and each repeat group's round.
@@ -527,7 +561,6 @@ async function drawSections() {
   }
   page.sections = reply;
   page.table = reply.sections;
-  drawOpened();
   const { sections } = reply;
   if (!sections.some((section) => section.start === page.selected)) {
     page.selected = sections[0].start;
@@ -637,7 +670,7 @@ async function sendGroup(group, tabs, draft) {
   if (!failed(reply)) {
     page.sections = reply;
   }
-  return echo(replies, page.asked.size);
+  return echo(replies);
 }
 
 async function pick(start, focus) {
@@ -775,7 +808,7 @@ function deleteFile() {
     URL.revokeObjectURL(page.url);
   }
   page = fresh();
-  drawOpened();
+  drawApplied();
   toChosen = false;
   // A move the ended worker never answered would otherwise hold every later one.
   moving = false;
@@ -872,6 +905,7 @@ $("#delete-dialog").addEventListener("close", () => {
   }
 });
 $("#reload").addEventListener("click", () => location.reload());
+$("#last-applied").addEventListener("click", showApplied);
 $("#steps").addEventListener("click", (event) => {
   const step = event.target.closest("button")?.dataset.step;
   if (step) {
