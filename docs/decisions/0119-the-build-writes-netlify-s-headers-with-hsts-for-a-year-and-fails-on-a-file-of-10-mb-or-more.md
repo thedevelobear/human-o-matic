@@ -1,6 +1,6 @@
 # 0119. The build writes Netlify's `_headers`, with HSTS for a year, and fails on a file of 10 MB or more
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-14
 
 - `tools/build_site.py build` writes `dist/site/_headers`, in the form Netlify reads, with these rules:

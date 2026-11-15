@@ -1,6 +1,6 @@
 # 0118. The page is hand-rolled ES modules with native controls and no library
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-14
 
 - The page is one HTML file, one stylesheet and a few small ES modules of its own, with the platform's native form controls: option (a) of the site plan's comparison of frontends. Its modules update the DOM themselves. It uses no JavaScript library, vendored or fetched, and has no build step, no import map and no npm package ([ADR 0112](0112-node-with-no-npm-package-runs-the-pyodide-test-and-the-page-s-pure-module-tests.md)).

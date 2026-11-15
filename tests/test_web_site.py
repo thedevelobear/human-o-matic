@@ -121,22 +121,6 @@ def test_the_app_zip_holds_the_source_data_and_vocabulary_at_their_paths() -> No
     assert not [name for name in names if name.startswith(("private", "tests", "tools"))]
 
 
-def test_the_check_page_has_no_inline_script_or_style_and_names_no_other_origin() -> None:
-    files = [path for path in static_dir().rglob("*") if path.is_file()]
-    page = (static_dir() / "check.html").read_text(encoding="utf-8")
-
-    assert '<script type="module" src="js/check.js"></script>' in page
-    assert "<style" not in page
-    assert "style=" not in page
-    assert page.count("<script") == 1
-    for path in files:
-        text = path.read_text(encoding="utf-8")
-        assert "http://" not in text, path
-        assert "https://" not in text, path
-        for storage in ("localStorage", "sessionStorage", "indexedDB", "caches."):
-            assert storage not in text, (path, storage)
-
-
 @pytest.fixture(scope="module")
 def site(tmp_path_factory: pytest.TempPathFactory) -> Path:
     """The site built without the network, from small stand-ins of the pinned downloads under
@@ -232,7 +216,9 @@ def test_none_of_the_page_s_own_files_names_another_origin(site: Path) -> None:
         and path.relative_to(site).parts[0] not in ("pyodide", "wheels", "app.zip", SONG)
     ]
 
-    assert {"_headers", "check.html", "engine.json", "js/worker.js"} <= {
+    page = {path.relative_to(static_dir()).as_posix() for path in static_dir().rglob("*.*")}
+    assert {"index.html", "site.css", "check.html", "js/app.js", "js/tabs.js"} <= page
+    assert page | {"_headers", "engine.json", "check-flow.json"} == {
         path.relative_to(site).as_posix() for path in own
     }
     for path in own:
