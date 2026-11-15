@@ -1,6 +1,6 @@
 # 0121. The page has seven steps until the feedback form, opens the song afresh for each kit, and takes the next seed for a new take
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-15
 
 - **Steps:** the top bar lists 1 File to 7 Download, and the eighth, Feedback, joins with its form in `feat/web-feedback`. A step reached can be opened again from the top bar. Opening the song again makes Check the furthest step reached.

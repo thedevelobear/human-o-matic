@@ -2,8 +2,8 @@
 // (ADR 0100), called by the worker API one call at a time (ADR 0114). The engine starts loading
 // as the page opens. The page never sees a note and stores nothing: the chosen file's bytes stay
 // in this page's memory and the worker's until "Delete my file now" ends the worker, or the tab
-// is closed (the website plan's section 8). The rounds' questions come in feat/web-questions:
-// until then each round is its Submit tab, with Fine-tune.
+// is closed (the website plan's section 8). The song-wide round and each repeat group's ask
+// their questions in tabs, from questions.js, and only a round's Submit sends.
 
 import { drawFields, element, readFields } from "./fields.js";
 import {
@@ -18,6 +18,21 @@ import {
   sectionEdit,
   touchedControls,
 } from "./forms.js";
+import {
+  echo,
+  groupCalls,
+  groupControls,
+  groupTabs,
+  keptAfterEdit,
+  membersOf,
+  rampTabs,
+  resolvedOf,
+  shownGroup,
+  shownSong,
+  songCalls,
+  songControls,
+  songTabs,
+} from "./questions.js";
 import { barsLabel, conversionLines, creativeLines, downloadName } from "./review.js";
 import { drawRound } from "./round.js";
 
@@ -30,6 +45,8 @@ let worker;
 let waiting = new Map();
 let calls = 0;
 let kitNames = {};
+// The vocabulary's rows at their starting points, from the worker's `presets` call.
+let presets = null;
 // Whether the kit to play the file was chosen, so it no longer follows the kit it came from.
 let toChosen = false;
 let page = fresh();
@@ -45,7 +62,16 @@ function fresh() {
     table: [],
     sections: null,
     defaults: null,
+    song: {},
+    // The session's style, which the Drummer step's "your call" keeps.
+    drummer: null,
     seed: 0,
+    // Each round's answers by tab, the controls its answers set at its last send, by section, and
+    // the groups whose rounds were sent, all of the song as opened; and the questions asked.
+    answers: {},
+    sent: {},
+    groupsAsked: new Set(),
+    asked: new Set(),
     selected: 0,
     summary: null,
     downloads: 0,
@@ -213,6 +239,10 @@ async function openSong() {
   }
   page.session = reply.session_id ?? null;
   page.toKit = reply.to_kit ?? null;
+  Object.assign(page, { answers: {}, sent: {}, groupsAsked: new Set() });
+  if (page.session) {
+    page.asked.add("kits");
+  }
   page.decisions = reply.decisions;
   page.table = reply.sections ?? [];
   page.reached = "kits";
@@ -256,6 +286,7 @@ async function drawCheck() {
 async function confirmCheck(event) {
   event.preventDefault();
   if (!page.decisions.length) {
+    page.asked.add("check");
     await go("drummer");
     return;
   }
@@ -274,6 +305,7 @@ async function confirmCheck(event) {
     await drawCheck();
     return;
   }
+  page.asked.add("check");
   await go("drummer");
 }
 
@@ -281,13 +313,34 @@ async function confirmCheck(event) {
 
 function remember(styled) {
   page.defaults = styled.defaults;
+  page.drummer = styled.style;
+  page.song = styled.controls;
   page.seed = styled.seed;
   $("#seed").textContent = String(styled.seed);
 }
 
+/** The vocabulary's rows, asked of the worker once. */
+async function vocabulary() {
+  if (!presets) {
+    const reply = await ask("presets");
+    presets = failed(reply) ? null : reply;
+  }
+  return presets;
+}
+
+/** `tabs` with the answer given before in each, where the pointer starts. */
+function withGiven(tabs, key) {
+  return tabs.map((tab) => ({ ...tab, given: page.answers[key]?.[tab.id] }));
+}
+
+function songContext() {
+  const { song, defaults, drummer, sent } = page;
+  return { presets, song, defaults, style: drummer, before: sent.song ?? [] };
+}
+
 async function drawDrummer() {
   const styled = await ask("set_style", { session_id: page.session });
-  if (failed(styled)) {
+  if (failed(styled) || !(await vocabulary())) {
     return;
   }
   remember(styled);
@@ -295,32 +348,37 @@ async function drawDrummer() {
   drawRound($("#song-round"), {
     id: "song",
     name: "The drummer",
-    questions: [],
+    questions: withGiven(songTabs(presets, resolved), "song"),
     fineTune: fineTune(SONG_CONTROLS, resolved),
+    follow: (round) => shownSong(round.tabs, round, songContext()),
+    count: () => page.asked.size,
     send: sendSong,
   });
 }
 
-async function sendSong({ values, touched }) {
-  // The round as it stands: its style, and of the song's controls the ones touched.
-  const { tightness, feel } = touchedControls(values, touched);
-  const styled = await ask("set_style", {
-    session_id: page.session,
-    style: values.style,
-    ...(tightness !== undefined && { tightness }),
-  });
-  if (failed(styled)) {
-    return "Not sent";
-  }
-  remember(styled);
-  if (feel !== undefined) {
-    const controls = { feel };
-    const reply = await ask("set_section_controls", { session_id: page.session, controls });
+async function sendSong(round) {
+  // The round as it stands: its style, its answers, and of Fine-tune the controls moved.
+  const fine = touchedControls(round.values, round.touched);
+  const { controls, set } = songControls(round.tabs, { ...round, fine }, songContext());
+  const replies = [];
+  for (const { call, args } of songCalls(controls, round.values.style)) {
+    const reply = await ask(call, { session_id: page.session, ...args });
     if (failed(reply)) {
       return "Not sent";
     }
+    replies.push(reply);
   }
-  return "Sent.";
+  const [styled, tuned] = replies;
+  remember({ ...styled, controls: tuned.song.controls });
+  page.answers.song = round.answered;
+  page.sent.song = set;
+  for (const tab of round.tabs) {
+    page.asked.add(tab.id);
+  }
+  const firsts = groupsOf(page.table).map(
+    (group) => page.table.find((section) => section.group === group).start,
+  );
+  return echo(replies, page.asked.size, firsts);
 }
 
 // 5. Sections, their edits and each repeat group's round.
@@ -335,7 +393,7 @@ function groupsOf(sections) {
 
 async function drawSections() {
   const reply = await ask("get_sections", { session_id: page.session });
-  if (failed(reply)) {
+  if (failed(reply) || !(await vocabulary())) {
     return;
   }
   page.sections = reply;
@@ -376,31 +434,68 @@ function drawEdits() {
   $("#take").textContent = String(section.take);
 }
 
+function groupContext(group) {
+  const members = membersOf(page.sections, group);
+  const { controls: song } = page.sections;
+  return { presets, song, defaults: page.defaults, members, before: page.sent[group] ?? {} };
+}
+
 function drawGroup() {
   const { sections, controls } = page.sections;
   const { group } = selected();
-  const members = sections.filter((section) => section.group === group);
+  const members = membersOf(page.sections, group);
   const groups = groupsOf(sections);
   const [first] = members;
-  const resolved = { ...page.defaults, ...controls, ...first.controls };
-  const ramp = Math.max(...members.map((section) => mostRamp(section.bars)));
   const title = `${group}: ${first.label}, ${first.plays}`;
   $("#group-title").textContent = title;
-  drawRound($("#group-round"), {
+  $("#next-group").disabled = groups.indexOf(group) === groups.length - 1;
+  const questions = groupTabs(page.sections, group, presets, page.defaults);
+  if (!questions.length) {
+    // A group whose sections ask nothing has no round: they play no notes.
+    $("#group-round").replaceChildren(element("p", {}, "Nothing to ask here: no drums play."));
+    return;
+  }
+  const resolved = resolvedOf(first, controls, page.defaults);
+  const ramp = Math.max(...members.map((section) => mostRamp(section.bars)));
+  const drawn = drawRound($("#group-round"), {
     id: `group-${groups.indexOf(group)}`,
     name: title,
-    questions: [],
+    questions: withGiven(questions, group),
     fineTune: fineTune(GROUP_CONTROLS, resolved, ramp),
-    send: async ({ values, touched }) => {
-      const reply = await ask("set_section_controls", {
-        session_id: page.session,
-        controls: touchedControls(values, touched),
-        section_ids: members.map((section) => section.start),
-      });
-      return failed(reply) ? "Not sent" : "Sent.";
-    },
+    follow: (round) => shownGroup(round.tabs, round, groupContext(group)),
+    count: () => page.asked.size,
+    send: (round) => sendGroup(group, round, drawn),
   });
-  $("#next-group").disabled = groups.indexOf(group) === groups.length - 1;
+}
+
+async function sendGroup(group, round, drawn) {
+  const fine = touchedControls(round.values, round.touched);
+  const { controls, set } = groupControls(round.tabs, { ...round, fine }, groupContext(group));
+  const replies = [];
+  for (const { call, args } of groupCalls(controls)) {
+    const reply = await ask(call, { session_id: page.session, ...args });
+    if (failed(reply)) {
+      return "Not sent";
+    }
+    replies.push(reply);
+  }
+  page.answers[group] = round.answered;
+  page.sent[group] = set;
+  page.groupsAsked.add(group);
+  for (const tab of round.tabs) {
+    page.asked.add(tab.id);
+  }
+  const said = echo(replies, page.asked.size);
+  // A ramp question both of whose groups are now asked about joins this round, before Submit,
+  // and is sent with it next (ADR 0108); focus stays where it is.
+  const reply = await ask("get_sections", { session_id: page.session });
+  if (failed(reply)) {
+    return said;
+  }
+  page.sections = reply;
+  const joined = rampTabs(reply, page.groupsAsked, presets, page.defaults).filter(drawn.join);
+  const added = joined.map((tab) => ` A Ramp tab joins this round, before Submit: ${tab.question}`);
+  return said + added.join("");
 }
 
 async function pick(start, focus) {
@@ -419,6 +514,7 @@ async function edit(op, event) {
     return;
   }
   const { sections } = page.sections;
+  page.sent = keptAfterEdit(page.sent, sections, reply.sections);
   const before = sections[sections.indexOf(section) - 1];
   const start = { merge: before?.start, move: change.to }[op] ?? section.start;
   say(`The sections are changed: ${reply.sections.length} sections.`);
@@ -459,6 +555,7 @@ async function drawReview() {
     return;
   }
   page.summary = reply.summary;
+  $("#asked").textContent = `Questions asked: ${page.asked.size}`;
   $("#said").replaceChildren(
     ...reply.sections.map(({ start, bars, group, take, skip, says }) => {
       const left = skip ? ", left as it came in" : "";

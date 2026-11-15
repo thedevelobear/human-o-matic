@@ -1,11 +1,11 @@
 // The question window (ADR 0111): a round's strip of tabs between two arrow buttons, each
 // question's panel with its numbered answers and "Set it by hand", and the Submit tab with
-// Fine-tune, drawn over the pure state of tabs.js. A round's questions are data: the page's own
-// come in feat/web-questions. The tabs and Next send nothing; only Submit's button does, through
-// `send`. Elements are made once and then updated in place, so focus stays where it is unless
-// the state says to move it.
+// Fine-tune, drawn over the pure state of tabs.js. A round's questions are data, from
+// questions.js. The tabs and Next send nothing; only Submit's button does, through `send`.
+// Elements are made once and then updated in place, so focus stays where it is unless the state
+// says to move it.
 
-import { drawFields, element, readFields } from "./fields.js";
+import { drawFields, element, readFields, writeFields } from "./fields.js";
 import {
   SUBMIT,
   answer,
@@ -31,15 +31,22 @@ import {
  *   `question`, and what its section `plays`, its `pattern`'s lines, and `hand`, the fields of
  *   its own controls, where it has them.
  * @param {Array<object>} options.fineTune The Submit tab's fields.
- * @param {(round: {answered: object, hand: object, values: object, touched: Set<string>}) =>
- *   Promise<string>} options.send Sends the round as it stands, and gives what to say.
- * @returns {{join: (question: object) => void}} `join` adds a question before Submit.
+ * @param {(round: object) => object} [options.follow] What Fine-tune shows for the round as it
+ *   stands, `{tabs, answered, hand, handTouched}`, in each control not moved yet.
+ * @param {() => number} [options.count] The count of questions so far, shown on Submit.
+ * @param {(round: {tabs: Array<object>, answered: object, hand: object, handTouched: object,
+ *   values: object, touched: Set<string>}) => Promise<string>} options.send Sends the round as it
+ *   stands, and gives what to say.
+ * @returns {{join: (question: object) => boolean}} `join` adds a question before Submit, unless
+ *   the round has it, and says whether it did.
  */
-export function drawRound(parent, { id, name, questions, fineTune, send }) {
+export function drawRound(parent, { id, name, questions, fineTune, follow, count, send }) {
   let state = round(name, questions);
   let byPointer = false;
   let sending = false;
   const touched = new Set();
+  // The controls of "Set it by hand" moved, by tab: only those are its answer (ADR 0120).
+  const handTouched = {};
   const drawn = new Map();
   const strip = element("div");
   const panels = element("div");
@@ -92,25 +99,26 @@ export function drawRound(parent, { id, name, questions, fineTune, send }) {
       }
       sending = true;
       said.textContent = "Sending";
-      const hand = Object.fromEntries(
-        state.tabs
-          .filter((tab) => tab.id !== SUBMIT)
-          .map((tab) => [tab.id, readFields(drawn.get(tab.id).panel.querySelector(".hand"))]),
-      );
       try {
-        said.textContent = await send({
-          answered: state.answered,
-          hand,
-          values: readFields(fine),
-          touched,
-        });
+        said.textContent = await send({ ...asked(), values: readFields(fine), touched });
       } finally {
         sending = false;
+        update({ ...state, focus: null });
       }
     });
     const summary = element("ul", { class: "summary" });
     const heading = element("h3", {}, "Fine-tune");
-    return element("div", { "data-tab": SUBMIT }, summary, heading, fine, button, said);
+    const counted = element("p", { class: "count" });
+    return element("div", { "data-tab": SUBMIT }, summary, heading, fine, counted, button, said);
+  }
+
+  /** The round's answers as they stand, with "Set it by hand"'s values by tab. */
+  function asked() {
+    const tabs = state.tabs.filter((tab) => tab.id !== SUBMIT);
+    const hand = Object.fromEntries(
+      tabs.map((tab) => [tab.id, readFields(drawn.get(tab.id).panel.querySelector(".hand"))]),
+    );
+    return { tabs, answered: state.answered, hand, handTouched };
   }
 
   function update(next) {
@@ -147,19 +155,28 @@ export function drawRound(parent, { id, name, questions, fineTune, send }) {
       }
     }
     drawSummary();
+    const submit = drawn.get(SUBMIT).panel;
+    if (follow) {
+      writeFields(submit.querySelector(".fine-tune"), follow(asked()), touched);
+    }
+    if (count) {
+      submit.querySelector(".count").textContent = `Questions so far: ${count()}`;
+    }
     moveFocus();
   }
 
+  /** Each answer and what it sets, a question left unanswered as "your call", the answer before
+   * "Set it by hand". */
   function drawSummary() {
-    const asked = state.tabs.filter((tab) => tab.id !== SUBMIT);
+    const questions = state.tabs.filter((tab) => tab.id !== SUBMIT);
     drawn
       .get(SUBMIT)
       .panel.querySelector(".summary")
       .replaceChildren(
-        ...asked.map((tab) => {
-          const given = state.answered[tab.id];
-          const said = given === undefined ? "your call" : tab.answers[given].label;
-          return element("li", {}, `${tab.label}: ${said}`);
+        ...questions.map((tab) => {
+          const given = state.answered[tab.id] ?? tab.answers.length - 2;
+          const { label, description } = tab.answers[given];
+          return element("li", {}, `${tab.label}: ${label}, ${description}`);
         }),
       );
   }
@@ -227,6 +244,8 @@ export function drawRound(parent, { id, name, questions, fineTune, send }) {
       if (found === "answer" && type === "change") {
         update(choose(state, Number(event.target.value)));
       } else if (found === "hand") {
+        const { id: tab } = state.tabs[state.current];
+        (handTouched[tab] ??= new Set()).add(event.target.name);
         update(setByHand(state));
       } else if (event.target.closest(".fine-tune")) {
         touched.add(event.target.name);
@@ -234,7 +253,15 @@ export function drawRound(parent, { id, name, questions, fineTune, send }) {
     });
   }
   update(state);
-  return { join: (question) => update(join(state, question)) };
+  return {
+    join: (question) => {
+      const joins = !state.tabs.some((tab) => tab.id === question.id);
+      if (joins) {
+        update(join(state, question));
+      }
+      return joins;
+    },
+  };
 }
 
 function arrow(label, glyph) {
