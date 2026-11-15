@@ -730,6 +730,20 @@ body main .segments legend {
   background: var(--surface-cream);
 }
 
+/* A Fine-tune control "Leave this section as it is" has disabled: dashed and muted, as a disabled
+   button is, and not clickable. */
+body main .fine-tune > :has(:disabled) {
+  border-style: dashed;
+  box-shadow: none;
+  background: var(--bg-parchment);
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
+.fine-tune > :has(:disabled) * {
+  pointer-events: none;
+}
+
 body .round details,
 body .edits {
   margin: 1rem 0;
@@ -996,7 +1010,8 @@ body .modal-body {
 
   #steps .step:disabled,
   body .next:disabled,
-  body .secondary:disabled {
+  body .secondary:disabled,
+  body main .fine-tune > :has(:disabled) {
     border-style: solid;
   }
 

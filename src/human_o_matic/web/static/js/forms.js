@@ -241,10 +241,11 @@ export function fineTune(names, resolved, ramp = MAX_RAMP) {
   });
 }
 
-/** What the controls `touched` were set to, from Fine-tune's values: each number as a number. */
+/** What the controls `touched` were set to, from Fine-tune's values, each number as a number: a
+ * control with no value read, a disabled one, is left out. */
 export function touchedControls(values, touched) {
   return Object.fromEntries(
-    [...touched].map((name) => [
+    [...touched].filter((name) => name in values).map((name) => [
       name,
       FINE_TUNE[name].kind === "range" ? Number(values[name]) : values[name],
     ]),

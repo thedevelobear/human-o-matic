@@ -325,6 +325,8 @@ test("only the controls touched are sent, numbers as numbers", () => {
     skip: true,
   });
   assert.deepEqual(touchedControls(values, new Set()), {});
+  // "Leave this section as it is" disables the others, which then have no value read.
+  assert.deepEqual(touchedControls({ skip: true }, new Set(["energy", "arc", "skip"])), { skip: true });
 });
 
 test("the page shows a sentence or an option with a capital first letter, and changes nothing else", () => {

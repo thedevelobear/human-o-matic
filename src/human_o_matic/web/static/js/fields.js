@@ -30,12 +30,16 @@ function nameOf(control) {
 }
 
 /**
- * The value of each named control under `parent`: a checkbox's as true or false, the checked
- * radio's of a group, and any other's as its text.
+ * The value of each named control under `parent` but a disabled one, which a form doesn't send
+ * either: a checkbox's as true or false, the checked radio's of a group, and any other's as its
+ * text.
  */
 export function readFields(parent) {
   const values = {};
   for (const control of parent.querySelectorAll("input[name], select[name]")) {
+    if (control.disabled) {
+      continue;
+    }
     if (control.type === "checkbox") {
       values[nameOf(control)] = control.checked;
     } else if (control.type !== "radio" || control.checked) {

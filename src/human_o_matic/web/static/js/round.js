@@ -186,6 +186,12 @@ export function drawRound(parent, { id, questions, fineTune, draft = {}, follow,
   }
 
   function update() {
+    // "Leave this section as it is" leaves Fine-tune's other controls nothing to set: while it is
+    // ticked they are disabled, and readFields reads, so the draft holds, none of them.
+    const skip = fine.querySelector('input[name="skip"]');
+    for (const control of fine.querySelectorAll("input")) {
+      control.disabled = control !== skip && Boolean(skip?.checked);
+    }
     const now = current();
     for (const tab of tabs) {
       const box = cards.querySelector(`fieldset[data-tab="${tab.id}"]`);
