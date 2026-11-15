@@ -15,19 +15,31 @@ import { vocabulary } from "./vocabulary.mjs";
 const site = new URL("../../dist/site/", import.meta.url);
 const flow = JSON.parse(await readFile(new URL("flow.json", import.meta.url), "utf8"));
 
+/** The engine, loaded afresh. A failure to load it says why, with its stack, on stderr and in
+ * the error, so a test that fails at once can be read: a build empties dist/site before it
+ * writes it again, so one running beside `node --test` fails every test here. */
 async function engine() {
-  await access(new URL("engine.json", site)).catch(() => {
-    throw new Error("no built site: run `uv run python tools/build_site.py build` first");
-  });
-  const { startEngine } = await import(new URL("js/engine.js", site).href);
-  const steps = [];
-  const started = await startEngine({
-    base: site,
-    read: async (url) => new Uint8Array(await readFile(fileURLToPath(url))),
-    place: (url) => fileURLToPath(url),
-    progress: (done, step) => steps.push([done, step]),
-  });
-  return { ...started, steps };
+  try {
+    await access(new URL("engine.json", site)).catch(() => {
+      throw new Error(
+        "no built site: run `uv run python tools/build_site.py build` first, and not while " +
+          "`node --test` runs, since a build empties dist/site before it writes it again",
+      );
+    });
+    const { startEngine } = await import(new URL("js/engine.js", site).href);
+    const steps = [];
+    const started = await startEngine({
+      base: site,
+      read: async (url) => new Uint8Array(await readFile(fileURLToPath(url))),
+      place: (url) => fileURLToPath(url),
+      progress: (done, step) => steps.push([done, step]),
+    });
+    return { ...started, steps };
+  } catch (error) {
+    const reason = `the engine didn't load under Pyodide: ${error?.stack ?? error}`;
+    console.error(reason);
+    throw new Error(reason, { cause: error });
+  }
 }
 
 test("the flow's calls under Pyodide download the file of the flow's SHA-256", async () => {
