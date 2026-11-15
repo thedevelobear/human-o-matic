@@ -97,21 +97,6 @@ function fresh() {
   };
 }
 
-// The background's stars.
-
-/** Place, size and time each background star once a page load, by custom properties set through
- * the CSSOM, which the CSP allows where it allows no style attribute: the one style the page's
- * code sets (ADR 0125). Its randomness is the page's, not the engine's, whose renders it can't
- * touch. */
-function scatterStars() {
-  for (const [index, star] of document.querySelectorAll("#stars svg").entries()) {
-    star.style.setProperty("--x", `${Math.floor(Math.random() * 96)}%`);
-    star.style.setProperty("--y", `${Math.floor(Math.random() * 96)}%`);
-    star.style.setProperty("--size", `${12 + Math.floor(Math.random() * 29)}px`);
-    star.style.setProperty("--delay", `${-index * 280}ms`);
-  }
-}
-
 // The engine.
 
 function startEngine() {
@@ -928,7 +913,6 @@ $("#steps").addEventListener("click", (event) => {
   }
 });
 
-scatterStars();
 startEngine();
 show("file", false);
 loadKits();

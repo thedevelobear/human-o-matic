@@ -316,43 +316,12 @@ def test_the_page_s_javascript_keeps_nothing_in_the_browser_s_storage() -> None:
 
 
 STYLED = re.compile(r"\.style\s*[.=[]|setAttribute\(.style.|(?:inner|outer)HTML|insertAdjacentHTML")
-"""A style set from script, which the CSP allows only from site.css, or HTML written as text."""
-
-
-STARS = re.compile(r'\bstar\.style\.setProperty\("--(?:x|y|size|delay)", ')
-"""The one style the page's code sets: each background star's place, size and delay, as custom
-properties through the CSSOM, which the CSP allows (ADR 0125)."""
+"""A style set from script, which the CSP allows only from tailwind.css, or HTML written as text."""
 
 
 def test_the_page_s_javascript_sets_no_style_and_writes_no_html() -> None:
     for path in MODULES:
-        text = path.read_text(encoding="utf-8")
-        if path.name == "app.js":
-            functions = {found.group(1): found.group(0) for found in FUNCTION.finditer(text)}
-            stars = functions["scatterStars"]
-            assert len(STARS.findall(stars)) == 4
-            text = text.replace(stars, STARS.sub("", stars))
-        assert STYLED.findall(text) == [], path.name
-
-
-def test_the_atom_is_gone_and_the_stars_are_decoration_behind_the_page() -> None:
-    page = parsed(INDEX)
-    by_id = {
-        attributes["id"]: attributes for tag, attributes in page.elements if "id" in attributes
-    }
-    html = INDEX.read_text(encoding="utf-8")
-    start = html.index('<div id="stars"')
-    layer = html[start : html.index("</div>", start)]
-    css = (TAILWIND / "input.css").read_text(encoding="utf-8")
-    rule = re.search(r"\.stars \{(.*?)\}", css, re.DOTALL)
-
-    assert "atom" not in html
-    assert by_id["stars"]["aria-hidden"] == "true"
-    assert "app" not in page.within["stars"]
-    assert 8 <= layer.count('<use href="#star"/>') <= 12
-    assert rule is not None
-    assert "pointer-events: none;" in rule.group(1)
-    assert "z-index: -1;" in rule.group(1)
+        assert STYLED.findall(path.read_text(encoding="utf-8")) == [], path.name
 
 
 COMMENT = re.compile(r"/\*.*?\*/|//[^\n]*", re.DOTALL)

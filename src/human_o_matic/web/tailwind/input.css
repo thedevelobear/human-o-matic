@@ -143,25 +143,6 @@ body input[type="range"]::-moz-range-thumb {
   cursor: pointer;
 }
 
-/* The background's stars, behind every card and text and never in the way: app.js places,
-   sizes and times each once a page load, through custom properties. */
-.stars {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.stars svg {
-  position: absolute;
-  left: var(--x, 50%);
-  top: var(--y, 50%);
-  width: var(--size, 16px);
-  height: var(--size, 16px);
-  opacity: 0.5;
-}
-
 /* The drawings: a sprite used by reference, and the wordmark's shadow. */
 
 .sprite {
@@ -737,10 +718,6 @@ body .state {
 
   .animate-sparkle {
     animation: pulseSparkle 2.8s ease-in-out infinite;
-  }
-
-  .stars svg {
-    animation-delay: var(--delay, 0ms);
   }
 
   progress.engine-bar::-webkit-progress-value {
