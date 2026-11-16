@@ -441,7 +441,7 @@ A drum MIDI file moved from one kit's note layout to another's, and nothing else
   - Tests: `tests/test_web_worker.py` holds the worker's `remap` reply and file to the tool's, with its drum track, its refusals and nothing kept; `tests/web/flow.json` holds a remap of the check song, whose SHA-256 the tool's file has natively (`tests/test_web_site.py`) and the worker's under Pyodide in Node (`tests/web/engine.test.mjs`) and in `check.html`; `tests/web/forms.test.mjs` holds a remap's answers so far, its lines and its download's name; and `tests/test_web_page.py` the two tabs, the eight steps and the feedback form in Re-perform's panel, and Remap's file and two kits alone.
 - **Next:**
   1. The owner's, outside the repository: the private tests of Sleep Token II's mapping and of the local build of the maps still hold note 96 as Crash 4 Choke and build `logic-pro-drums` from local sources, so both disagree with the committed maps until the owner updates them.
-  2. PR 1 is merged ([#22](https://github.com/thedevelobear/human-o-matic/pull/22)). PR 2, `feat/web-remap`, is in review: the owner's look at the Remap tab in a browser, with the keyboard and a screen reader, as at M7's gate, and ADR 0136's choices to confirm. PR 3, `feat/maps`, follows from `main` once it has merged.
+  2. PR 1 is merged. PR 2, `feat/web-remap`, is in review: the owner's look at the Remap tab in a browser, with the keyboard and a screen reader, as at M7's gate, and ADR 0136's choices to confirm. PR 3, `feat/maps`, follows from `main` once it has merged.
 - **Gate:** the owner's: the maps agreed, then a song remapped between two kits they own, through Claude Code and on the site, and heard in the DAW.
 
 ## Verification
