@@ -1,6 +1,6 @@
 # 0136. The Remap tab shares the page's one file, reads the worker's `remap` reply before its file, and names it `-remapped-`
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-16
 
 - **The worker's call:** `remap` joins the worker's allowlist ([ADR 0114](0114-the-worker-api-takes-the-file-s-bytes-and-display-name-and-answers-an-error-as-error.md)). It takes the tool's arguments ([ADR 0133](0133-the-remap-tool-takes-paths-kits-and-every-answer-so-far-keeps-no-session-and-writes-one-file.md)) with `name`, the file's display name, for `midi_path`, the file's bytes beside it as `open_session` takes them, no `output_path` or `overwrite`, and `download`, false by default. It replies as the tool does, the file by its display name and no `output`, and with `download` set and every note placed, it gives the bytes the tool writes, both from `service.remap_reply`. It checks the browser's limits as `open_session` does, keeps no session and writes no file.
