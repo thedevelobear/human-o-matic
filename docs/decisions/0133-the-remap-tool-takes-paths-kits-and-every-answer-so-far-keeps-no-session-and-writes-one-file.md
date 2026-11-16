@@ -1,6 +1,6 @@
 # 0133. The remap tool takes paths, kits and every answer so far, keeps no session, and writes one file
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-16
 
 - The MCP server's tenth tool, beside the nine of [ADR 0084](0084-the-tools-take-ids-and-paths-and-reply-with-compact-json.md), is `remap(midi_path, from_map, to_map, output_path, track?, unmapped?, substitutions?, overwrite?)`, a method of `service.Tools` over `remap.remap` ([ADR 0130](0130-a-remap-keeps-every-note-s-tick-length-and-velocity-and-changes-only-its-pitch-and-channel.md)).

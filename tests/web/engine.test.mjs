@@ -1,5 +1,6 @@
 // The engine under Pyodide in Node: the calls of flow.json on the built site's test song give
-// the download whose SHA-256 the flow holds, as they do natively (ADRs 0100 and 0112), and the
+// the download whose SHA-256 the flow holds, as they do natively, and its remap's calls the file
+// the remap tool writes (ADRs 0100, 0112 and 0131), and the
 // page's forms, as it serves them, make calls the engine takes, and the feedback's settings of a
 // song it opens hold only their allowed keys. It loads what
 // `uv run python tools/build_site.py build` wrote into dist/site/, so the build runs first.
@@ -43,14 +44,16 @@ async function engine() {
   }
 }
 
-test("the flow's calls under Pyodide download the file of the flow's SHA-256", async () => {
-  const { call, steps } = await engine();
+/** The SHA-256 of the file `calls` download from the test song, each other reply checked for an
+ * error: the song's bytes go with an `open_session` or a `remap`, and `$session` is the session
+ * the first opened. */
+async function downloaded(call, calls) {
   const data = new Uint8Array(await readFile(fileURLToPath(new URL(flow.song, site))));
   let session = null;
   let digest = null;
-  for (const { call: name, args } of flow.calls) {
+  for (const { call: name, args } of calls) {
     const given = JSON.parse(JSON.stringify(args).replaceAll('"$session"', JSON.stringify(session)));
-    const out = call({ call: name, args: given }, name === "open_session" ? data : undefined);
+    const out = call({ call: name, args: given }, ["open_session", "remap"].includes(name) ? data : undefined);
     if (out instanceof Uint8Array) {
       digest = createHash("sha256").update(out).digest("hex");
       continue;
@@ -59,13 +62,24 @@ test("the flow's calls under Pyodide download the file of the flow's SHA-256", a
     assert.equal(reply.error, undefined, `${name}: ${reply.error}`);
     session = reply.session_id ?? session;
   }
+  return digest;
+}
 
-  assert.equal(digest, flow.sha256);
+test("the flow's calls under Pyodide download the file of the flow's SHA-256", async () => {
+  const { call, steps } = await engine();
+
+  assert.equal(await downloaded(call, flow.calls), flow.sha256);
   assert.deepEqual(
     steps.map(([, step]) => step),
     ["runtime", "packages", "wheels", "app"],
   );
   assert.equal(steps.at(-1)[0], 1);
+});
+
+test("the remap's calls under Pyodide download the file the remap tool writes natively", async () => {
+  const { call } = await engine();
+
+  assert.equal(await downloaded(call, flow.remap.calls), flow.remap.sha256);
 });
 
 /** Each field's starting value, by name, as the page's form holds it before any change. */

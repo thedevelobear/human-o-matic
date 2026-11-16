@@ -393,3 +393,13 @@ def test_the_tool_never_writes_over_the_input_and_refuses_what_it_can_t_use(
 
     assert source.read_bytes() == original
     assert output.read_bytes() != b"theirs"
+
+
+def test_the_tool_checks_the_answers_before_it_reads_the_file(tools: Tools, tmp_path: Path) -> None:
+    missing = tmp_path / "missing.mid"
+    output = tmp_path / "out.mid"
+
+    with pytest.raises(ToolError, match=r"^unmapped\.x: 'x' is not a pitch"):
+        tools.remap(str(missing), "gm", "ssd5", str(output), unmapped={"x": "drop"})
+    with pytest.raises(ToolError, match="can't be read"):
+        tools.remap(str(missing), "gm", "ssd5", str(output))

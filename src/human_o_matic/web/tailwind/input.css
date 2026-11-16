@@ -202,9 +202,11 @@ progress.engine-bar::-moz-progress-bar {
   pointer-events: none;
 }
 
-/* The stepper: the current step iridescent and underlined, a step not reached yet dashed. */
+/* The stepper: the current step iridescent and underlined, a step not reached yet dashed, and the
+   page's tab shown as the current step is. */
 
-#steps .step[aria-current="step"] {
+#steps .step[aria-current="step"],
+#tabs [aria-selected="true"] {
   background: linear-gradient(95deg, var(--pill-start) 0%, var(--sunset-orange) 35%, var(--vibrant-magenta) 72%, var(--pill-end) 100%);
   font-weight: 700;
   text-decoration: underline;
@@ -342,8 +344,8 @@ body main textarea {
   text-overflow: ellipsis;
 }
 
-/* The file picker's button: cream, its border the main buttons' iridescent pill. */
-body #midi::file-selector-button {
+/* The file pickers' button: cream, its border the main buttons' iridescent pill. */
+body main input[type="file"]::file-selector-button {
   border: 2px solid transparent;
   background: linear-gradient(var(--surface-cream), var(--surface-cream)) padding-box,
     linear-gradient(95deg, var(--pill-start) 0%, var(--sunset-orange) 35%, var(--vibrant-magenta) 72%, var(--pill-end) 100%) border-box;

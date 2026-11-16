@@ -1,5 +1,5 @@
 {
-  "about": "The calls both runtimes make on the site's check song, built in code by tools/build_site.py, and the SHA-256 of the file the download gives: natively, by tests/test_web_site.py, under Pyodide in Node, by tests/web/engine.test.mjs, and in a browser, by the site's check.html. \"$session\" is the session open_session returned.",
+  "about": "The calls both runtimes make on the site's check song, built in code by tools/build_site.py, and the SHA-256 of the file the download gives: natively, by tests/test_web_site.py, under Pyodide in Node, by tests/web/engine.test.mjs, and in a browser, by the site's check.html. \"$session\" is the session open_session returned. \"remap\" holds a remap's calls on the same song, which keep no session, and the SHA-256 of the file the last gives, which the remap tool writes.",
   "song": "check-song.mid",
   "calls": [
     {"call": "open_session", "args": {"name": "check-song.mid", "from_map": "gm", "to_map": "sleep-token-ii/default"}},
@@ -12,5 +12,12 @@
     {"call": "render", "args": {"session_id": "$session", "section_ids": [68], "take": 1}},
     {"call": "download", "args": {"session_id": "$session"}}
   ],
-  "sha256": "87319eb294e6c9c70e0f63d44d2a4b7147fcdaafa94365ce98a9185d273827db"
+  "sha256": "87319eb294e6c9c70e0f63d44d2a4b7147fcdaafa94365ce98a9185d273827db",
+  "remap": {
+    "calls": [
+      {"call": "remap", "args": {"name": "check-song.mid", "from_map": "gm", "to_map": "sleep-token-ii/default"}},
+      {"call": "remap", "args": {"name": "check-song.mid", "from_map": "gm", "to_map": "sleep-token-ii/default", "track": 0, "substitutions": {"crash.1.hit": "crash.2.hit"}, "download": true}}
+    ],
+    "sha256": "5c8b708b9aec1d9631508256862ba7f51d7baa133687df459923a84ff028e5be"
+  }
 }

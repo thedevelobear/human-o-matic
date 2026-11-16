@@ -6,7 +6,10 @@
 // their questions on one card, from questions.js, whose answers stay a draft in this page's
 // memory until the song is opened again, and a round is applied when the user moves on from it
 // (ADR 0124). After a download, the page offers a feedback form, which posts what the user wrote
-// with the render's settings, never the file, its name or a note (ADRs 0099 and 0127).
+// with the render's settings, never the file, its name or a note (ADRs 0099 and 0127). Its second
+// tab, Remap, moves the file to another kit through the same worker, with no session: a file, its
+// kits, the requests that came up and a download, and no feedback (ADR 0131). The page holds one
+// file, which either tab's picker chooses.
 
 import { drawFields, element, readFields } from "./fields.js";
 import {
@@ -20,6 +23,7 @@ import {
   form,
   kitOptions,
   mostRamp,
+  remapAnswers,
   sectionEdit,
 } from "./forms.js";
 import {
@@ -43,7 +47,7 @@ import {
   songControls,
   songTabs,
 } from "./questions.js";
-import { barsLabel, conversionLines, creativeLines, downloadName } from "./review.js";
+import { barsLabel, conversionLines, creativeLines, downloadName, remapLines } from "./review.js";
 import { feedbackRequest, settingsOf } from "./feedback.js";
 import { engineState } from "./loading.js";
 import { drawRound } from "./round.js";
@@ -60,8 +64,9 @@ let calls = 0;
 let kitNames = {};
 // The vocabulary's rows at their starting points, from the worker's `presets` call.
 let presets = null;
-// Whether the kit to play the file was chosen, so it no longer follows the kit it came from.
-let toChosen = false;
+// The kits to play the file that were chosen, by their select, each no longer following the kit
+// the file came from.
+const toChosen = new Set();
 // Whether the page is moving on, so a second click can't apply a round twice.
 let moving = false;
 let toastTimer;
@@ -103,6 +108,9 @@ function fresh() {
     downloads: 0,
     url: null,
     reached: "file",
+    // The Remap tab's answers so far, which each call sends again, its open requests and its
+    // summary once every note is placed (ADR 0133).
+    remap: { answers: {}, decisions: [], summary: null },
   };
 }
 
@@ -193,7 +201,7 @@ function drawApplied() {
   const [last] = Object.values(page.rounds)
     .filter(({ said }) => said)
     .sort((a, b) => b.at - a.at);
-  $("#last-applied").hidden = !page.session;
+  $("#last-applied").hidden = !page.session || $("#reperform").hidden;
   $("#last-applied").textContent = last ? `Last applied: ${capital(last.name)}` : "Nothing applied yet";
 }
 
@@ -234,6 +242,29 @@ function namesOf(key) {
   }
   const [first] = membersOf(page.sections, key);
   return { name: `${first.label} (${key})`, title: groupTitle(key) };
+}
+
+// The tabs.
+
+const TABS = ["reperform", "remap"];
+
+/** Show the panel `name` of the page's two tabs, as the ARIA tabs pattern does, with the
+ * re-performing flow's step bar and "Last applied" beside its own panel alone (ADR 0131), and the
+ * status and alert lines the two share emptied of what the other tab said. */
+function showTab(name, focus = false) {
+  for (const panel of TABS) {
+    const tab = $(`#${panel}-tab`);
+    tab.setAttribute("aria-selected", String(panel === name));
+    tab.tabIndex = panel === name ? 0 : -1;
+    $(`#${panel}`).hidden = panel !== name;
+  }
+  $("#steps-nav").hidden = name !== "reperform";
+  drawApplied();
+  say("");
+  problem("");
+  if (focus) {
+    $(`#${name}-tab`).focus();
+  }
 }
 
 // The steps.
@@ -385,7 +416,9 @@ function drawShown(key, parent, { send, due = () => [], ...options }) {
 
 // 1. Choose a file.
 
-async function choose(file) {
+/** Take `file` as the page's one file, from `picker`, or dropped, so the other picker lets go of
+ * the file it showed. */
+async function choose(file, picker = null) {
   if (!file) {
     return;
   }
@@ -399,10 +432,18 @@ async function choose(file) {
   page = { ...fresh(), downloads: page.downloads, file: { name: file.name, bytes } };
   problem("");
   $("#deleted").textContent = "";
-  $("#chosen").textContent = `Chosen: ${file.name}`;
+  for (const other of [$("#midi"), $("#remap-midi")]) {
+    if (other !== picker) {
+      other.value = "";
+    }
+  }
+  for (const chosen of [$("#chosen"), $("#remap-chosen")]) {
+    chosen.textContent = `Chosen: ${file.name}`;
+  }
   drawApplied();
   $("#to-kits").disabled = false;
   $("#delete-box").hidden = false;
+  remapAfresh();
   show("file", false);
 }
 
@@ -416,11 +457,14 @@ async function loadKits() {
   for (const [select, source] of [
     [$("#from-map"), true],
     [$("#to-map"), false],
+    [$("#remap-from"), true],
+    [$("#remap-to"), false],
   ]) {
     select.replaceChildren(...kitOptions(maps, source).map(({ value, label }) => new Option(label, value)));
   }
   kitNames = Object.fromEntries(kitOptions(maps, false).map(({ value, label }) => [value, label]));
   $("#open").disabled = false;
+  $("#remap-run").disabled = !page.file;
 }
 
 /** Open the chosen file in a new session, with the kits chosen and any tempo or track given. */
@@ -476,18 +520,25 @@ function drawStrip(list, sections, pick) {
   );
 }
 
+/** Each open request's form, drawn apart from the page for the caller to place, its fields' ids
+ * under `prefix`, an unmapped note's choices the articulations of the kit that read it. */
+async function requestForms(decisions, prefix) {
+  const parts = [];
+  for (const [index, request] of decisions.entries()) {
+    const unmapped = request.kind === "unmapped_notes";
+    const extra = unmapped ? await ask("kit_articulations", { map: request.details.kit }) : {};
+    const part = element("div", { class: "request" }, element("p", {}, request.message));
+    drawFields(part, form(request, extra.error ? {} : extra), `${prefix}-${index}`);
+    parts.push(part);
+  }
+  return parts;
+}
+
 async function drawCheck() {
   $("#opened-facts").textContent = `${count(page.bars, "bar")} in ${count(page.table.length, "section")}.`;
   drawStrip($("#check-sections"), page.table, false);
   const box = $("#requests");
-  box.replaceChildren();
-  for (const [index, request] of page.decisions.entries()) {
-    const unmapped = request.kind === "unmapped_notes";
-    const extra = unmapped ? await ask("kit_articulations", { map: request.details.kit }) : {};
-    const part = element("div", { class: "request" }, element("p", {}, request.message));
-    drawFields(part, form(request, extra.error ? {} : extra), `request-${index}`);
-    box.append(part);
-  }
+  box.replaceChildren(...(await requestForms(page.decisions, "request")));
   if (!page.decisions.length) {
     box.append(element("p", {}, "Nothing else to check: confirm the sections to go on."));
   }
@@ -806,7 +857,11 @@ function drawAnswers() {
 
 function listenFor() {
   const { conversion, creative } = page.summary;
-  const lines = [...conversionLines(conversion), ...creativeLines(creative)];
+  return orEvery([...conversionLines(conversion), ...creativeLines(creative)]);
+}
+
+/** `lines` to listen for, or when there are none, that every note plays as written. */
+function orEvery(lines) {
   return lines.length ? lines : ["Every note plays as it was written, in the kit chosen to play it."];
 }
 
@@ -829,16 +884,7 @@ async function download() {
     }
     return;
   }
-  page.downloads += 1;
-  const name = downloadName(page.file.name, page.downloads);
-  const url = URL.createObjectURL(new Blob([out], { type: "audio/midi" }));
-  page.url = url;
-  const link = element("a", { href: url, download: name });
-  document.body.append(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), REVOKE_MS);
-  $("#saved").textContent = `Saved as ${name}.`;
+  $("#saved").textContent = `Saved as ${save(out, "humanized")}.`;
   // The settings this render used, which the feedback form, open from now on, sends (ADR 0099).
   const read = await ask("get_sections", { session_id: page.session });
   if (!failed(read)) {
@@ -847,6 +893,22 @@ async function download() {
     $('#steps [data-step="feedback"]').disabled = false;
     $("#to-feedback").hidden = false;
   }
+}
+
+/** Give the browser `bytes` to save, named after the chosen file, what was `made` of it and this
+ * visit's count, by a Blob URL revoked 10 seconds after the download starts (ADR 0121). Gives the
+ * name. */
+function save(bytes, made) {
+  page.downloads += 1;
+  const name = downloadName(page.file.name, page.downloads, made);
+  const url = URL.createObjectURL(new Blob([bytes], { type: "audio/midi" }));
+  page.url = url;
+  const link = element("a", { href: url, download: name });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_MS);
+  return name;
 }
 
 // 8. Feedback.
@@ -879,6 +941,78 @@ async function sendFeedback(event) {
     : "Not sent: the site didn't take it just now. What you wrote is still here, to send again.";
 }
 
+// Remap, the second tab: a file, its kits, the requests that came up and the download. It keeps no
+// session, so each call sends the file with every answer so far (ADRs 0131 and 0133).
+
+/** Remap as it starts for a file or kits chosen afresh: no answers, requests or file yet. */
+function remapAfresh() {
+  page.remap = fresh().remap;
+  $("#remap-requests").replaceChildren();
+  $("#remap-done").hidden = true;
+  $("#remap-saved").textContent = "";
+  $("#remap-run").hidden = false;
+  $("#remap-run").disabled = !page.file || !$("#remap-from").options.length;
+  $("#remap-get").hidden = true;
+}
+
+/** The remap's arguments: the file's name, its kits and every answer so far. */
+function remapArgs() {
+  const kits = { from_map: $("#remap-from").value, to_map: $("#remap-to").value };
+  return { name: page.file.name, ...kits, ...page.remap.answers };
+}
+
+/** Remap the file with the answers given so far, and show the requests still open, or what to
+ * listen for and the download. */
+async function remapSong(event) {
+  event.preventDefault();
+  const { remap } = page;
+  remap.answers = remapAnswers(remap.answers, remap.decisions, readFields($("#remap-requests")));
+  say("Remapping the file");
+  const reply = await ask("remap", remapArgs(), page.file.bytes);
+  // A file or kit chosen while the engine worked, after either call, has started the remap
+  // afresh, and what came back is of what came before, so none of it is shown.
+  if (page.remap !== remap) {
+    return;
+  }
+  if (failed(reply)) {
+    say("");
+    return;
+  }
+  const forms = await requestForms(reply.decisions, "remap-request");
+  if (page.remap !== remap) {
+    return;
+  }
+  remap.decisions = reply.decisions;
+  remap.summary = reply.summary ?? null;
+  $("#remap-requests").replaceChildren(...forms);
+  const done = !remap.decisions.length;
+  $("#remap-done").hidden = !done;
+  $("#remap-run").hidden = done;
+  $("#remap-get").hidden = !done;
+  if (!done) {
+    say(`${count(remap.decisions.length, "question")} came up: answer below, then remap.`);
+    return;
+  }
+  const { written, dropped, to_kit: toKit } = remap.summary;
+  const kit = kitNames[toKit] ?? toKit;
+  const left = dropped ? `, ${count(dropped, "note")} left out` : "";
+  $("#remap-heard").replaceChildren(...orEvery(remapLines(remap.summary)).map((line) => element("li", {}, line)));
+  $("#remap-listen").textContent = `Drag the file onto the track whose drum instrument is ${kit}, and play it.`;
+  say(`Remapped: ${count(written, "note")} in ${kit}${left}.`);
+  $("#remap-get").focus();
+}
+
+async function downloadRemap() {
+  const out = await ask("remap", { ...remapArgs(), download: true }, page.file.bytes);
+  if (!(out instanceof Uint8Array)) {
+    if (!failed(out)) {
+      problem("The engine gave no file; start over.");
+    }
+    return;
+  }
+  $("#remap-saved").textContent = `Saved as ${save(out, "remapped")}.`;
+}
+
 // Delete my file now.
 
 function deleteFile() {
@@ -888,13 +1022,17 @@ function deleteFile() {
     URL.revokeObjectURL(page.url);
   }
   page = fresh();
-  drawApplied();
-  toChosen = false;
+  toChosen.clear();
   // A move the ended worker never answered would otherwise hold every later one.
   moving = false;
-  $("#midi").value = "";
-  $("#chosen").textContent = "";
+  for (const picker of [$("#midi"), $("#remap-midi")]) {
+    picker.value = "";
+  }
+  for (const chosen of [$("#chosen"), $("#remap-chosen")]) {
+    chosen.textContent = "";
+  }
   $("#saved").textContent = "";
+  remapAfresh();
   $("#to-kits").disabled = true;
   $("#delete-box").hidden = true;
   $("#feedback-form").reset();
@@ -905,28 +1043,54 @@ function deleteFile() {
   // An opening the ended worker never answered leaves the button to open again.
   $("#open").disabled = !$("#from-map").options.length;
   startEngine();
+  // Starting again from step 1, as the dialog says, on the first tab, which also draws "Last
+  // applied" afresh.
+  showTab("reperform");
   show("file");
-  problem("");
   // Apart from the status, which the new engine's progress takes over, until a file is chosen.
   $("#deleted").textContent =
     "Your file is deleted: the engine that held it has ended, and starts again.";
 }
 
-$("#midi").addEventListener("change", () => choose($("#midi").files[0]));
-$("#drop").addEventListener("dragover", (event) => event.preventDefault());
-$("#drop").addEventListener("drop", (event) => {
-  event.preventDefault();
-  choose(event.dataTransfer.files[0]);
-});
-$("#to-kits").addEventListener("click", () => moveOn(false, () => go("kits")));
-$("#from-map").addEventListener("change", () => {
-  if (!toChosen) {
-    $("#to-map").value = $("#from-map").value;
+$("#tabs").addEventListener("click", (event) => {
+  const tab = event.target.closest('[role="tab"]');
+  if (tab) {
+    showTab(tab.getAttribute("aria-controls"));
   }
 });
-$("#to-map").addEventListener("change", () => {
-  toChosen = true;
+// The arrow keys, Home and End move between the tabs and show the one they reach, as the ARIA
+// tabs pattern has them.
+$("#tabs").addEventListener("keydown", (event) => {
+  const at = TABS.indexOf(event.target.getAttribute("aria-controls"));
+  const to = { ArrowLeft: at - 1, ArrowRight: at + 1, Home: 0, End: TABS.length - 1 }[event.key];
+  if (at >= 0 && to !== undefined) {
+    event.preventDefault();
+    showTab(TABS[(to + TABS.length) % TABS.length], true);
+  }
 });
+for (const [picker, drop] of [
+  ["#midi", "#drop"],
+  ["#remap-midi", "#remap-drop"],
+]) {
+  $(picker).addEventListener("change", () => choose($(picker).files[0], $(picker)));
+  $(drop).addEventListener("dragover", (event) => event.preventDefault());
+  $(drop).addEventListener("drop", (event) => {
+    event.preventDefault();
+    choose(event.dataTransfer.files[0]);
+  });
+}
+$("#to-kits").addEventListener("click", () => moveOn(false, () => go("kits")));
+for (const [from, to] of [
+  ["#from-map", "#to-map"],
+  ["#remap-from", "#remap-to"],
+]) {
+  $(from).addEventListener("change", () => {
+    if (!toChosen.has(to)) {
+      $(to).value = $(from).value;
+    }
+  });
+  $(to).addEventListener("change", () => toChosen.add(to));
+}
 $("#kits-form").addEventListener("submit", (event) => {
   event.preventDefault();
   openSong();
@@ -973,6 +1137,16 @@ $("#to-download").addEventListener("click", () => moveOn(false, () => go("downlo
 $("#get").addEventListener("click", download);
 $("#to-feedback").addEventListener("click", () => moveOn(false, () => go("feedback")));
 $("#feedback-form").addEventListener("submit", sendFeedback);
+// A remap's answers are for the kits they were given with, so a kit changed starts afresh.
+$("#remap-from").addEventListener("change", remapAfresh);
+$("#remap-to").addEventListener("change", remapAfresh);
+$("#remap-form").addEventListener("submit", remapSong);
+$("#remap-requests").addEventListener("click", (event) => {
+  if (event.target.name === "kits") {
+    $("#remap-from").focus();
+  }
+});
+$("#remap-get").addEventListener("click", downloadRemap);
 $("#delete").addEventListener("click", () => {
   const { file, bars } = page;
   const song = bars ? `${file.name}, ${count(bars, "bar")}` : file.name;

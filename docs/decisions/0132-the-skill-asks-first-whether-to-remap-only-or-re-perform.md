@@ -1,6 +1,6 @@
 # 0132. The skill asks first whether to remap only or re-perform
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-16
 
 - The skill's first question, every time, before the kits question and before any tool call on the song, asks whether the user wants the file only moved to another kit, every note's timing and velocity kept, or re-performed. It is asked even when the user's request seems to say which.

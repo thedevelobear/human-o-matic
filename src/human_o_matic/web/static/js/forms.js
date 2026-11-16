@@ -173,6 +173,17 @@ export function batch(requests, values) {
   return { call: "set_hit_types", args };
 }
 
+/** Every answer so far of a remap, which keeps no session, so each call sends them all (ADR 0133):
+ * `answers` with those the forms of `requests` give, a drum track as `track`, and the rest added
+ * to `unmapped` and `substitutions`, each pitch or articulation taking its latest answer. */
+export function remapAnswers(answers, requests, values) {
+  const all = { ...answers };
+  for (const [argument, given] of Object.entries(batch(requests, values).args)) {
+    all[argument] = typeof given === "object" ? { ...all[argument], ...given } : given;
+  }
+  return all;
+}
+
 function span([low, high]) {
   return low === high ? String(low) : `${low} to ${high}`;
 }
