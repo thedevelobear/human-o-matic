@@ -26,6 +26,7 @@ PLAN_TOOLS = {
     "set_section_controls",
     "render",
     "export",
+    "remap",
 }
 
 

@@ -38,9 +38,10 @@ from human_o_matic.files import name_new, write_aside
 from human_o_matic.instruments.drums import DRUMS
 from human_o_matic.maps.kit import DrumKit
 from human_o_matic.maps.loader import built_in_maps, find_kit
-from human_o_matic.midi.io import MidiFileError, midi_bytes
+from human_o_matic.midi.io import MidiFileError, midi_bytes, parse_midi
 from human_o_matic.midi.tempo import MAX_BPM, MIN_BPM
 from human_o_matic.normalize.answers import AnswerError
+from human_o_matic.remap import remap
 from human_o_matic.render.creative import CreativeReport
 from human_o_matic.render.describe import sound
 from human_o_matic.render.engine import Rendered, RenderedNote
@@ -48,6 +49,7 @@ from human_o_matic.render.measure import section_stats
 from human_o_matic.render.style import built_in_styles
 from human_o_matic.reports import (
     HitTypeCounts,
+    RenderAnswers,
     RenderedNotes,
     RenderSummary,
     SectionEntry,
@@ -565,20 +567,10 @@ class Tools:
         neither, and with overwrite replaces the report, then the MIDI file. While a decision
         request is open it writes nothing and returns the requests."""
         session = self._session(session_id)
-        output = _given_path(output_path, "output_path")
-        if output.suffix.lower() not in MIDI_SUFFIXES:
-            raise ToolError(f"{output} doesn't end in .mid or .midi")
+        output = _output(output_path)
         report = output.with_name(output.stem + REPORT_SUFFIX)
-        source = Path(session.midi_path)
         for path in (output, report):
-            if path.resolve() == source.resolve() or (
-                path.exists() and source.exists() and path.samefile(source)
-            ):
-                raise ToolError(f"{path} is the session's input file, which is never overwritten")
-            if path.exists() and not overwrite:
-                raise ToolError(f"{path} exists; give overwrite to replace it")
-        if not output.parent.is_dir():
-            raise ToolError(f"{output.parent} isn't a folder that exists")
+            _writable(path, Path(session.midi_path), overwrite, "the session's input file")
         loaded = self._loaded(session)
         if loaded.decisions:
             return {"sections": _table(session), "decisions": _decisions(loaded.decisions)}
@@ -617,6 +609,117 @@ class Tools:
             "sections": measured,
             "decisions": [],
         }
+
+    def remap(
+        self,
+        midi_path: Annotated[str, Field(description="The drum MIDI file, as an absolute path.")],
+        from_map: Annotated[
+            str,
+            Field(description="The built-in kit the file was made for: library/kit, or library."),
+        ],
+        to_map: Annotated[
+            str,
+            Field(description="The built-in kit to move it to: the drum instrument in the DAW."),
+        ],
+        output_path: Annotated[
+            str,
+            Field(
+                description="The MIDI file to write, as an absolute path ending .mid or .midi: "
+                "never the input."
+            ),
+        ],
+        track: Annotated[
+            int | None, Field(description="The track that holds the drums, from 0.")
+        ] = None,
+        unmapped: Annotated[
+            dict[str, str] | None,
+            Field(
+                description='For an unmapped_notes request: from a pitch, such as "99", to an '
+                'articulation of from_map or "drop".'
+            ),
+        ] = None,
+        substitutions: Annotated[
+            dict[str, str] | None,
+            Field(
+                description="For a conversion request: from a source articulation to an "
+                'articulation of to_map or "drop".'
+            ),
+        ] = None,
+        overwrite: Annotated[
+            bool, Field(description="Replace the output file if it exists.")
+        ] = False,
+    ) -> Reply:
+        """Move a drum MIDI file from one kit's note layout to another's, and nothing else: each
+        drum note keeps its tick, length and velocity and takes to_map's pitch and channel, at
+        the file's own resolution. Keeps no session. While a request is open it writes nothing
+        and returns the requests: call again with every answer so far, the track in track and
+        the others under the argument each names. It never writes over the input, and refuses a
+        file that exists unless overwrite is set."""
+        path = _given_path(midi_path, "midi_path")
+        source = _kit(from_map, "from_map")
+        target = _kit(to_map, "to_map")
+        output = _output(output_path)
+        _writable(output, path, overwrite, "the input file")
+        try:
+            answers = RenderAnswers.model_validate(
+                {"unmapped": unmapped or {}, "substitutions": substitutions or {}}
+            )
+        except ValidationError as error:
+            raise ToolError(_problems(error)) from error
+        try:
+            song = parse_midi(path.read_bytes(), keep_ppq=True)
+            remapped = remap(
+                song,
+                source,
+                target,
+                track=track,
+                unmapped=answers.unmapped,
+                substitutions=answers.substitutions,
+            )
+        except OSError as error:
+            raise ToolError(f"{path} can't be read: {error}") from error
+        except DecisionRequired as asked:
+            return {"decisions": _decisions([asked.request])}
+        except MidiFileError as error:
+            raise ToolError(f"{path}: {error}") from error
+        except AnswerError as error:
+            raise ToolError(answer_problem(error)) from error
+        except ValueError as error:
+            raise ToolError(f"substitutions.{error}") from error
+        summary: Reply = {
+            "file": str(path),
+            "output": str(output),
+            "kit": source.ref,
+            "to_kit": target.ref,
+            "ppq": song.ppq,
+            **remapped.report.model_dump(mode="json"),
+        }
+        if not remapped.complete:
+            return {"summary": summary, "decisions": _decisions(remapped.decisions)}
+        _write_together([(output, midi_bytes(remapped.song, keep_ppq=True))], overwrite)
+        return {"output": str(output), "summary": summary, "decisions": []}
+
+
+def _output(output_path: str) -> Path:
+    """The MIDI file to write, as given. Raises `ToolError` unless it is absolute, ends in
+    `.mid` or `.midi`, and is in a folder that exists."""
+    output = _given_path(output_path, "output_path")
+    if output.suffix.lower() not in MIDI_SUFFIXES:
+        raise ToolError(f"{output} doesn't end in .mid or .midi")
+    if not output.parent.is_dir():
+        raise ToolError(f"{output.parent} isn't a folder that exists")
+    return output
+
+
+def _writable(path: Path, source: Path, overwrite: bool, what: str) -> None:
+    """Raises `ToolError` when `path` is the input, by its path or as the same file, or exists
+    and `overwrite` isn't set."""
+    if path.resolve() == source.resolve() or (
+        path.exists() and source.exists() and path.samefile(source)
+    ):
+        raise ToolError(f"{path} is {what}, which is never overwritten")
+    if path.exists() and not overwrite:
+        raise ToolError(f"{path} exists; give overwrite to replace it")
 
 
 def _write_together(files: Sequence[tuple[Path, bytes]], overwrite: bool) -> None:

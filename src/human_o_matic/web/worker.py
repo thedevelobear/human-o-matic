@@ -2,9 +2,10 @@
 
 The page sends `{"call": name, "args": {...}}` to `handle`, with the chosen file's bytes beside
 an `open_session`, and gets compact JSON back, or the MIDI file's bytes for a `download`. The
-calls are an allowlist, `CALLS`: the tools of `service.Tools` but `export`, each taking the
-arguments the MCP server's tool takes and checked the same way, plus `download`,
-`kit_articulations`, `presets` and `reset`. Like the tools, no call takes or gives a note.
+calls are an allowlist, `CALLS`: the tools of `service.Tools` but `export`, and `remap` until
+the site's Remap tab (ADR 0131), each taking the arguments the MCP server's tool takes and
+checked the same way, plus `download`, `kit_articulations`, `presets` and `reset`. Like the
+tools, no call takes or gives a note.
 
 The worker keeps one `Tools` over a `SessionStore` in `state/` under its root, in Pyodide's
 in-memory file system, and writes each chosen file to `song/<random hex>.mid` there, a name it
@@ -68,7 +69,7 @@ CALLS: tuple[Call, ...] = (
     "reset",
 )
 """The calls the page may make: the tools but `export`, which writes files the page can't reach,
-and the page's own four."""
+and `remap`, until the site's Remap tab, and the page's own four."""
 TOOLS: tuple[Call, ...] = (
     "list_maps",
     "get_sections",

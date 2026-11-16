@@ -13,6 +13,8 @@ from human_o_matic.maps.loader import built_in_maps, find_kit
 from human_o_matic.midi.io import MidiSong, Note, midi_bytes, parse_midi
 from human_o_matic.normalize.answers import AnswerError
 from human_o_matic.remap import Remapped, remap
+from human_o_matic.service import ToolError, Tools
+from human_o_matic.session import SessionStore
 from map_files import articulation, load_kit
 from midi_files import (
     MidoMessage,
@@ -28,6 +30,7 @@ from midi_files import (
     tempo,
     track,
 )
+from test_service import Json
 
 KITS = tuple(built_in_maps())
 REFS = [kit.ref for kit in KITS]
@@ -271,3 +274,122 @@ def test_notes_brought_onto_one_pitch_end_before_the_next_starts(tmp_path: Path)
         (47, 0, 240),
         (47, 240, 480),
     ]
+
+
+# The MCP tool, as a method of `service.Tools`.
+
+
+@pytest.fixture
+def tools(tmp_path: Path) -> Tools:
+    return Tools(SessionStore(tmp_path / "sessions"))
+
+
+def test_the_tool_writes_the_remap_at_the_file_s_own_resolution_and_keeps_no_session(
+    tools: Tools, tmp_path: Path
+) -> None:
+    source = tmp_path / "song.mid"
+    source.write_bytes(song_bytes([(0, 10, 36, 100, 64), (48, 10, 42, 70, 64)], ppq=96))
+    output = tmp_path / "song-ezd.mid"
+
+    reply: Json = tools.remap(str(source), "gm", "ezdrummer-3", str(output))
+
+    assert reply["output"] == str(output)
+    assert reply["decisions"] == []
+    summary = reply["summary"]
+    assert (summary["kit"], summary["to_kit"], summary["ppq"]) == (
+        "gm/default",
+        "ezdrummer-3/default",
+        96,
+    )
+    assert (summary["track"], summary["notes"], summary["written"], summary["dropped"]) == (
+        1,
+        2,
+        2,
+        0,
+    )
+    assert summary["conversion"]["low_confidence"]["written"] == {"kick.hit": 1, "hat.closed": 1}
+    assert header(output.read_bytes())[2] == 96
+    written = parse_midi(output.read_bytes(), keep_ppq=True)
+    assert [(n.pitch, n.start, n.velocity) for n in written.notes if n.track == 1] == [
+        (36, 0, 100),
+        (61, 48, 70),
+    ]
+    assert not (tmp_path / "sessions").exists()
+
+
+def test_the_tool_writes_nothing_while_a_request_is_open(tools: Tools, tmp_path: Path) -> None:
+    source = tmp_path / "song.mid"
+    source.write_bytes(song_bytes([(0, 10, 56, 100, 64), (480, 10, 99, 90, 64)]))
+    output = tmp_path / "out.mid"
+
+    asked: Json = tools.remap(str(source), "gm", "ezdrummer-3", str(output))
+    answered_: Json = tools.remap(
+        str(source),
+        "gm",
+        "ezdrummer-3",
+        str(output),
+        unmapped={"99": "drop"},
+        substitutions={"cowbell.hit": "drop"},
+    )
+
+    assert [request["kind"] for request in asked["decisions"]] == ["unmapped_notes", "conversion"]
+    assert asked["summary"]["waiting"] == 2
+    assert "output" not in asked
+    assert answered_["summary"]["dropped"] == 2
+    assert output.exists()
+
+
+def test_the_tool_asks_which_track_holds_the_drums_and_writes_nothing(
+    tools: Tools, tmp_path: Path
+) -> None:
+    source = tmp_path / "song.mid"
+    source.write_bytes(
+        build(
+            track((0, on(36, channel=0)), (10, off(36, channel=0))),
+            track((0, on(38, channel=1)), (10, off(38, channel=1))),
+        )
+    )
+    output = tmp_path / "out.mid"
+
+    reply: Json = tools.remap(str(source), "gm", "gm", str(output))
+
+    assert [request["kind"] for request in reply["decisions"]] == ["drum_track"]
+    assert not output.exists()
+    assert tools.remap(str(source), "gm", "gm", str(output), track=1)["decisions"] == []
+
+
+def test_the_tool_never_writes_over_the_input_and_refuses_what_it_can_t_use(
+    tools: Tools, tmp_path: Path
+) -> None:
+    source = tmp_path / "song.mid"
+    source.write_bytes(song_bytes([(0, 10, 36, 100, 64)]))
+    original = source.read_bytes()
+    output = tmp_path / "out.mid"
+    output.write_bytes(b"theirs")
+
+    with pytest.raises(ToolError, match="is the input file"):
+        tools.remap(str(source), "gm", "ssd5", str(source), overwrite=True)
+    with pytest.raises(ToolError, match="exists; give overwrite"):
+        tools.remap(str(source), "gm", "ssd5", str(output))
+    with pytest.raises(ToolError, match=r"doesn.t end in \.mid"):
+        tools.remap(str(source), "gm", "ssd5", str(tmp_path / "out.wav"))
+    with pytest.raises(ToolError, match="is not an absolute path"):
+        tools.remap("song.mid", "gm", "ssd5", str(output))
+    with pytest.raises(ToolError, match="to_map"):
+        tools.remap(str(source), "gm", "no-such-kit", str(output))
+    with pytest.raises(ToolError, match=r"unmapped\.98: note 98"):
+        tools.remap(str(source), "gm", "ssd5", str(output), unmapped={"98": "drop"}, overwrite=True)
+    with pytest.raises(ToolError, match=r"substitutions\.cowbell\.hit"):
+        tools.remap(
+            str(source),
+            "gm",
+            "ssd5",
+            str(output),
+            substitutions={"cowbell.hit": "drop"},
+            overwrite=True,
+        )
+    assert output.read_bytes() == b"theirs"
+    tools.remap(str(source), "gm", "ssd5", str(output), overwrite=True)
+
+    assert source.read_bytes() == original
+    assert output.read_bytes() != b"theirs"

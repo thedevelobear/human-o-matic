@@ -1,4 +1,5 @@
-"""The MCP server: the plan's tools, `service.Tools`, served over stdio (ADRs 0084, 0085).
+"""The MCP server: the plan's tools, `service.Tools`, served over stdio (ADRs 0084, 0085), and
+`remap` (ADR 0130).
 
 `build_server` registers each tool with the official MCP SDK, which runs them one at a time and
 replies with compact JSON, turning a `service.ToolError` into the SDK's own, and `main`, the
@@ -19,7 +20,12 @@ from human_o_matic.service import Reply, Tools
 from human_o_matic.session import SessionStore
 
 INSTRUCTIONS = """\
-human-o-matic re-performs a drum MIDI file section by section, steered by the user's answers.
+human-o-matic re-performs a drum MIDI file section by section, steered by the user's answers,
+or remaps it to another kit.
+0. Ask first whether the user wants the file only remapped to another kit, every note's timing
+   and velocity kept, or re-performed. remap does the first: it writes a new file, keeps no
+   session, and asks only which track holds the drums, the notes from_map doesn't map and the
+   ones to_map can't play, answered by calling it again with every answer so far.
 1. list_maps gives the built-in kits. open_session reads a file through the kit it was made
    for (from_map) and writes through the kit that will play it (to_map).
 2. Answer the decision requests: bpm and track by calling open_session again, and soft notes,
@@ -73,6 +79,7 @@ def build_server(store: SessionStore | None = None) -> MCPServer:
         (tools.set_section_controls, False),
         (tools.render, False),
         (tools.export, False),
+        (tools.remap, False),
     ]
     for method, read_only in methods:
         server.add_tool(

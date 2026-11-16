@@ -661,6 +661,7 @@ def test_no_reply_holds_a_note_list(tools: Tools, tmp_path: Path) -> None:
             tools.render(session_id, take=1),
             tools.export(session_id, str(tmp_path / "out.mid")),
             tools.get_sections(session_id),
+            tools.remap(str(file), "gm", "ezdrummer-3", str(tmp_path / "remapped.mid")),
         ]
     )
 
