@@ -1,6 +1,6 @@
 # 0131. The site's remap is a tab of its own beside the re-performing flow, with a short flow and no feedback
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-16
 
 - The page has two top-level tabs: the re-performing flow, as it is, and Remap.

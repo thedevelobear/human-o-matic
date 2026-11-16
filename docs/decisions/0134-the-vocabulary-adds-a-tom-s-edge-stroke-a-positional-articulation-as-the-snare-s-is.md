@@ -1,6 +1,6 @@
 # 0134. The vocabulary adds a tom's edge stroke, a positional articulation as the snare's is
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-16
 
 - `data/vocabulary.toml` adds `edge` to the tom family's articulations, so `tom.N.edge` names a tom struck toward its edge, as `snare.edge` names the snare's.

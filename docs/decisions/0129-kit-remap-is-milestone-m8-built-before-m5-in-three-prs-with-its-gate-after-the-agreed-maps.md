@@ -1,6 +1,6 @@
 # 0129. Kit remap is milestone M8, built before M5 in three PRs, with its gate after the agreed maps
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-16
 
 - A kit remap, which moves a drum MIDI file from one kit's note layout to another's and changes nothing else ([ADR 0130](0130-a-remap-keeps-every-note-s-tick-length-and-velocity-and-changes-only-its-pitch-and-channel.md)), is milestone M8 of the app's plan. It is built now, after M7 and before M5, which stays not started.

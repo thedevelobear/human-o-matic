@@ -1,6 +1,6 @@
 # 0130. A remap keeps every note's tick, length and velocity, and changes only its pitch and channel
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-16
 
 - A remap reads the drum track's notes ([ADR 0017](0017-the-drums-are-one-whole-track.md)) with the source kit and places each in the target kit by conversion's fallback order ([ADR 0021](0021-conversion-falls-back-within-a-family.md)), through the function a render places notes with, `maps.convert.place`. A note takes the target binding's note, and that binding's channel, or else the kit's, or else its own ([ADR 0048](0048-a-render-writes-the-score-through-the-target-kit-into-the-drum-track.md)).

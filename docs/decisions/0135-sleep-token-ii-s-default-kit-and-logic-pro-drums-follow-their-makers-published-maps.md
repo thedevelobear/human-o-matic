@@ -1,6 +1,6 @@
 # 0135. Sleep Token II's default kit and Logic Pro Drums follow their makers' published maps
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-16
 
 - `sleep-token-ii/default` drops note 96, `crash.4.choke`, since the library's published user guide gives Crash 4 no choke note. It has 57 articulations on 67 pitches, and a note on 96 is an `unmapped_notes` request.
