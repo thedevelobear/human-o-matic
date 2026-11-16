@@ -106,7 +106,8 @@ def _given_path(text: str, what: str) -> Path:
     return path
 
 
-def _kit(name: str, what: str) -> DrumKit:
+def built_in_kit(name: str, what: str) -> DrumKit:
+    """The built-in kit `name`. Raises `ToolError` naming the argument `what` when there's none."""
     try:
         return find_kit(name)
     except KeyError as error:
@@ -216,8 +217,8 @@ class Tools:
         counts, the section table, and the decision requests to answer. A request for the tempo
         or the drum track makes no session: open it again with bpm or track."""
         path = _given_path(midi_path, "midi_path")
-        source = _kit(from_map, "from_map")
-        target = _kit(to_map, "to_map") if to_map is not None else source
+        source = built_in_kit(from_map, "from_map")
+        target = built_in_kit(to_map, "to_map") if to_map is not None else source
         if bpm is not None and not MIN_BPM <= bpm <= MAX_BPM:
             raise ToolError(
                 f"bpm {bpm} is outside {MIN_BPM:g} to {MAX_BPM:.0f}, the tempos a MIDI file can "
@@ -656,48 +657,80 @@ class Tools:
         the others under the argument each names. It never writes over the input, and refuses a
         file that exists unless overwrite is set."""
         path = _given_path(midi_path, "midi_path")
-        source = _kit(from_map, "from_map")
-        target = _kit(to_map, "to_map")
+        source = built_in_kit(from_map, "from_map")
+        target = built_in_kit(to_map, "to_map")
         output = _output(output_path)
         _writable(output, path, overwrite, "the input file")
         try:
-            answers = RenderAnswers.model_validate(
-                {"unmapped": unmapped or {}, "substitutions": substitutions or {}}
-            )
-        except ValidationError as error:
-            raise ToolError(_problems(error)) from error
-        try:
-            song = parse_midi(path.read_bytes(), keep_ppq=True)
-            remapped = remap(
-                song,
-                source,
-                target,
-                track=track,
-                unmapped=answers.unmapped,
-                substitutions=answers.substitutions,
-            )
+            data = path.read_bytes()
         except OSError as error:
             raise ToolError(f"{path} can't be read: {error}") from error
-        except DecisionRequired as asked:
-            return {"decisions": _decisions([asked.request])}
-        except MidiFileError as error:
-            raise ToolError(f"{path}: {error}") from error
-        except AnswerError as error:
-            raise ToolError(answer_problem(error)) from error
-        except ValueError as error:
-            raise ToolError(f"substitutions.{error}") from error
-        summary: Reply = {
-            "file": str(path),
-            "output": str(output),
-            "kit": source.ref,
-            "to_kit": target.ref,
-            "ppq": song.ppq,
-            **remapped.report.model_dump(mode="json"),
-        }
-        if not remapped.complete:
-            return {"summary": summary, "decisions": _decisions(remapped.decisions)}
-        _write_together([(output, midi_bytes(remapped.song, keep_ppq=True))], overwrite)
-        return {"output": str(output), "summary": summary, "decisions": []}
+        reply, remapped = remap_reply(
+            data,
+            str(path),
+            source,
+            target,
+            track=track,
+            unmapped=unmapped,
+            substitutions=substitutions,
+            output=str(output),
+        )
+        if remapped is None:
+            return reply
+        _write_together([(output, remapped)], overwrite)
+        return {"output": str(output), **reply}
+
+
+def remap_reply(
+    data: bytes,
+    file: str,
+    source: DrumKit,
+    target: DrumKit,
+    *,
+    track: int | None = None,
+    unmapped: dict[str, str] | None = None,
+    substitutions: dict[str, str] | None = None,
+    output: str | None = None,
+) -> tuple[Reply, bytes | None]:
+    """`remap`'s reply on a MIDI file's bytes, named `file` in it and in its errors, with the
+    `output` it names, if any, and the remapped file's bytes once every note is placed, or None
+    while a request is open. The tool writes those bytes, and the site's worker gives them to
+    the page, so both make the same file (ADR 0131). Raises `ToolError`."""
+    try:
+        answers = RenderAnswers.model_validate(
+            {"unmapped": unmapped or {}, "substitutions": substitutions or {}}
+        )
+    except ValidationError as error:
+        raise ToolError(_problems(error)) from error
+    try:
+        song = parse_midi(data, keep_ppq=True)
+        remapped = remap(
+            song,
+            source,
+            target,
+            track=track,
+            unmapped=answers.unmapped,
+            substitutions=answers.substitutions,
+        )
+    except DecisionRequired as asked:
+        return {"decisions": _decisions([asked.request])}, None
+    except MidiFileError as error:
+        raise ToolError(f"{file}: {error}") from error
+    except AnswerError as error:
+        raise ToolError(answer_problem(error)) from error
+    except ValueError as error:
+        raise ToolError(f"substitutions.{error}") from error
+    summary: Reply = {
+        "file": file,
+        **({"output": output} if output is not None else {}),
+        "kit": source.ref,
+        "to_kit": target.ref,
+        "ppq": song.ppq,
+        **remapped.report.model_dump(mode="json"),
+    }
+    if not remapped.complete:
+        return {"summary": summary, "decisions": _decisions(remapped.decisions)}, None
+    return {"summary": summary, "decisions": []}, midi_bytes(remapped.song, keep_ppq=True)
 
 
 def _output(output_path: str) -> Path:
