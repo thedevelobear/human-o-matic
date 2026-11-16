@@ -1,11 +1,11 @@
 ---
 name: human-o-matic
-description: Re-performs a drum MIDI file section by section with the human-o-matic MCP server, asking the user a few targeted questions about each section and turning the answers into controls. Use when the user wants to humanize, re-perform or add feel to programmed drum MIDI, or mentions human-o-matic.
+description: Re-performs a drum MIDI file section by section with the human-o-matic MCP server, asking the user a few targeted questions about each section and turning the answers into controls, or remaps it to another drum kit with every note's timing and velocity kept. Use when the user wants to humanize, re-perform or add feel to programmed drum MIDI, to move drum MIDI from one drum library or kit to another, or mentions human-o-matic.
 ---
 
 # human-o-matic
 
-human-o-matic re-performs a drum MIDI file section by section. The server reads the file, finds its sections and renders them. You ask the user about the music, turn the answers into controls, and hand the user a new MIDI file to hear. The server asks nothing itself: its replies carry facts, suggested questions and decision requests for you to put to the user.
+human-o-matic re-performs a drum MIDI file section by section. The server reads the file, finds its sections and renders them. You ask the user about the music, turn the answers into controls, and hand the user a new MIDI file to hear. It can instead only remap the file to another kit, every note's timing and velocity kept. The server asks nothing itself: its replies carry facts, suggested questions and decision requests for you to put to the user.
 
 The tools are the `human-o-matic` MCP server's, which Claude Code names `mcp__human-o-matic__<tool>`. If they are missing, the server isn't registered: tell the user it is registered once, from a shell, with the path of their human-o-matic checkout,
 
@@ -25,6 +25,7 @@ and that a new Claude Code session then has the tools. Don't run it unless the u
 - **No live preview.** The user hears a render by dragging its exported MIDI file into the DAW, onto the track whose drum instrument is the kit the session writes for.
 
 ## Question policy
+0. **Ask first, always: remap only, or re-perform?** Before anything else, every time, even when the user's request seems to say which (see step 0).
 1. **Confirm before asking about feel:** kit maps, section table, soft notes and ambiguous bars, as one batch.
 2. **One song-wide question round:** the overall style or tightness, plus anything else that applies everywhere.
 3. **Per repeat group, in song order, every question `get_sections` suggests for it,** among them whether it builds into a louder section after it, as a `ramp` (see "Ramps"). Always accept "your call".
@@ -34,6 +35,11 @@ and that a new Claude Code session then has the tools. Don't run it unless the u
 7. **Count, with no budget:** count the questions you ask and tell the user the count (step 7). It limits nothing.
 
 ## Workflow
+
+### 0. Remap only, or re-perform? (rule 0)
+Your first question, always, before the kits or any tool call on the song, even when the request seems to say which: "Do you want this file only moved to another kit, every note's timing and velocity kept as it is, or re-performed with feel, section by section?"
+- **Re-perform:** go on to step 1.
+- **Remap only:** follow "Remap only" below, and nothing else: no sections, style or questions about feel.
 
 ### 1. Open the song
 - You need the file's absolute path, the kit it was made for, `from_map`, and the kit that will play it, `to_map`: the drum instrument on the user's DAW track. `list_maps` gives the built-in libraries and kits: pass a kit's `map`, such as `sleep-token-ii/default`, or a library with one kit by its id. Only built-in kits exist, and no map file can be loaded. If the user hasn't said which kits, ask, naming the closest from `list_maps`.
@@ -85,7 +91,20 @@ Ask about what holds everywhere: always what kind of drummer, tight and modern o
 - Export again under a new number after each refinement.
 
 ### 7. Count the questions (rule 7)
-Keep count as you go: one for the kits question when you need it, one for the confirmation batch, and one for each other question you ask. The echo's "sound right?" doesn't count. When the user has the file they're happy with, tell them how many questions you asked, in all and in each step. The count limits nothing.
+Keep count as you go: one for the first question, remap only or re-perform, one for the kits question when you need it, one for the confirmation batch, and one for each other question you ask. The echo's "sound right?" doesn't count. When the user has the file they're happy with, tell them how many questions you asked, in all and in each step. The count limits nothing.
+
+## Remap only
+A remap moves the file from one kit's note layout to another's and changes nothing else: each drum note keeps its tick, length and velocity, and takes the target kit's pitch and channel, at the file's own resolution. The server keeps no session for it.
+1. **The kits**, as step 1 asks them: `from_map`, the kit the file was made for, and `to_map`, the kit that will play it. If the user hasn't said, ask, naming the closest from `list_maps`.
+2. **`remap(midi_path, from_map, to_map, output_path)`**, with `output_path` a new file beside the input, such as `song-remapped.mid`. It never writes the input, and refuses a file that exists unless `overwrite` is true, which you set only when the user asks.
+3. **Only the questions that came up.** While a request is open, `remap` writes nothing and replies with `decisions`. Put them to the user in one message, each with its options:
+   - `drum_track`: which track holds the drums, answered as `track`, counted from 0;
+   - `unmapped_notes`: notes `from_map` doesn't map, answered as `unmapped`, `{"99": "tom.3.hit"}`, a pitch to an articulation of `from_map`, or `"drop"`;
+   - `conversion`: notes `to_map` can't play in their family, answered as `substitutions`, from a source articulation to an articulation of `to_map` from the request's options, or `"drop"`.
+
+   Then call `remap` again with every answer so far, since it keeps none, until `decisions` is empty and it has written the file. Ask nothing else.
+4. **The file:** give the user the path, to drag onto the track with the `to_map` drum instrument. Mention what the `summary` reports: the notes written and dropped, the articulations written as others and their steps in `conversion.changed`, the drums landing on one pitch in `conversion.collisions`, names read or written at low confidence, and any velocities kept outside the target's range in `outside_range`.
+5. **Count:** the first question, the kits question when you asked it, and the batch of requests as one, then tell the user the count.
 
 ## Turning answers into controls
 - Read [the vocabulary](references/vocabulary.md): its rows map answers to controls, each with a starting point and the range that keeps the answer's meaning. Start from the closest row, blend rows when an answer mixes them, and stay within their ranges.
@@ -126,3 +145,4 @@ Creative mode lets a section add notes the song doesn't have. It is off unless t
 | `set_section_controls` | `session_id`, `controls`, `section_ids`, `note` | per section its controls, `resolved` and `expected`, then `clamped` and `decisions` |
 | `render` | `session_id`, `section_ids`, `take` | the summary and each section's statistics, `creative` and `says`, without writing |
 | `export` | `session_id`, `output_path`, `overwrite` | the files written, the summary and each section's statistics, `creative` and `says` |
+| `remap` | `midi_path`, `from_map`, `to_map`, `output_path`, `track`, `unmapped`, `substitutions`, `overwrite` | the file written, or the requests while one is open, and a `summary` of the drum track, the notes written, dropped and waiting, `conversion` and `outside_range` |

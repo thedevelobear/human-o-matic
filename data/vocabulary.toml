@@ -81,8 +81,9 @@ articulations = [
 pieces = "numbered"
 default = "hit"
 # Toms are ordered by pitch, so a kit with a different number of them is re-spread by register.
+# edge is a positional articulation, as the snare's is, so a kit without it takes the hit.
 piece_substitution = "register"
-articulations = ["hit", "rimshot", "rim"]
+articulations = ["hit", "edge", "rimshot", "rim"]
 
 [families.ride]
 pieces = "numbered"

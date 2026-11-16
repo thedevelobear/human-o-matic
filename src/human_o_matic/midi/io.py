@@ -185,8 +185,9 @@ def read_midi(path: str | PathLike[str]) -> MidiSong:
     return parse_midi(Path(path).read_bytes())
 
 
-def parse_midi(data: bytes) -> MidiSong:
-    """Parse the bytes of a MIDI file, at its `working_ppq`."""
+def parse_midi(data: bytes, *, keep_ppq: bool = False) -> MidiSong:
+    """Parse the bytes of a MIDI file, at its `working_ppq`, or at its own with `keep_ppq`, as a
+    remap reads it (ADR 0130)."""
     try:
         midi = mido.MidiFile(file=BytesIO(data))
     except (OSError, EOFError, ValueError, KeyError, IndexError, mido.KeySignatureError) as error:
@@ -213,7 +214,7 @@ def parse_midi(data: bytes) -> MidiSong:
         events=tuple(events),
         track_ends=ends,
     )
-    return rescale(song, working_ppq(song.ppq))
+    return song if keep_ppq else rescale(song, working_ppq(song.ppq))
 
 
 def _read_track(index: int, track: mido.MidiTrack, notes: list[Note], events: list[Event]) -> int:
@@ -295,9 +296,11 @@ def _meta_payload(raw: list[int]) -> list[int]:
 _OFF_RANK, _EVENT_RANK, _ON_RANK = 0, 1, 2
 
 
-def midi_bytes(song: MidiSong) -> bytes:
-    """The song as the bytes of a MIDI file, at its `working_ppq`."""
-    song = rescale(song, working_ppq(song.ppq))
+def midi_bytes(song: MidiSong, *, keep_ppq: bool = False) -> bytes:
+    """The song as the bytes of a MIDI file, at its `working_ppq`, or at its own with
+    `keep_ppq`, as a remap writes it (ADR 0130)."""
+    if not keep_ppq:
+        song = rescale(song, working_ppq(song.ppq))
     timed: list[list[tuple[int, int, int, int, Event | bytes]]] = [[] for _ in song.track_ends]
     for note in song.notes:
         on = bytes((NOTE_ON | note.channel, note.pitch, note.velocity))

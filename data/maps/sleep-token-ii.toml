@@ -1,9 +1,10 @@
-# Sleep Token II, from the library's own note mapping (ADR 0011): 68 pitches on channel 10 as 58
-# articulations. Where an articulation has two notes, the first is the one written and the
-# second is only read. Confidence is high where the mapping's name gives the canonical name
-# directly, and medium where it had to be interpreted. Its second kit, `groove-pack`, is the
-# layout its own groove files play, which no mapping at hand names, so each of its names is
-# inferred from where the library puts its notes, at low confidence (ADR 0066).
+# Sleep Token II, from the library's own note mapping (ADR 0011): 67 pitches on channel 10 as 57
+# articulations. Note 96 is left out, since the library's published user guide gives Crash 4 no
+# choke note, so a note on it is asked about. Where an articulation has two notes, the first is
+# the one written and the second is only read. Confidence is high where the mapping's name gives
+# the canonical name directly, and medium where it had to be interpreted. Its second kit,
+# `groove-pack`, is the layout its own groove files play, which no mapping at hand names, so each
+# of its names is inferred from where the library puts its notes, at low confidence (ADR 0066).
 schema = 1
 id = "sleep-token-ii"
 name = "Sleep Token II"
@@ -241,12 +242,6 @@ channel = 10
   [[kits.articulations]]
   name = "crash.4.hit"
   notes = [95]
-  source = "mapping"
-  confidence = "high"
-
-  [[kits.articulations]]
-  name = "crash.4.choke"
-  notes = [96]
   source = "mapping"
   confidence = "high"
 

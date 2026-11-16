@@ -120,6 +120,15 @@ def test_a_damped_stroke_wires_off_and_a_crash_tip_are_variants_that_drop_to_the
     assert VOCABULARY.name(name.family, name.piece, name.path[:-1]).text == parent
 
 
+def test_a_tom_s_edge_is_a_positional_articulation_as_the_snare_s_is() -> None:
+    name = VOCABULARY.parse("tom.2.edge")
+
+    assert (name.articulation, name.variants) == ("edge", ())
+    assert "edge" in VOCABULARY.families["snare"].articulations
+    # Not a variant, so it falls back to its piece's default, not by dropping a variant.
+    assert VOCABULARY.default(name.family, name.piece).text == "tom.2.hit"
+
+
 def test_a_sample_layer_is_numbered_and_nothing_stands_in_for_it() -> None:
     assert VOCABULARY.families["sample"].pieces == "numbered"
     assert "sample" not in VOCABULARY.suggestions
