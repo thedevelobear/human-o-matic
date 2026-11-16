@@ -119,11 +119,14 @@ def test_every_general_midi_note_has_exactly_one_articulation() -> None:
     assert GM.write("hat.open").channel == 9
 
 
-def test_the_sleep_token_map_has_its_68_pitches_as_58_articulations() -> None:
+def test_the_sleep_token_map_has_its_67_pitches_as_57_articulations() -> None:
     pitches = [binding.note for entry in SLEEP_TOKEN.articulations for binding in entry.bindings]
 
-    assert len(SLEEP_TOKEN.articulations) == 58
-    assert len(pitches) == len(set(pitches)) == 68
+    assert len(SLEEP_TOKEN.articulations) == 57
+    assert len(pitches) == len(set(pitches)) == 67
+    # Crash 4 has no choke note in the library's published user guide.
+    assert not SLEEP_TOKEN.read(96, 100, 9)
+    assert "crash.4.choke" not in SLEEP_TOKEN
     assert all(SLEEP_TOKEN.write(entry.name).channel == 9 for entry in SLEEP_TOKEN.articulations)
     assert all(entry.source == "mapping" for entry in SLEEP_TOKEN.articulations)
     flam, rimshot = SLEEP_TOKEN.resolve(39, 100, 9), SLEEP_TOKEN.resolve(40, 100, 9)
@@ -288,7 +291,6 @@ def test_sleep_token_ii_onto_general_midi_asks_about_chokes_cc_hats_and_missing_
         "crash.1.choke",
         "crash.2.choke",
         "crash.3.choke",
-        "crash.4.choke",
         "china.1.choke",
         "splash.1.choke",
         "splash.2.choke",
