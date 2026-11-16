@@ -1,6 +1,7 @@
 """The page's worker API, run natively on songs built in code: its allowlist, its compact JSON,
-no note list and no path of its own in a reply or an error, the browser's limits, `reset`, and a
-download equal to `export`'s and `human-o-matic render`'s (ADRs 0084, 0098, 0100)."""
+no note list and no path of its own in a reply or an error, the browser's limits, `reset`, a
+download equal to `export`'s and `human-o-matic render`'s, and a remap equal to the `remap`
+tool's (ADRs 0084, 0098, 0100, 0131)."""
 
 import json
 from pathlib import Path
@@ -13,7 +14,8 @@ from grooves import KICK, PPQ, midi_file, rock
 from human_o_matic.cli import app
 from human_o_matic.midi.io import parse_midi, read_midi
 from human_o_matic.web.worker import CALLS, FAILED, MAX_BYTES, Worker
-from midi_files import build, end, name, on, tempo, track
+from midi_files import build, end, name, off, on, tempo, track
+from test_remap import song_bytes
 from test_service import HIT_TYPES, Json, notes_in, song_file
 
 SONG = "My Song (v2).mid"
@@ -74,6 +76,9 @@ def test_every_call_of_the_allowlist_answers_and_no_reply_holds_a_note_list(
     replies["render"] = ask(worker, "render", session_id=session_id, take=1)
     replies["kit_articulations"] = ask(worker, "kit_articulations", map="gm")
     replies["presets"] = ask(worker, "presets")
+    replies["remap"] = ask(
+        worker, "remap", file.read_bytes(), name=SONG, from_map="gm", to_map="ezdrummer-3"
+    )
     midi = download(worker, session_id)
     replies["reset"] = ask(worker, "reset")
 
@@ -99,6 +104,7 @@ def test_every_call_of_the_allowlist_answers_and_no_reply_holds_a_note_list(
         ('{"call": "get_sections", "args": {"session_id": "0123456789ab"}}', "there is no session"),
         ('{"call": "kit_articulations", "args": {"map": "nope"}}', "map: no library 'nope'"),
         ('{"call": "open_session", "args": {"from_map": "gm"}}', "choose a MIDI file to open"),
+        ('{"call": "remap", "args": {"from_map": "gm", "to_map": "gm"}}', "choose a MIDI file"),
     ],
 )
 def test_a_call_it_can_t_take_is_an_error_in_plain_words(
@@ -253,3 +259,85 @@ def test_the_download_equals_export_and_at_take_0_human_o_matic_render(
     assert first == (tmp_path / "first.mid").read_bytes()
     assert second == (tmp_path / "second.mid").read_bytes()
     assert second != first
+
+
+def remapped(worker: Worker, data: bytes, **args: Any) -> bytes:
+    """The worker's remap of `data` with `download` set, which gives the file's bytes."""
+    request = {"call": "remap", "args": {"name": SONG, **args, "download": True}}
+    out = worker.handle(json.dumps(request), data)
+    assert isinstance(out, bytes)
+    return out
+
+
+def test_a_remap_gives_the_tool_s_reply_and_file_and_keeps_nothing(
+    worker: Worker, tmp_path: Path
+) -> None:
+    # An unmapped note and a family the target lacks, as the tool's tests have them.
+    source = tmp_path / "song.mid"
+    source.write_bytes(
+        song_bytes([(0, 10, 56, 100, 64), (480, 10, 99, 90, 64), (960, 10, 36, 80, 0)])
+    )
+    data = source.read_bytes()
+    kits: Json = {"from_map": "gm", "to_map": "ezdrummer-3"}
+    unmapped, substitutions = {"99": "drop"}, {"cowbell.hit": "drop"}
+    answers: Json = {"unmapped": unmapped, "substitutions": substitutions}
+    output = tmp_path / "out.mid"
+
+    asked = ask(worker, "remap", data, name=SONG, **kits)
+    waiting = worker.handle(
+        json.dumps({"call": "remap", "args": {"name": SONG, **kits, "download": True}}), data
+    )
+    done = ask(worker, "remap", data, name=SONG, **kits, **answers)
+    file = remapped(worker, data, **kits, **answers)
+    tool_asked: Json = worker.tools.remap(str(source), "gm", "ezdrummer-3", str(output))
+    tool_done: Json = worker.tools.remap(
+        str(source),
+        "gm",
+        "ezdrummer-3",
+        str(output),
+        unmapped=unmapped,
+        substitutions=substitutions,
+    )
+
+    def as_the_page_s(reply: Json) -> Json:
+        """A reply of the tool's as the worker gives it: the file by its display name, and no
+        output written."""
+        summary = {**reply["summary"], "file": SONG}
+        del summary["output"]
+        return {"summary": summary, "decisions": reply["decisions"]}
+
+    assert [request["kind"] for request in asked["decisions"]] == ["unmapped_notes", "conversion"]
+    assert isinstance(waiting, str)
+    assert json.loads(waiting) == asked == as_the_page_s(tool_asked)
+    assert done == as_the_page_s(tool_done)
+    assert done["decisions"] == []
+    assert file == output.read_bytes()
+    assert files_in(worker) == []
+
+
+def test_a_remap_asks_for_the_drum_track_and_refuses_a_path_an_output_or_a_file_past_a_limit(
+    worker: Worker,
+) -> None:
+    data = build(
+        track((0, on(36, channel=0)), (10, off(36, channel=0))),
+        track((0, on(38, channel=1)), (10, off(38, channel=1))),
+    )
+
+    asked = ask(worker, "remap", data, name=SONG, from_map="gm", to_map="gm")
+    placed = remapped(worker, data, from_map="gm", to_map="gm", track=1)
+    path = ask(worker, "remap", data, from_map="gm", to_map="gm", midi_path="/song.mid")
+    output = ask(worker, "remap", data, from_map="gm", to_map="gm", output_path="/out.mid")
+    kit = ask(worker, "remap", data, name=SONG, from_map="gm", to_map="nope")
+    limit = ask(worker, "remap", b"not midi", name=SONG, from_map="gm", to_map="gm")
+
+    assert [request["kind"] for request in asked["decisions"]] == ["drum_track"]
+    notes = [
+        [(note.track, note.pitch, note.start, note.velocity) for note in song.notes]
+        for song in (parse_midi(placed, keep_ppq=True), parse_midi(data, keep_ppq=True))
+    ]
+    assert notes[0] == notes[1]
+    assert path == {"error": "midi_path: the page sends the file itself, never a path"}
+    assert "output_path: Unexpected keyword argument" in output["error"]
+    assert kit["error"].startswith("to_map: ")
+    assert limit["error"] == f"{SONG} isn't a MIDI file: it doesn't start as one does"
+    assert files_in(worker) == []

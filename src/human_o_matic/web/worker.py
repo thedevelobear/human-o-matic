@@ -1,18 +1,21 @@
 """What the page's Web Worker calls: one entry, a JSON request in, compact JSON or a file out.
 
 The page sends `{"call": name, "args": {...}}` to `handle`, with the chosen file's bytes beside
-an `open_session`, and gets compact JSON back, or the MIDI file's bytes for a `download`. The
-calls are an allowlist, `CALLS`: the tools of `service.Tools` but `export`, and `remap` until
-the site's Remap tab (ADR 0131), each taking the arguments the MCP server's tool takes and
-checked the same way, plus `download`, `kit_articulations`, `presets` and `reset`. Like the
-tools, no call takes or gives a note.
+an `open_session` or a `remap`, and gets compact JSON back, or the MIDI file's bytes for a
+`download`, and for a `remap` with `download` set once every note is placed. The calls are an
+allowlist, `CALLS`: the tools of `service.Tools` but `export`, each taking the arguments the MCP
+server's tool takes and checked the same way, but that `open_session` and `remap` take the file's
+display name, `name`, for its path, and `remap` no output path (ADR 0131), plus `download`,
+`kit_articulations`, `presets` and `reset`. Like the tools, no call takes or gives a note.
 
 The worker keeps one `Tools` over a `SessionStore` in `state/` under its root, in Pyodide's
-in-memory file system, and writes each chosen file to `song/<random hex>.mid` there, a name it
-draws, so nothing the user gives names a path. Every path in a reply or an error is replaced by
-the file's display name, which the page passes as `name`. The browser's limits are checked
-before the song is normalized (ADR 0098): the size and the `MThd` header before parsing, and the
-tracks, events, bars and tempo events after. `reset` removes everything under `state/` and
+in-memory file system, and writes each file it opens to `song/<random hex>.mid` there, a name it
+draws, so nothing the user gives names a path. A `remap` keeps no session and writes no file: it
+remaps the bytes in memory, through the function the tool writes its file from (ADR 0133).
+Every path in a reply or an error is replaced by the file's display name, which the page passes
+as `name`. The browser's limits are checked before the song is normalized or remapped
+(ADR 0098): the size and the `MThd` header before parsing, and the tracks, events, bars and
+tempo events after. `reset` removes everything under `state/` and
 `song/`. The page queues its calls, so they run one at a time, as the MCP server's lock does.
 """
 
@@ -20,17 +23,16 @@ import json
 import secrets
 import shutil
 from collections.abc import Buffer, Callable
-from functools import cache
+from functools import cache, partial
 from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError, validate_call
 
-from human_o_matic.maps.loader import find_kit
 from human_o_matic.midi.io import MidiFileError, MidiSong, midi_bytes, parse_midi
 from human_o_matic.midi.tempo import META_TEMPO, time_signature_map
 from human_o_matic.presets import read_vocabulary, starting_points
-from human_o_matic.service import Reply, ToolError, Tools
+from human_o_matic.service import Reply, ToolError, Tools, built_in_kit, remap_reply
 from human_o_matic.session import (
     STATE_ENV,
     SessionError,
@@ -49,6 +51,7 @@ type Call = Literal[
     "set_style",
     "set_section_controls",
     "render",
+    "remap",
     "download",
     "kit_articulations",
     "presets",
@@ -63,13 +66,14 @@ CALLS: tuple[Call, ...] = (
     "set_style",
     "set_section_controls",
     "render",
+    "remap",
     "download",
     "kit_articulations",
     "presets",
     "reset",
 )
 """The calls the page may make: the tools but `export`, which writes files the page can't reach,
-and `remap`, until the site's Remap tab, and the page's own four."""
+and the page's own four."""
 TOOLS: tuple[Call, ...] = (
     "list_maps",
     "get_sections",
@@ -139,6 +143,9 @@ class Worker:
         match call:
             case "open_session":
                 return self._open(args, data)
+            case "remap":
+                name, content = _sent(args, data)
+                return _checked(partial(_remap, name, content))(**args)
             case "download":
                 return _checked(self._download)(**args)
             case "kit_articulations":
@@ -150,15 +157,7 @@ class Worker:
 
     def _open(self, args: dict[str, JsonValue], data: Buffer | None) -> Reply:
         """`open_session` of the file the page sends, written where the worker chooses."""
-        name = args.pop("name", DEFAULT_NAME)
-        if not isinstance(name, str) or not name:
-            raise ToolError("name: give the file's name as text")
-        if "midi_path" in args:
-            raise ToolError("midi_path: the page sends the file itself, never a path")
-        if data is None:
-            raise ToolError("choose a MIDI file to open")
-        content = bytes(data)
-        _check(name, content)
+        name, content = _sent(args, data)
         self.songs.mkdir(parents=True, exist_ok=True)
         path = self.songs / f"{secrets.token_hex(8)}.mid"
         path.write_bytes(content)
@@ -211,6 +210,45 @@ class Worker:
         return message
 
 
+def _sent(args: dict[str, JsonValue], data: Buffer | None) -> tuple[str, bytes]:
+    """The file the page sends beside a call: its display name, taken out of `args`, and its
+    bytes, within the browser's limits. Raises `ToolError`."""
+    name = args.pop("name", DEFAULT_NAME)
+    if not isinstance(name, str) or not name:
+        raise ToolError("name: give the file's name as text")
+    if "midi_path" in args:
+        raise ToolError("midi_path: the page sends the file itself, never a path")
+    if data is None:
+        raise ToolError("choose a MIDI file to open")
+    content = bytes(data)
+    _check(name, content)
+    return name, content
+
+
+def _remap(
+    name: str,
+    data: bytes,
+    from_map: str,
+    to_map: str,
+    track: int | None = None,
+    unmapped: dict[str, str] | None = None,
+    substitutions: dict[str, str] | None = None,
+    download: bool = False,
+) -> Reply | bytes:
+    """`remap` of the file the page sends, by its display name: the tool's reply with no output,
+    or with `download`, once every note is placed, the bytes the tool writes (ADR 0131)."""
+    reply, remapped = remap_reply(
+        data,
+        name,
+        built_in_kit(from_map, "from_map"),
+        built_in_kit(to_map, "to_map"),
+        track=track,
+        unmapped=unmapped,
+        substitutions=substitutions,
+    )
+    return remapped if download and remapped is not None else reply
+
+
 def _checked[T](method: Callable[..., T]) -> Callable[..., T]:
     """`method` with its arguments checked against its signature, as the MCP SDK checks a tool's.
     Raises `ValidationError` for one it can't take."""
@@ -247,10 +285,7 @@ def _bars(song: MidiSong) -> int:
 
 def _articulations(map: str) -> Reply:
     """A built-in kit's articulations by name, for the page's `unmapped_notes` form."""
-    try:
-        kit = find_kit(map)
-    except KeyError as error:
-        raise ToolError(f"map: {error.args[0]}") from error
+    kit = built_in_kit(map, "map")
     return {
         "map": kit.ref,
         "articulations": [articulation.name for articulation in kit.articulations],
