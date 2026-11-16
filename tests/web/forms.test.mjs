@@ -1,6 +1,7 @@
 // The page's pure modules for its forms and words: each decision request's form and the answer
-// its values give, the check batch's one call, Fine-tune's fields, the section edits, the kits
-// as choices, the review's lines and the download's name (the website plan's PR 3). The
+// its values give, the check batch's one call, a remap's answers so far, Fine-tune's fields, the
+// section edits, the kits as choices, the review's and a remap's lines and the download's name
+// (the website plan's PR 3, and ADR 0131). The
 // requests are in the form the engine gives them, as `decisions` in a reply.
 
 import assert from "node:assert/strict";
@@ -19,6 +20,7 @@ import {
   form,
   kitOptions,
   mostRamp,
+  remapAnswers,
   scale,
   sectionEdit,
   touchedControls,
@@ -29,6 +31,7 @@ import {
   conversionLines,
   creativeLines,
   downloadName,
+  remapLines,
 } from "../../src/human_o_matic/web/static/js/review.js";
 
 const REQUEST = {
@@ -272,6 +275,26 @@ test("the check batch answers every request of set_hit_types in one call", () =>
   assert.deepEqual(args.hit_types, { snare: {}, kick: {} });
 });
 
+test("a remap sends every answer so far, the track alone and the rest added to, the latest winning", () => {
+  const track = remapAnswers({}, [REQUEST.drum_track], { track: "2" });
+  const asked = [REQUEST.unmapped_notes, REQUEST.conversion];
+  const first = remapAnswers(track, asked, {
+    "unmapped.20": "tom.1.hit",
+    "unmapped.99": "drop",
+    "substitutions.cowbell.hit": "perc.1.hit",
+  });
+  const again = remapAnswers(first, [REQUEST.conversion], { "substitutions.cowbell.hit": "drop" });
+
+  assert.deepEqual(track, { track: 2 });
+  assert.deepEqual(first, {
+    track: 2,
+    unmapped: { 20: "tom.1.hit", 99: "drop" },
+    substitutions: { "cowbell.hit": "perc.1.hit" },
+  });
+  assert.deepEqual(again, { ...first, substitutions: { "cowbell.hit": "drop" } });
+  assert.deepEqual(remapAnswers(again, [], {}), again);
+});
+
 test("Fine-tune starts each control at its resolved value, a ramp up to what the section allows", () => {
   const resolved = {
     style: "medium",
@@ -441,6 +464,7 @@ test("the download is named after the file, cleaned and cut, and counted from 1"
   assert.equal(downloadName("x".repeat(100) + ".mid", 1), `${"x".repeat(80)}-humanized-1.mid`);
   assert.equal(downloadName("...mid", 1), "song-humanized-1.mid");
   assert.equal(downloadName("take.mid.mid", 1), "takemid-humanized-1.mid");
+  assert.equal(downloadName("My Song (v2).mid", 4, "remapped"), "My Song (v2)-remapped-4.mid");
 });
 
 test("bars are labelled from 1, as a DAW shows them", () => {
@@ -467,6 +491,10 @@ test("the conversion's report and the creative sections' are a line each, in wor
     "5 notes written as hat.open, a name not checked yet",
   ]);
   assert.deepEqual(conversionLines({ changed: [], collisions: [], low_confidence: { read: {}, written: {} } }), []);
+  assert.deepEqual(remapLines({ conversion: report, outside_range: { "kick.hit": 3 } }), [
+    ...conversionLines(report),
+    "3 notes of kick.hit keep a velocity outside its range in the kit",
+  ]);
   assert.deepEqual(creativeLines(null), []);
   assert.deepEqual(creativeLines({ added: { ghost: 12, fill: 8 }, skipped: { missing: { choke: 2 } } }), [
     "Added: 12 ghost, 8 fill",

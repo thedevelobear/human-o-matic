@@ -198,9 +198,45 @@ def test_the_page_shows_the_loading_view_alone_until_the_engine_is_ready() -> No
         assert "app" in page.within[inside], inside
     for inside in ("download", "feedback", "feedback-form", "delete-box", "toast", "delete-dialog"):
         assert "app" in page.within[inside], inside
+    for inside in ("tabs", "reperform", "remap"):
+        assert "app" in page.within[inside], inside
     assert '$("#app").inert = !ready;' in shown
     assert '$("#app").hidden = !ready;' in shown
     assert loading.count(".inert") == 1
+
+
+def test_the_page_has_two_tabs_and_remap_s_holds_a_file_its_kits_and_the_requests_alone() -> None:
+    # Re-perform, whose panel holds the eight steps and the feedback form, and Remap, whose panel
+    # holds a file picker, the two kits and a box for the requests that came up, as the ARIA
+    # tabs pattern marks them (ADR 0131).
+    page = parsed(INDEX)
+    by_id = {
+        attributes["id"]: attributes for tag, attributes in page.elements if "id" in attributes
+    }
+    tabs = [attributes for tag, attributes in page.elements if attributes.get("role") == "tab"]
+    remap = {found for found, ancestors in page.within.items() if "remap" in ancestors}
+    controls = [
+        attributes["id"]
+        for tag, attributes in page.elements
+        if tag in ("input", "select", "textarea") and attributes.get("id") in remap
+    ]
+
+    assert by_id["tabs"]["role"] == "tablist"
+    assert [(tab["id"], tab["aria-controls"], tab["aria-selected"]) for tab in tabs] == [
+        ("reperform-tab", "reperform", "true"),
+        ("remap-tab", "remap", "false"),
+    ]
+    assert [tab.get("tabindex") for tab in tabs] == [None, "-1"]
+    for panel in ("reperform", "remap"):
+        assert by_id[panel]["role"] == "tabpanel"
+        assert by_id[panel]["aria-labelledby"] == f"{panel}-tab"
+    assert "hidden" in by_id["remap"]
+    assert "hidden" not in by_id["reperform"]
+    steps = ("file", "kits", "check", "drummer", "sections", "review", "download", "feedback")
+    for step in (*steps, "feedback-form"):
+        assert "reperform" in page.within[step], step
+    assert controls == ["remap-midi", "remap-from", "remap-to"]
+    assert "remap-requests" in remap
 
 
 def luminance(colour: str) -> float:

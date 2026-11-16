@@ -87,7 +87,14 @@
             <button type="button" id="last-applied" class="retro-btn self-start sm:self-center bg-cream hover:bg-white text-ink rounded-xl px-3.5 py-2 text-xs font-mono font-bold" hidden>Nothing applied yet</button>
           </div>
 
-          <nav aria-label="Steps" class="mb-5 mt-12">
+          <!-- The page's two tabs (ADR 0131): re-performing, whose steps the bar below lists, and
+               remapping. -->
+          <div id="tabs" role="tablist" aria-label="What to do with your file" class="mt-12 mb-5 flex flex-wrap items-center gap-3">
+            <button type="button" role="tab" id="reperform-tab" aria-selected="true" aria-controls="reperform" class="retro-btn bg-cream hover:bg-white text-ink font-display font-bold text-base sm:text-lg px-4 py-2 rounded-xl flex items-center gap-2"><svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" aria-hidden="true" focusable="false"><path d="M4 4l16 12M20 4L4 16"/><circle cx="12" cy="18" r="3"/></svg>Re-perform</button>
+            <button type="button" role="tab" id="remap-tab" aria-selected="false" aria-controls="remap" tabindex="-1" class="retro-btn bg-cream hover:bg-white text-ink font-display font-bold text-base sm:text-lg px-4 py-2 rounded-xl flex items-center gap-2"><svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="17 3 21 7 17 11"/><line x1="3" y1="7" x2="21" y2="7"/><polyline points="7 13 3 17 7 21"/><line x1="21" y1="17" x2="3" y2="17"/></svg>Remap</button>
+          </div>
+
+          <nav id="steps-nav" aria-label="Steps" class="mb-5">
             <ol id="steps" class="flex flex-wrap items-center gap-2">
               <li><button type="button" data-step="file" class="step retro-btn bg-cream hover:bg-white text-ink font-semibold text-xs sm:text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" focusable="false"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>1 File</button></li>
               <li><button type="button" data-step="kits" class="step retro-btn bg-cream hover:bg-white text-ink font-semibold text-xs sm:text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5"><svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" focusable="false"><ellipse cx="12" cy="7" rx="9" ry="4"/><path d="M3 7v10c0 2.2 4 4 9 4s9-1.8 9-4V7"/><line x1="7" y1="10.5" x2="7" y2="19.5"/><line x1="17" y1="10.5" x2="17" y2="19.5"/></svg>2 Kits</button></li>
@@ -105,6 +112,7 @@
           <p id="status" role="status" class="font-mono text-sm text-ink/75 empty:hidden mb-3"></p>
           <p id="problem" role="alert" class="font-bold text-[#B91C3C] empty:hidden mb-3"></p>
 
+          <div id="reperform" role="tabpanel" aria-labelledby="reperform-tab">
           <section id="file" aria-labelledby="file-title">
           <div class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative">
             <h2 id="file-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Choose a file</h2>
@@ -298,6 +306,43 @@
           </div>
           <div class="cta">
             <button id="send" form="feedback-form" class="next retro-btn iridescent-pill text-ink font-display font-bold text-base sm:text-lg px-6 py-2.5 rounded-2xl inline-flex items-center gap-2.5">Send feedback</button>
+          </div>
+          </section>
+          </div>
+
+          <!-- Remap: a file, its kits, the requests that came up and the download, with no
+               sections, style or feedback (ADR 0131). -->
+          <section id="remap" role="tabpanel" aria-labelledby="remap-tab" hidden>
+          <div class="card bg-cream retro-box-lg rounded-2xl p-4 sm:p-6 relative">
+            <h2 id="remap-title" tabindex="-1" class="font-display text-2xl sm:text-3xl font-bold text-ink tracking-tight mb-4">Remap to another kit</h2>
+            <p class="mb-4">Move a drum MIDI file to another kit's notes, and change nothing else: every note keeps its timing and velocity, and plays the same drum in the kit you choose. Nothing is re-performed, and your file stays in your browser.</p>
+            <form id="remap-form">
+              <div id="remap-drop" class="border-2 border-dashed border-ink rounded-2xl p-4 sm:p-5 bg-parchment/55 halftone-subtle mb-4">
+                <label for="remap-midi" class="block font-bold mb-2">A drum MIDI file, .mid or .midi, up to 512 KB</label>
+                <input id="remap-midi" type="file" accept=".mid,.midi" class="font-mono text-sm rounded-xl file:mr-3 file:rounded-xl file:px-3 file:py-1.5 file:font-bold file:text-ink">
+                <p class="font-mono text-xs text-ink/75 mt-2">Or drop it here.</p>
+              </div>
+              <p id="remap-chosen" class="font-mono text-sm mb-4 empty:hidden"></p>
+              <div class="field">
+                <label for="remap-from">Where did this MIDI come from?</label>
+                <select id="remap-from" name="from_map"></select>
+              </div>
+              <div class="field">
+                <label for="remap-to">Which drum instrument will play it?</label>
+                <select id="remap-to" name="to_map"></select>
+              </div>
+              <div id="remap-requests"></div>
+            </form>
+            <div id="remap-done" hidden>
+              <h3 class="font-display font-bold text-xl mt-6 mb-2">What to listen for</h3>
+              <ul id="remap-heard" class="list-disc pl-6 space-y-1"></ul>
+              <p id="remap-listen" class="mt-3"></p>
+              <p id="remap-saved" role="status" class="font-mono text-sm mt-3 empty:hidden"></p>
+            </div>
+          </div>
+          <div class="cta">
+            <button id="remap-run" form="remap-form" class="next retro-btn iridescent-pill text-ink font-display font-bold text-base sm:text-lg px-6 py-2.5 rounded-2xl inline-flex items-center gap-2.5" disabled>Remap <svg class="w-5 h-5" aria-hidden="true" focusable="false"><use href="#next"/></svg></button>
+            <button type="button" id="remap-get" class="next retro-btn iridescent-pill text-ink font-display font-bold text-base sm:text-lg px-6 py-2.5 rounded-2xl inline-flex items-center gap-2.5" hidden>Download the file</button>
           </div>
           </section>
         </main>
