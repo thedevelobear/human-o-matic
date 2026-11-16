@@ -124,9 +124,29 @@ def test_the_skill_names_every_tool_the_server_serves(tmp_path: Path) -> None:
 
     tools = anyio.run(listed)
 
-    assert len(tools) == 9
+    assert len(tools) == 10
     assert all(f"`{tool}`" in text for tool in tools), tools
     assert "`preview`" not in text
+
+
+def test_the_skill_always_asks_first_whether_to_remap_only_or_re_perform() -> None:
+    """ADR 0132: the first question, every time, and a remap asks only the kits and the
+    requests `remap` returns."""
+    text = SKILL.read_text(encoding="utf-8")
+    workflow = text[text.index("## Workflow") :]
+    first = workflow[: workflow.index("### 1. ")]
+    remapping = text[text.index("## Remap only") : text.index("## Turning answers")]
+
+    assert re.findall(r"^### (.+)$", workflow, re.MULTILINE)[0] == (
+        "0. Remap only, or re-perform? (rule 0)"
+    )
+    assert "always" in first
+    assert "even when the request seems to say which" in first
+    assert "unless" not in first
+    assert "0. **Ask first, always: remap only, or re-perform?**" in text
+    assert "`remap(midi_path, from_map, to_map, output_path)`" in remapping
+    assert all(f"`{kind}`" in remapping for kind in ("drum_track", "unmapped_notes", "conversion"))
+    assert "Ask nothing else." in remapping
 
 
 def test_the_vocabulary_has_about_30_answers() -> None:

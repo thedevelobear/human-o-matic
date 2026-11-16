@@ -4,6 +4,7 @@ Re-performs programmed drum MIDI section by section, steered by your answers.
 Programmed drum MIDI sounds robotic, and existing tools mostly fix that with blind randomization. Randomization can't know that one section is a full-power breakdown and another a low-energy bridge that needs groove. human-o-matic is an MCP server that re-performs a drum MIDI file section by section, steered by your answers to questions the connected agent asks. The result is a new MIDI file.
 
 ## How it works
+The agent first asks whether you want the file only remapped to another kit, or re-performed. A remap moves each drum note to the other kit's pitch and channel and changes nothing else: every note keeps its timing and velocity, and the agent asks only the kits and about any notes one kit can't read or the other can't play. A re-performance goes:
 1. The agent opens your file through the kit it was made for. The server finds its sections, its repeats, its soft notes and any bars whose grid is unclear.
 2. The agent confirms the kits, the section table, the soft notes and the unclear bars with you in one message.
 3. It asks once about the whole song: what kind of drummer, tight and modern or looser. Then, for each repeat group in song order, it asks every question the engine suggests for it, about energy and feel, and where a section leads into a clearly louder one, over how many bars to build into it, or none. Repeats take their group's answers, and the agent asks about one only when it probably differs, such as a bigger last chorus. "Your call" is always an answer. The agent counts its questions and tells you the count at the end, and nothing limits them.
@@ -72,6 +73,7 @@ The MCP server's tools take IDs and file paths, never notes, and reply with comp
 | `set_section_controls` | Sets controls for some sections or the whole song, and says what they give. |
 | `render` | Gives each section's statistics, without writing a file. |
 | `export` | Writes a new MIDI file and its report. It never writes over the input, or over a file that exists unless asked. |
+| `remap` | Writes a new MIDI file with the drums moved from `from_map` to `to_map`, every note's timing and velocity kept, or returns the questions about notes it can't place. It keeps no session, and never writes over the input, or over a file that exists unless asked. |
 
 Without an agent, the `human-o-matic` CLI works from flags and JSON files. `uv run human-o-matic analyze` prints a song's summary, sections and decision requests as JSON, and `uv run human-o-matic render` writes a new MIDI file from a JSON file of controls. `--help` lists the kits.
 
