@@ -1,0 +1,327 @@
+# Klangmacht Drums, from drumverter's note map of it (ADRs 0137 and 0138), at its source's commit
+# a627bacb4adf. Each name is drumverter's, read into the vocabulary, so it is medium confidence.
+# Where an articulation has several notes, the first is the one written and the others are only
+# read. A note left out is asked about. Built by tools/drumverter_maps.py: change it there and build
+# it again, rather than editing this file.
+schema = 1
+id = "klangmacht-drums"
+name = "Klangmacht Drums"
+
+# Default map: drumverter's klangmacht, Klangmacht Drums. 85 notes, of which 71 are named here as 52
+# articulations. Left out: snare ruff, 47; crash belltip, 79, 82, 84, 87, 91, 96; china belltip, 94;
+# bell, 97, 98, 99, 100, 101, 103.
+[[kits]]
+id = "default"
+name = "Default map"
+
+  [[kits.articulations]]
+  name = "kick.hit"
+  notes = [36, 35]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "kick.hit.left"
+  notes = [34, 33]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "snare.center"
+  notes = [39, 40]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "snare.offcenter"
+  notes = [38]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "snare.rimshot"
+  notes = [37]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "snare.sidestick"
+  notes = [48]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "snare.flam"
+  notes = [44, 42, 46]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.closed"
+  notes = [27, 30, 32]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.closed.tip"
+  notes = [25]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.open"
+  notes = [24]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.open.quarter"
+  notes = [31, 20, 21]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.open.half"
+  notes = [28, 29]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.open.three_quarter"
+  notes = [26]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.pedal"
+  notes = [23]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.pedal.splash"
+  notes = [22]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.2.closed"
+  notes = [73, 75]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.2.open"
+  notes = [74]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.2.open.quarter"
+  notes = [69]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.2.open.half"
+  notes = [71]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.2.open.three_quarter"
+  notes = [72]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "tom.1.hit"
+  notes = [58, 59]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "tom.2.hit"
+  notes = [56, 57]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "tom.3.hit"
+  notes = [54, 55]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "tom.4.hit"
+  notes = [51, 52]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "tom.5.hit"
+  notes = [49, 50]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "ride.1.bow"
+  notes = [68]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "ride.1.bell"
+  notes = [66]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "ride.1.bell.tip"
+  notes = [65]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "ride.1.crash"
+  notes = [70]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.1.hit"
+  notes = [85]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.1.choke"
+  notes = [86]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.2.hit"
+  notes = [93]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.2.choke"
+  notes = [95]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.3.hit"
+  notes = [81]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.3.choke"
+  notes = [83]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.4.hit"
+  notes = [88]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.4.choke"
+  notes = [89]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.5.hit"
+  notes = [76]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.5.choke"
+  notes = [77]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.6.hit"
+  notes = [78]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.6.choke"
+  notes = [80]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "china.1.hit"
+  notes = [90]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "china.1.choke"
+  notes = [92]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "china.2.hit"
+  notes = [102]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "china.2.choke"
+  notes = [104]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "china.3.hit"
+  notes = [105, 108]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "china.3.choke"
+  notes = [107]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "splash.1.hit"
+  notes = [110, 112]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "splash.1.choke"
+  notes = [111]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "splash.2.hit"
+  notes = [113, 115]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "splash.2.choke"
+  notes = [114]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "stack.1.hit"
+  notes = [109]
+  source = "mapping"
+  confidence = "medium"
