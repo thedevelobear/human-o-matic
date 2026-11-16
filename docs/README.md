@@ -33,7 +33,7 @@ What was decided, specifically enough to check the code against.
 | Plan | Status |
 |---|---|
 | [2026-11-08-human-o-matic](plans/2026-11-08-human-o-matic.md) | Active. The app, milestone by milestone. |
-| [2026-11-13-website](plans/2026-11-13-website.md) | Done. M7, the website, built after M4's gate and before M5: PRs 1 to 7 merged, and the site deployed. |
+| [2026-11-13-website](plans/2026-11-13-website.md) | Done. M7, the website, built after M4's gate and before M5: PRs 1 to 7 merged, and the site deployed. M8's Remap tab is added to its sections 5, 6 and 12. |
 
 ### Research
 | Page | Compares |
@@ -179,3 +179,4 @@ What was decided, specifically enough to check the code against.
 | [0133](decisions/0133-the-remap-tool-takes-paths-kits-and-every-answer-so-far-keeps-no-session-and-writes-one-file.md) | The `remap` tool takes paths, kits and every answer so far, keeps no session, writes nothing while a request is open, and writes one file with no report beside it | Accepted |
 | [0134](decisions/0134-the-vocabulary-adds-a-tom-s-edge-stroke-a-positional-articulation-as-the-snare-s-is.md) | The vocabulary adds a tom's edge stroke, `tom.N.edge`, a positional articulation as `snare.edge` is, which falls back to `tom.N.hit` | Accepted |
 | [0135](decisions/0135-sleep-token-ii-s-default-kit-and-logic-pro-drums-follow-their-makers-published-maps.md) | `sleep-token-ii/default` drops note 96, and `logic-pro-drums` is written from Drum Kit Designer's published GM Standard mapping, both following their makers' published maps | Accepted |
+| [0136](decisions/0136-the-remap-tab-shares-the-page-s-one-file-reads-the-worker-s-remap-reply-before-its-file-and-names-it-remapped.md) | The site's Remap tab shares the page's one file with Re-perform, as ARIA tabs, reads the worker's `remap` reply before its file, which `download` gives, and names it `<name>-remapped-<n>.mid` | Proposed |
