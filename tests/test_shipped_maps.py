@@ -1,12 +1,12 @@
 """The built-in maps in `data/maps/`. They are in the repository, so these are ordinary tests."""
 
 from collections import Counter
-from itertools import product
 
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+from drumverter_maps import read_pins
 from human_o_matic.maps.convert import DROP, Row, convert
 from human_o_matic.maps.kit import DrumKit
 from human_o_matic.maps.loader import built_in_maps
@@ -21,23 +21,21 @@ SLEEP_TOKEN = MAPS.kit("sleep-token-ii", "default")
 LOGIC = MAPS.kit("logic-pro-drums", "default")
 DRUMMER = MAPS.kit("iof-drummer", "default")
 FOUR_FOUR = TimeSignatureMap(960, [])
+FROM_DRUMVERTER = {
+    library.id: tuple(kit.id for kit in library.kits) for library in read_pins().libraries
+}
+"""The libraries tools/drumverter_maps.py builds from drumverter's note maps (ADR 0137)."""
 SHIPPED = {
     "gm": ("default",),
     "sleep-token-ii": ("default", "groove-pack"),
     "iof-drummer": ("default", "old"),
-    "ezdrummer-3": ("default",),
-    "superior-drummer-3": ("default",),
-    "addictive-drums-2": ("default",),
-    "ssd5": ("default",),
-    "ggd-modern-and-massive": ("default",),
-    "ni-abbey-road": ("default",),
     "logic-pro-drums": ("default",),
     "garageband-drums": ("default",),
     "counterkit": ("default",),
     "ni-drum-lab": ("default",),
     "krimh-drums": ("default",),
     "ggd-matt-halpern": ("default",),
-}
+} | FROM_DRUMVERTER
 NEW_IN_M3 = {
     # library: (articulations, pitches, the notes of its mapping it leaves out) (ADR 0055)
     "counterkit": (20, 20, (64, 65)),
@@ -86,6 +84,7 @@ def test_the_shipped_maps_load_one_library_per_file() -> None:
     kits = {library.id: tuple(kit.id for kit in library.kits) for library in MAPS.libraries}
 
     assert kits == SHIPPED
+    assert len(SHIPPED) == 117
     assert len(sorted((data_dir() / "maps").glob("*.toml"))) == len(SHIPPED)
     assert all(library.schema_version == 1 for library in MAPS.libraries)
 
@@ -260,10 +259,13 @@ def check_fallback_order(row: Row, source: DrumKit, target: DrumKit) -> None:
                 assert step.used == vocabulary.default(asked.family, asked.piece).text, step
 
 
-@pytest.mark.parametrize(("source", "target"), list(product(KITS, KITS)), ids=lambda kit: kit.ref)
-def test_converting_between_shipped_maps_never_changes_family(
-    source: DrumKit, target: DrumKit
-) -> None:
+@pytest.mark.parametrize("source", KITS, ids=lambda kit: kit.ref)
+def test_converting_between_shipped_maps_never_changes_family(source: DrumKit) -> None:
+    for target in KITS:
+        check_conversion(source, target)
+
+
+def check_conversion(source: DrumKit, target: DrumKit) -> None:
     notes = every_binding_note(source)
 
     conversion = convert(notes, source, target, FOUR_FOUR)
@@ -369,8 +371,10 @@ def test_random_hits_never_change_family(data: st.DataObject) -> None:
     check_report(conversion.rows, source, target)
 
 
-@pytest.mark.parametrize("target", KITS, ids=lambda kit: kit.ref)
-def test_note_39_of_the_default_layout_is_a_snare_on_every_kit_and_never_a_flam(
+@pytest.mark.parametrize(
+    "target", [kit for kit in KITS if kit.pieces("snare")], ids=lambda kit: kit.ref
+)
+def test_note_39_of_the_default_layout_is_a_snare_on_every_kit_with_one_and_never_a_flam(
     target: DrumKit,
 ) -> None:
     hit = note(39)

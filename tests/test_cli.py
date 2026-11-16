@@ -353,7 +353,10 @@ def test_a_grid_a_beat_cant_have_is_a_usage_error(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     ("from_map", "message"),
     [
-        ("nope", "no library 'nope'; there are addictive-drums-2, counterkit, ezdrummer-3"),
+        (
+            "nope",
+            "no library 'nope'; there are addictive-drums-2, alesis-command, alesis-crimson-ii",
+        ),
         ("iof-drummer", "iof-drummer has the kits default, old; name one"),
         ("gm/nope", "gm has no kit 'nope'; it has default"),
         ("iof-drummer/", "iof-drummer has no kit ''; it has default, old"),
@@ -573,7 +576,7 @@ def test_the_summary_counts_the_score(tmp_path: Path) -> None:
 
 
 def test_the_summary_counts_notes_read_through_low_confidence_names(tmp_path: Path) -> None:
-    kit = built_in_maps().kit("ezdrummer-3")
+    kit = built_in_maps().kit("garageband-drums")
     song = read_midi(drums(tmp_path, GROOVE))
     normalized = normalize(song, kit)
 

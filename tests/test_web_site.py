@@ -138,6 +138,8 @@ def test_the_app_zip_holds_the_source_data_and_vocabulary_at_their_paths() -> No
     assert "src/human_o_matic/service.py" in names
     assert "data/vocabulary.toml" in names
     assert "data/styles/tight.toml" in names
+    # drumverter's licence notice ships with the maps built from its (ADR 0137).
+    assert "data/maps/NOTICE.md" in names
     assert "skills/human-o-matic/references/vocabulary.md" in names
     assert not [name for name in names if "__pycache__" in name or "/static/" in name]
     assert not [name for name in names if name.startswith(("private", "tests", "tools"))]
