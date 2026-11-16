@@ -661,24 +661,31 @@ class Tools:
         target = built_in_kit(to_map, "to_map")
         output = _output(output_path)
         _writable(output, path, overwrite, "the input file")
+        answers = remap_answers(unmapped, substitutions)
         try:
             data = path.read_bytes()
         except OSError as error:
             raise ToolError(f"{path} can't be read: {error}") from error
         reply, remapped = remap_reply(
-            data,
-            str(path),
-            source,
-            target,
-            track=track,
-            unmapped=unmapped,
-            substitutions=substitutions,
-            output=str(output),
+            data, str(path), source, target, track=track, answers=answers, output=str(output)
         )
         if remapped is None:
             return reply
         _write_together([(output, remapped)], overwrite)
         return {"output": str(output), **reply}
+
+
+def remap_answers(
+    unmapped: dict[str, str] | None, substitutions: dict[str, str] | None
+) -> RenderAnswers:
+    """`remap`'s `unmapped` and `substitutions` answers, checked before the file is read. Raises
+    `ToolError`."""
+    try:
+        return RenderAnswers.model_validate(
+            {"unmapped": unmapped or {}, "substitutions": substitutions or {}}
+        )
+    except ValidationError as error:
+        raise ToolError(_problems(error)) from error
 
 
 def remap_reply(
@@ -687,21 +694,14 @@ def remap_reply(
     source: DrumKit,
     target: DrumKit,
     *,
-    track: int | None = None,
-    unmapped: dict[str, str] | None = None,
-    substitutions: dict[str, str] | None = None,
+    track: int | None,
+    answers: RenderAnswers,
     output: str | None = None,
 ) -> tuple[Reply, bytes | None]:
     """`remap`'s reply on a MIDI file's bytes, named `file` in it and in its errors, with the
     `output` it names, if any, and the remapped file's bytes once every note is placed, or None
     while a request is open. The tool writes those bytes, and the site's worker gives them to
     the page, so both make the same file (ADR 0131). Raises `ToolError`."""
-    try:
-        answers = RenderAnswers.model_validate(
-            {"unmapped": unmapped or {}, "substitutions": substitutions or {}}
-        )
-    except ValidationError as error:
-        raise ToolError(_problems(error)) from error
     try:
         song = parse_midi(data, keep_ppq=True)
         remapped = remap(

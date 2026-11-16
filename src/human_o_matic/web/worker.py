@@ -32,7 +32,14 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError, v
 from human_o_matic.midi.io import MidiFileError, MidiSong, midi_bytes, parse_midi
 from human_o_matic.midi.tempo import META_TEMPO, time_signature_map
 from human_o_matic.presets import read_vocabulary, starting_points
-from human_o_matic.service import Reply, ToolError, Tools, built_in_kit, remap_reply
+from human_o_matic.service import (
+    Reply,
+    ToolError,
+    Tools,
+    built_in_kit,
+    remap_answers,
+    remap_reply,
+)
 from human_o_matic.session import (
     STATE_ENV,
     SessionError,
@@ -243,8 +250,7 @@ def _remap(
         built_in_kit(from_map, "from_map"),
         built_in_kit(to_map, "to_map"),
         track=track,
-        unmapped=unmapped,
-        substitutions=substitutions,
+        answers=remap_answers(unmapped, substitutions),
     )
     return remapped if download and remapped is not None else reply
 
