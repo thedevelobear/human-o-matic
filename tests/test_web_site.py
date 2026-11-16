@@ -1,6 +1,7 @@
 """The site's build without the network, its `_headers`, its page's origins and its file sizes,
-and the fixed hash: the calls of `tests/web/flow.json` on the check song, built in code,
-download the file whose SHA-256 the flow holds, as they must under Pyodide in Node (ADR 0100)."""
+and the fixed hashes: the calls of `tests/web/flow.json` on the check song, built in code,
+download the file whose SHA-256 the flow holds, and its remap's calls the file the remap tool
+writes, as they must under Pyodide in Node (ADRs 0100 and 0131)."""
 
 import hashlib
 import io
@@ -32,6 +33,8 @@ from build_site import (
     read_pins,
 )
 from human_o_matic.midi.io import parse_midi
+from human_o_matic.service import Tools
+from human_o_matic.session import SessionStore
 from human_o_matic.web import static_dir
 from human_o_matic.web.worker import Worker
 
@@ -42,7 +45,7 @@ def run_flow(worker: Worker, flow: dict[str, Any], song: bytes) -> bytes:
     for step in flow["calls"]:
         args = json.loads(json.dumps(step["args"]).replace('"$session"', json.dumps(session)))
         request = json.dumps({"call": step["call"], "args": args})
-        out = worker.handle(request, song if step["call"] == "open_session" else None)
+        out = worker.handle(request, song if step["call"] in ("open_session", "remap") else None)
         if isinstance(out, bytes):
             return out
         reply = json.loads(out)
@@ -57,6 +60,23 @@ def test_the_flow_downloads_the_file_of_the_fixed_sha256(tmp_path: Path) -> None
     data = run_flow(Worker(tmp_path), flow, built_song())
 
     assert hashlib.sha256(data).hexdigest() == flow["sha256"]
+
+
+def test_the_remap_flow_downloads_the_remap_tool_s_file_of_the_fixed_sha256(
+    tmp_path: Path,
+) -> None:
+    remap = json.loads(FLOW.read_text(encoding="utf-8"))["remap"]
+    *_, last = remap["calls"]
+    args = {key: value for key, value in last["args"].items() if key not in ("name", "download")}
+    song = tmp_path / SONG
+    song.write_bytes(built_song())
+    output = tmp_path / "remapped.mid"
+
+    data = run_flow(Worker(tmp_path / "worker"), remap, built_song())
+    Tools(SessionStore(tmp_path / "sessions")).remap(str(song), output_path=str(output), **args)
+
+    assert hashlib.sha256(data).hexdigest() == remap["sha256"]
+    assert output.read_bytes() == data
 
 
 def test_the_check_song_is_304_bars_built_the_same_every_time() -> None:
