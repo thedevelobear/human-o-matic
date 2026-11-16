@@ -29,7 +29,7 @@ Agent:  Taking that as maximum energy, tight, little light and shade: kick about
 ```
 
 ## Features
-- **Built-in kits.** 15 libraries with 17 kits: General MIDI and 14 drum libraries. A file made for one kit can be written for another. A note the target kit can't play falls back within its family, or the agent asks about it. Maps are built in, and no map file of your own can be loaded.
+- **Built-in kits.** 117 libraries with 161 kits: General MIDI, and drum libraries, DAW instruments, drum machines and e-drum modules, most from drumverter's published note maps. A file made for one kit can be written for another. A note the target kit can't play falls back within its family, or the agent asks about it. Maps are built in, and no map file of your own can be loaded.
 - **Styles.** `tight`, the default, `medium` and `loose`, fitted from performed drum MIDI, with the song's tightness tuned within the style.
 - **Per section.** Energy, groove, dynamic range, feel from pushed to laid back, an arc that holds steady, builds or drops, fill intensity and ghost level. A ramp builds a section's last bars, each a little harder, its fills with them, into a louder next section, so that section's first beat is the peak, and none is the default. `skip` leaves a section exactly as it came in.
 - **A performance, not noise.** Outside a skipped section, only the notes and their hit types, soft, normal or accent, are kept from the input. Velocities and timing are performed anew, never the same velocity twice in a row on one drum, but in rare corners: loud notes beside soft ones, and an articulation that plays only one velocity. Timing stays within what drummers play, and drifts rather than jitters.

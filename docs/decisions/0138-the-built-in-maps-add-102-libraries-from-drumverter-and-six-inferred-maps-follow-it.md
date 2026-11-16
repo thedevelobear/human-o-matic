@@ -1,0 +1,21 @@
+# 0138. The built-in maps add 102 libraries from drumverter's note maps, and six inferred maps follow it
+
+- **Status:** Proposed
+- **Date:** 2026-11-16
+
+- **Six inferred maps change** to drumverter's, built as [ADR 0137](0137-drumverter-s-published-note-maps-are-a-source-for-the-built-in-maps-and-a-maker-s-own-map-wins.md) sets:
+  - `addictive-drums-2`, checked against XLN Audio's published Addictive Drums 2 keymap: 46 articulations on 50 notes, `high` on the 17 the keymap names as the vocabulary does. Notes 3, 4 and 6, which the keymap gives to a controller's position, and 41 and 43, the snare's shallow rimshot and hit, are left out, where drumverter reads them as plain strokes. The keymap's Cymbal 6 is `crash.5`, the kit's fifth crash. The inferred map's tip and shaft, swapped on the closed hats, are as the keymap has them.
+  - `ezdrummer-3`, `superior-drummer-3` and `ssd5`, each one kit, `default`.
+  - `ggd-modern-and-massive`: the kits `default`, the pack's own mapping, `ggd` and `gm`, its other mapping presets.
+  - `ni-abbey-road`: the kits `60s-early` and `60s-late`, of Abbey Road 60s Drummer, and `modern-white` and `modern-sparkle`, of Abbey Road Modern Drummer. It has no `default` kit, so the library alone no longer names one, as for `sleep-token-ii` ([ADR 0066](0066-sleep-token-ii-gets-an-inferred-groove-pack-kit.md)).
+- **102 libraries are added**, with 139 kits: every engine drumverter maps that no built-in map covers, drum libraries, DAW instruments, drum machines, e-drum modules and the notation programs Guitar Pro and MuseScore, listed in `tools/drumverter_maps.toml`. Each id names the product in kebab case ([ADR 0023](0023-built-in-library-ids.md)). A pack's mapping presets are kits of its library, `default` being the pack's own and `ggd`, `gm` and `halpern` the others GetGood Drums offers, and so are the kits of one product with layouts of their own, as Impact XT's `roomy-rock`, Odeholm Drums' `alt` and RS Drums Monarch's `gm`. Separate products, such as BFD3, BFD Eco and BFD Player, are separate libraries.
+- **Not built from drumverter's:**
+  - `gm`, which follows the General MIDI Level 1 standard ([ADR 0022](0022-the-general-midi-map-follows-the-standard.md)), where drumverter reads 35 as a second note of the kick and 69 as a shaker, and adds 31 and 82, which Level 1 doesn't have.
+  - drumverter's own "MidiRemap Standard", the layout it converts through, which no instrument plays.
+  - The maps written from their makers' own mappings, `sleep-token-ii`, `logic-pro-drums`, `counterkit`, `ni-drum-lab` and `krimh-drums`, which stay as they are. Drumverter's reading of each is compared with them, and where it differs, it waits for the owner.
+  - `ggd-matt-halpern`, which stays inferred. Calibration reads performed MIDI through it, and drumverter's layout of GetGood Drums' MIDI packs, `ggd-groove-player`, reads six of its notes differently, which moves the fitted styles slightly. Drumverter's three mappings of the pack wait until the owner chooses the kit calibration reads.
+  - `garageband-drums` and `iof-drummer`, which drumverter doesn't map, so they stay inferred, at low confidence.
+
+**Why:** A user chooses a map by the library they have, and these are the libraries a published map names. The inferred maps were guesses from where the notes sit, and drumverter names every note. Leaving the maker-based maps and the calibration's kit alone keeps a third party's reading from overriding a maker's, and the styles from moving without the owner.
+
+**Consequences:** 117 libraries with 161 kits ship. `list_maps` and an error naming the libraries list all of them. A conversion's test runs over every pair of kits, now about 26,000, in one test per source kit. [ADR 0011](0011-m1-maps-for-general-midi-and-drum-libraries.md)'s list of libraries and its inferred names, and [ADR 0023](0023-built-in-library-ids.md)'s list of ids, are amended by this ADR.
