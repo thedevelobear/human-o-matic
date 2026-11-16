@@ -518,24 +518,25 @@ function drawStrip(list, sections, pick) {
   );
 }
 
-/** Each open request's form in `box`, its fields' ids under `prefix`, an unmapped note's
- * choices the articulations of the kit that read it. */
-async function drawRequests(box, decisions, prefix) {
-  box.replaceChildren();
+/** Each open request's form, drawn apart from the page for the caller to place, its fields' ids
+ * under `prefix`, an unmapped note's choices the articulations of the kit that read it. */
+async function requestForms(decisions, prefix) {
+  const parts = [];
   for (const [index, request] of decisions.entries()) {
     const unmapped = request.kind === "unmapped_notes";
     const extra = unmapped ? await ask("kit_articulations", { map: request.details.kit }) : {};
     const part = element("div", { class: "request" }, element("p", {}, request.message));
     drawFields(part, form(request, extra.error ? {} : extra), `${prefix}-${index}`);
-    box.append(part);
+    parts.push(part);
   }
+  return parts;
 }
 
 async function drawCheck() {
   $("#opened-facts").textContent = `${count(page.bars, "bar")} in ${count(page.table.length, "section")}.`;
   drawStrip($("#check-sections"), page.table, false);
   const box = $("#requests");
-  await drawRequests(box, page.decisions, "request");
+  box.replaceChildren(...(await requestForms(page.decisions, "request")));
   if (!page.decisions.length) {
     box.append(element("p", {}, "Nothing else to check: confirm the sections to go on."));
   }
@@ -966,8 +967,8 @@ async function remapSong(event) {
   remap.answers = remapAnswers(remap.answers, remap.decisions, readFields($("#remap-requests")));
   say("Remapping the file");
   const reply = await ask("remap", remapArgs(), page.file.bytes);
-  // A file or kit chosen while the engine worked has started the remap afresh, and the reply is
-  // of what came before.
+  // A file or kit chosen while the engine worked, after either call, has started the remap
+  // afresh, and what came back is of what came before, so none of it is shown.
   if (page.remap !== remap) {
     return;
   }
@@ -975,9 +976,13 @@ async function remapSong(event) {
     say("");
     return;
   }
+  const forms = await requestForms(reply.decisions, "remap-request");
+  if (page.remap !== remap) {
+    return;
+  }
   remap.decisions = reply.decisions;
   remap.summary = reply.summary ?? null;
-  await drawRequests($("#remap-requests"), remap.decisions, "remap-request");
+  $("#remap-requests").replaceChildren(...forms);
   const done = !remap.decisions.length;
   $("#remap-done").hidden = !done;
   $("#remap-run").hidden = done;

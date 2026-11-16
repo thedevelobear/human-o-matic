@@ -549,3 +549,17 @@ def test_the_page_s_only_request_with_a_body_is_the_feedback_form() -> None:
     script = (static_dir() / "js" / "feedback.js").read_text(encoding="utf-8")
     assert '"Content-Type": "application/x-www-form-urlencoded"' in script
     assert "body: body.toString()" in script
+
+
+def test_a_remap_shows_nothing_of_a_call_a_file_or_kit_chosen_since_has_left_behind() -> None:
+    # A remap keeps no session, and a file or kit chosen starts it afresh (ADR 0136), so after
+    # each call remapSong waits on, the engine's reply and the request forms' articulations, it
+    # goes on only while the remap it started is still the page's, and it places the forms only
+    # after the last.
+    text = (static_dir() / "js" / "app.js").read_text(encoding="utf-8")
+    functions = {found.group(1): found.group(0) for found in FUNCTION.finditer(text)}
+    body = COMMENT.sub("", functions["remapSong"])
+    after = re.findall(r"\bawait [^;]*;\s*(\S[^\n]*)", body)
+
+    assert after == ["if (page.remap !== remap) {"] * 2
+    assert "replaceChildren" not in body[: body.rindex("await ")]
