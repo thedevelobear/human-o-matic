@@ -249,7 +249,8 @@ function namesOf(key) {
 const TABS = ["reperform", "remap"];
 
 /** Show the panel `name` of the page's two tabs, as the ARIA tabs pattern does, with the
- * re-performing flow's step bar and "Last applied" beside its own panel alone (ADR 0131). */
+ * re-performing flow's step bar and "Last applied" beside its own panel alone (ADR 0131), and the
+ * status and alert lines the two share emptied of what the other tab said. */
 function showTab(name, focus = false) {
   for (const panel of TABS) {
     const tab = $(`#${panel}-tab`);
@@ -259,6 +260,7 @@ function showTab(name, focus = false) {
   }
   $("#steps-nav").hidden = name !== "reperform";
   drawApplied();
+  say("");
   problem("");
   if (focus) {
     $(`#${name}-tab`).focus();
