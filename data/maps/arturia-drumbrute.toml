@@ -1,0 +1,98 @@
+# Arturia DrumBrute, from drumverter's note map of it (ADRs 0137 and 0138), at its source's commit
+# a627bacb4adf. Each name is drumverter's, read into the vocabulary, so it is medium confidence.
+# Where an articulation has several notes, the first is the one written and the others are only
+# read. A note left out is asked about. Built by tools/drumverter_maps.py: change it there and build
+# it again, rather than editing this file.
+schema = 1
+id = "arturia-drumbrute"
+name = "Arturia DrumBrute"
+
+# Default map: drumverter's arturia_drumbrute, Arturia DrumBrute. 17 notes, of which 14 are named
+# here as 14 articulations. Left out: alternate kick, 37; percussion, 49, 52.
+[[kits]]
+id = "default"
+name = "Default map"
+
+  [[kits.articulations]]
+  name = "kick.hit"
+  notes = [36]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "snare.center"
+  notes = [38]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "snare.sidestick"
+  notes = [40]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.closed"
+  notes = [42]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.open"
+  notes = [43]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "tom.1.hit"
+  notes = [45]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "tom.2.hit"
+  notes = [47]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.1.hit"
+  notes = [48]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "tambourine.hit"
+  notes = [51]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "clap.hit"
+  notes = [39]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "maracas.hit"
+  notes = [50]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "claves.hit"
+  notes = [41]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "conga.1.open"
+  notes = [44]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "conga.2.open"
+  notes = [46]
+  source = "mapping"
+  confidence = "medium"
