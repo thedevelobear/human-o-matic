@@ -1,11 +1,18 @@
-# Addictive Drums 2 (ADR 0011). Each name is inferred from where the library puts its notes, so
-# each entry is low confidence until it is checked in the instrument (ADR 0025). Built in private/
-# from local sources (ADR 0007): change it there and build it again, rather than editing this
-# file.
+# Addictive Drums 2, from drumverter's note map of it (ADRs 0137 and 0138), at its source's commit
+# a627bacb4adf. Each name is drumverter's, read into the vocabulary, so it is medium confidence, or
+# high where XLN Audio's Addictive Drums 2 keymap names the same stroke as the vocabulary does.
+# Where it names a note otherwise and the vocabulary has no name for it, the note is left out. Where
+# an articulation has several notes, the first is the one written and the others are only read. A
+# note left out is asked about. Built by tools/drumverter_maps.py: change it there and build it
+# again, rather than editing this file.
 schema = 1
 id = "addictive-drums-2"
 name = "Addictive Drums 2"
 
+# Default map: drumverter's addictive_drums2, Addictive Drums 2. 70 notes, of which 50 are named
+# here as 46 articulations. Left out: Ride 2's position controller, 3; Ride 1's position controller,
+# 4; the snare's position controller, 6; hi-hat bell, 9, 53, 58; the snare's shallow rimshot, 41;
+# the snare's shallow hit, 43; percussion, 47, 73, 74, 76, 96, 97, 98, 99, 101, 102, 103, 104.
 [[kits]]
 id = "default"
 name = "Default map"
@@ -13,185 +20,277 @@ name = "Default map"
   [[kits.articulations]]
   name = "kick.hit"
   notes = [36]
-  source = "inferred"
-  confidence = "low"
+  source = "mapping"
+  confidence = "high"
 
   [[kits.articulations]]
   name = "snare.center"
-  notes = [38]
-  source = "inferred"
-  confidence = "low"
+  notes = [38, 40]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "snare.rimshot"
+  notes = [37, 39]
+  source = "mapping"
+  confidence = "high"
 
   [[kits.articulations]]
   name = "snare.sidestick"
   notes = [42]
-  source = "inferred"
-  confidence = "low"
+  source = "mapping"
+  confidence = "high"
 
   [[kits.articulations]]
-  name = "tom.1.hit"
-  notes = [71]
-  source = "inferred"
-  confidence = "low"
-
-  [[kits.articulations]]
-  name = "tom.2.hit"
-  notes = [69]
-  source = "inferred"
-  confidence = "low"
-
-  [[kits.articulations]]
-  name = "tom.3.hit"
-  notes = [67]
-  source = "inferred"
-  confidence = "low"
-
-  [[kits.articulations]]
-  name = "tom.4.hit"
-  notes = [65]
-  source = "inferred"
-  confidence = "low"
-
-  [[kits.articulations]]
-  name = "hat.pedal"
-  notes = [48]
-  source = "inferred"
-  confidence = "low"
-
-  [[kits.articulations]]
-  name = "hat.tight"
-  notes = [51]
-  source = "inferred"
-  confidence = "low"
-
-  [[kits.articulations]]
-  name = "hat.tight.tip"
-  notes = [52]
-  source = "inferred"
-  confidence = "low"
+  name = "snare.rim"
+  notes = [44]
+  source = "mapping"
+  confidence = "medium"
 
   [[kits.articulations]]
   name = "hat.closed"
-  notes = [49]
-  source = "inferred"
-  confidence = "low"
+  notes = [52]
+  source = "mapping"
+  confidence = "medium"
 
   [[kits.articulations]]
   name = "hat.closed.tip"
+  notes = [51]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.tight"
   notes = [50]
-  source = "inferred"
-  confidence = "low"
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.tight.tip"
+  notes = [49]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.open"
+  notes = [57]
+  source = "mapping"
+  confidence = "medium"
 
   [[kits.articulations]]
   name = "hat.open.quarter"
   notes = [54]
-  source = "inferred"
-  confidence = "low"
+  source = "mapping"
+  confidence = "medium"
 
   [[kits.articulations]]
   name = "hat.open.half"
   notes = [55]
-  source = "inferred"
-  confidence = "low"
+  source = "mapping"
+  confidence = "medium"
 
   [[kits.articulations]]
-  name = "hat.open"
+  name = "hat.open.three_quarter"
   notes = [56]
-  source = "inferred"
-  confidence = "low"
+  source = "mapping"
+  confidence = "medium"
 
   [[kits.articulations]]
-  name = "crash.1.hit"
-  notes = [77]
-  source = "inferred"
-  confidence = "low"
-
-  [[kits.articulations]]
-  name = "crash.2.hit"
-  notes = [79]
-  source = "inferred"
-  confidence = "low"
-
-  [[kits.articulations]]
-  name = "china.1.hit"
-  notes = [93]
-  source = "inferred"
-  confidence = "low"
-
-  [[kits.articulations]]
-  name = "ride.1.bow"
-  notes = [60]
-  source = "inferred"
-  confidence = "low"
-
-  [[kits.articulations]]
-  name = "ride.1.crash"
-  notes = [62]
-  source = "inferred"
-  confidence = "low"
-
-  [[kits.articulations]]
-  name = "ride.1.bell"
-  notes = [61]
-  source = "inferred"
-  confidence = "low"
-
-  [[kits.articulations]]
-  name = "crash.1.choke"
-  notes = [78]
-  source = "inferred"
-  confidence = "low"
-
-  [[kits.articulations]]
-  name = "crash.2.choke"
-  notes = [80]
-  source = "inferred"
-  confidence = "low"
-
-  [[kits.articulations]]
-  name = "china.1.choke"
-  notes = [94]
-  source = "inferred"
-  confidence = "low"
-
-  [[kits.articulations]]
-  name = "ride.1.choke"
-  notes = [63]
-  source = "inferred"
-  confidence = "low"
+  name = "hat.pedal"
+  notes = [48]
+  source = "mapping"
+  confidence = "high"
 
   [[kits.articulations]]
   name = "hat.pedal.splash"
   notes = [59]
-  source = "inferred"
-  confidence = "low"
+  source = "mapping"
+  confidence = "medium"
 
   [[kits.articulations]]
-  name = "snare.rimshot"
-  notes = [37]
-  source = "inferred"
-  confidence = "low"
+  name = "hat.variable"
+  notes = [7]
+  cc = { mode = "shape" }
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.variable.tip"
+  notes = [8]
+  cc = { mode = "shape" }
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "tom.1.hit"
+  notes = [71]
+  source = "mapping"
+  confidence = "high"
 
   [[kits.articulations]]
   name = "tom.1.rimshot"
   notes = [72]
-  source = "inferred"
-  confidence = "low"
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.2.hit"
+  notes = [69]
+  source = "mapping"
+  confidence = "high"
 
   [[kits.articulations]]
   name = "tom.2.rimshot"
   notes = [70]
-  source = "inferred"
-  confidence = "low"
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.3.hit"
+  notes = [67]
+  source = "mapping"
+  confidence = "high"
 
   [[kits.articulations]]
   name = "tom.3.rimshot"
   notes = [68]
-  source = "inferred"
-  confidence = "low"
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "tom.4.hit"
+  notes = [65]
+  source = "mapping"
+  confidence = "high"
 
   [[kits.articulations]]
   name = "tom.4.rimshot"
   notes = [66]
-  source = "inferred"
-  confidence = "low"
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "ride.1.bow"
+  notes = [60, 45]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "ride.1.bell"
+  notes = [61]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "ride.1.crash"
+  notes = [62]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "ride.1.choke"
+  notes = [63]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "ride.2.bow"
+  notes = [84]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "ride.2.bell"
+  notes = [85]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "ride.2.crash"
+  notes = [86]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "ride.2.choke"
+  notes = [87]
+  source = "mapping"
+  confidence = "high"
+
+  [[kits.articulations]]
+  name = "crash.1.hit"
+  notes = [77, 46]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.1.choke"
+  notes = [78]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.2.hit"
+  notes = [79]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.2.choke"
+  notes = [80]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.3.hit"
+  notes = [81]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.3.choke"
+  notes = [82]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.4.hit"
+  notes = [89]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.4.choke"
+  notes = [90]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.5.hit"
+  notes = [93]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "crash.5.choke"
+  notes = [94]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "china.1.hit"
+  notes = [91]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "china.1.choke"
+  notes = [92]
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "sticks.hit"
+  notes = [75]
+  source = "mapping"
+  confidence = "high"
