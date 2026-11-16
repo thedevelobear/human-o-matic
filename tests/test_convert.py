@@ -42,6 +42,7 @@ BIG = kit(
     articulation("hat.open.quarter.tip", 83, confidence="medium"),
     articulation("hat.variable", 32, cc=SHAPE),
     *(articulation(f"tom.{n}.hit", pitch) for n, pitch in enumerate((50, 48, 47, 45, 43, 41), 1)),
+    articulation("tom.1.edge", 60),
     articulation("crash.1.hit", 49),
     articulation("crash.1.choke", 91),
     articulation("crash.1.mute", 61),
@@ -124,6 +125,7 @@ def test_the_exact_name_is_used_first(kits: tuple[DrumKit, DrumKit]) -> None:
         ("snare.flam", "snare.center", [("default", "snare.flam", "snare.center")]),
         ("ride.1.crash", "ride.1.bow", [("default", "ride.1.crash", "ride.1.bow")]),
         ("crash.1.mute", "crash.1.hit", [("default", "crash.1.mute", "crash.1.hit")]),
+        ("tom.1.edge", "tom.1.hit", [("default", "tom.1.edge", "tom.1.hit")]),
         (
             "tom.6.hit",
             "tom.3.hit",
