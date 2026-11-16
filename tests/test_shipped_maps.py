@@ -18,6 +18,7 @@ MAPS = built_in_maps()
 KITS = list(MAPS)
 GM = MAPS.kit("gm", "default")
 SLEEP_TOKEN = MAPS.kit("sleep-token-ii", "default")
+LOGIC = MAPS.kit("logic-pro-drums", "default")
 DRUMMER = MAPS.kit("iof-drummer", "default")
 FOUR_FOUR = TimeSignatureMap(960, [])
 SHIPPED = {
@@ -132,6 +133,31 @@ def test_the_sleep_token_map_has_its_67_pitches_as_57_articulations() -> None:
     flam, rimshot = SLEEP_TOKEN.resolve(39, 100, 9), SLEEP_TOKEN.resolve(40, 100, 9)
     assert (flam and flam.name, rimshot and rimshot.name) == ("snare.flam", "snare.rimshot")
     assert (SLEEP_TOKEN.pieces("tom"), SLEEP_TOKEN.pieces("crash")) == (3, 4)
+
+
+def test_logic_pro_drums_has_its_published_mapping_but_note_32_as_27_articulations() -> None:
+    pitches = [binding.note for entry in LOGIC.articulations for binding in entry.bindings]
+    found = [LOGIC.resolve(pitch, 100, 9) for pitch in (35, 33, 50, 52, 59, 70)]
+
+    assert len(LOGIC.articulations) == 27
+    assert len(pitches) == len(set(pitches)) == 29
+    assert set(pitches) == set(range(28, 55)) - {30, 32} | {56, 57, 59, 70}
+    assert all(entry.source == "mapping" for entry in LOGIC.articulations)
+    assert [entry and entry.name for entry in found] == [
+        "kick.hit",
+        "hat.pedal",
+        "tom.1.edge",
+        "ride.1.crash",
+        "ride.1.bow.alt",
+        "maracas.hit",
+    ]
+    assert (LOGIC.write("kick.hit").pitch, LOGIC.write("hat.pedal").pitch) == (36, 44)
+    # A tom's edge goes to its tom, re-spread by register, on a kit without edges.
+    moved = {
+        row.source: row.target
+        for row in convert(every_binding_note(LOGIC), LOGIC, GM, FOUR_FOUR).rows
+    }
+    assert [moved[f"tom.{n}.edge"] for n in (1, 2, 3)] == ["tom.1.hit", "tom.3.hit", "tom.6.hit"]
 
 
 @pytest.mark.parametrize("library", NEW_IN_M3)
