@@ -33,7 +33,7 @@ What was decided, specifically enough to check the code against.
 | Plan | Status |
 |---|---|
 | [2026-11-08-human-o-matic](plans/2026-11-08-human-o-matic.md) | Active. The app, milestone by milestone. |
-| [2026-11-13-website](plans/2026-11-13-website.md) | Active. M7, the website, built after M4's gate and before M5: PRs 1 to 6 merged. |
+| [2026-11-13-website](plans/2026-11-13-website.md) | Done. M7, the website, built after M4's gate and before M5: PRs 1 to 7 merged, and the site deployed. |
 
 ### Research
 | Page | Compares |
