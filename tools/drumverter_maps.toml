@@ -1,0 +1,821 @@
+# The built-in maps that come from drumverter's note maps (ADRs 0137 and 0138), which
+# tools/drumverter_maps.py builds. drumverter's source is MIT-licensed, its notice in
+# data/maps/NOTICE.md. Each library names its kits, each from one of drumverter's engines by its id.
+# A library's `maker` is what its maker publishes about its notes, which wins over drumverter's.
+
+# drumverter's source at one commit, as GitHub serves its archive.
+[source]
+name = "drumverter"
+version = "a627bacb4adfb5d079bf2cd0ad5bffa9b1785d50"
+url = "https://github.com/nullcrimson/remidi/archive/a627bacb4adfb5d079bf2cd0ad5bffa9b1785d50.tar.gz"
+sha256 = "fda739cd762a90ca0498bfca078b7e252cd5a45d08a3e7ddb95eae4c6a575ad1"
+
+[[libraries]]
+id = "addictive-drums-2"
+name = "Addictive Drums 2"
+kits = [
+  { id = "default", name = "Default map", engine = "addictive_drums2" },
+]
+
+[libraries.maker]
+document = "XLN Audio's Addictive Drums 2 keymap"
+high = [36, 37, 39, 42, 48, 61, 63, 65, 66, 67, 68, 69, 70, 71, 72, 75, 85, 87]
+
+[libraries.maker.leave_out]
+3 = "Ride 2's position controller"
+4 = "Ride 1's position controller"
+6 = "the snare's position controller"
+41 = "the snare's shallow rimshot"
+43 = "the snare's shallow hit"
+
+[[libraries]]
+id = "ezdrummer-3"
+name = "EZdrummer 3"
+kits = [
+  { id = "default", name = "Default map", engine = "ezdrummer" },
+]
+
+[[libraries]]
+id = "superior-drummer-3"
+name = "Superior Drummer 3"
+kits = [
+  { id = "default", name = "Default map", engine = "superior_drummer3" },
+]
+
+[[libraries]]
+id = "ssd5"
+name = "SSD5"
+kits = [
+  { id = "default", name = "Default map", engine = "ssd5" },
+]
+
+[[libraries]]
+id = "ggd-modern-and-massive"
+name = "GGD Modern & Massive"
+kits = [
+  { id = "default", name = "Default mapping (Halpern)", engine = "ggd_modernmassive" },
+  { id = "ggd", name = "GGD mapping", engine = "ggd_modernmassive_ggd" },
+  { id = "gm", name = "GM mapping", engine = "ggd_modernmassive_gm" },
+]
+
+
+[[libraries]]
+id = "ni-abbey-road"
+name = "NI Abbey Road Drummers"
+kits = [
+  { id = "60s-early", name = "60s Drummer, Early 60s Kit", engine = "ni_abbeyroad_60s_early" },
+  { id = "60s-late", name = "60s Drummer, Late 60s Kit", engine = "ni_abbeyroad_60s_late" },
+  { id = "modern-white", name = "Modern Drummer, White Kit", engine = "ni_abbeyroad_modern" },
+  { id = "modern-sparkle", name = "Modern Drummer, Sparkle Kit", engine = "ni_abbeyroad_modern_sparkle" },
+]
+
+[[libraries]]
+id = "royotoms"
+name = "Royotoms (Alan ViSTa)"
+kits = [
+  { id = "default", name = "Default map", engine = "alanvista_royotoms" },
+]
+
+[[libraries]]
+id = "alesis-command"
+name = "Alesis Command"
+kits = [
+  { id = "default", name = "Default map", engine = "alesis_command" },
+]
+
+[[libraries]]
+id = "alesis-crimson-ii"
+name = "Alesis Crimson II"
+kits = [
+  { id = "default", name = "Default map", engine = "alesis_crimson2" },
+]
+
+[[libraries]]
+id = "alesis-nitro"
+name = "Alesis Nitro, Nitro Mesh, Nitro Max and Surge"
+kits = [
+  { id = "default", name = "Default map", engine = "alesis_nitro" },
+]
+
+[[libraries]]
+id = "alesis-sr-16"
+name = "Alesis SR-16"
+kits = [
+  { id = "default", name = "Default map", engine = "alesis_sr16" },
+]
+
+[[libraries]]
+id = "arturia-drumbrute"
+name = "Arturia DrumBrute"
+kits = [
+  { id = "default", name = "Default map", engine = "arturia_drumbrute" },
+]
+
+[[libraries]]
+id = "arturia-drumbrute-impact"
+name = "Arturia DrumBrute Impact"
+kits = [
+  { id = "default", name = "Default map", engine = "arturia_drumbrute_impact" },
+]
+
+[[libraries]]
+id = "beatbuddy"
+name = "BeatBuddy"
+kits = [
+  { id = "default", name = "Default map", engine = "beatbuddy" },
+]
+
+[[libraries]]
+id = "behringer-rd-6"
+name = "Behringer RD-6"
+kits = [
+  { id = "default", name = "Default map", engine = "behringer_rd6" },
+]
+
+[[libraries]]
+id = "bfd3"
+name = "BFD3"
+kits = [
+  { id = "default", name = "Default map", engine = "bfd3" },
+]
+
+[[libraries]]
+id = "bfd-eco"
+name = "BFD Eco"
+kits = [
+  { id = "default", name = "Default map", engine = "bfd_eco" },
+]
+
+[[libraries]]
+id = "bfd-player"
+name = "BFD Player"
+kits = [
+  { id = "default", name = "Default map", engine = "bfd_player" },
+]
+
+[[libraries]]
+id = "trivium-drums"
+name = "Trivium Drums"
+kits = [
+  { id = "default", name = "Default map", engine = "bogren_trivium" },
+]
+
+[[libraries]]
+id = "d16-drumazon"
+name = "D16 Drumazon"
+kits = [
+  { id = "default", name = "Default map", engine = "d16_drumazon" },
+]
+
+[[libraries]]
+id = "d16-nepheton"
+name = "D16 Nepheton"
+kits = [
+  { id = "default", name = "Default map", engine = "d16_nepheton" },
+]
+
+[[libraries]]
+id = "drumforge-bergstrand"
+name = "Drumforge Bergstrand"
+kits = [
+  { id = "default", name = "Default map", engine = "drumforge_bergstrand" },
+]
+
+[[libraries]]
+id = "drumforge-matt-greiner"
+name = "Drumforge Matt Greiner"
+kits = [
+  { id = "default", name = "Default map", engine = "drumforge_greiner" },
+]
+
+[[libraries]]
+id = "drumforge-ultimate"
+name = "Drumforge Ultimate"
+kits = [
+  { id = "default", name = "Default map", engine = "drumforge_ultimate" },
+]
+
+[[libraries]]
+id = "dw-soundworks"
+name = "DW Soundworks"
+kits = [
+  { id = "default", name = "Default map", engine = "dw_soundworks" },
+]
+
+[[libraries]]
+id = "eastwest-prodrummer"
+name = "EastWest ProDrummer"
+kits = [
+  { id = "default", name = "Default map", engine = "eastwest_prodrummer" },
+]
+
+[[libraries]]
+id = "efnote"
+name = "EFNOTE 3, 5 and 7"
+kits = [
+  { id = "default", name = "Default map", engine = "efnote" },
+]
+
+[[libraries]]
+id = "ezdrummer-1"
+name = "EZdrummer 1"
+kits = [
+  { id = "default", name = "Default map", engine = "ezdrummer1" },
+]
+
+[[libraries]]
+id = "ezdrummer-2"
+name = "EZdrummer 2"
+kits = [
+  { id = "default", name = "Default map", engine = "ezdrummer2" },
+]
+
+[[libraries]]
+id = "ezx-drumkit-from-hell"
+name = "Drumkit From Hell EZX"
+kits = [
+  { id = "default", name = "Default map", engine = "ezx_drumkit_from_hell" },
+]
+
+[[libraries]]
+id = "ezx-metal-mania"
+name = "Metal Mania EZX"
+kits = [
+  { id = "default", name = "Default map", engine = "ezx_metal_mania" },
+]
+
+[[libraries]]
+id = "fotis-benardo-drums"
+name = "Fotis Benardo Drums"
+kits = [
+  { id = "default", name = "Default map", engine = "fotis_benardo" },
+]
+
+[[libraries]]
+id = "ggd-aggressive-rock"
+name = "GGD One Kit Wonder: Aggressive Rock"
+kits = [
+  { id = "default", name = "Default mapping (Invasion)", engine = "ggd_aggressiverock" },
+  { id = "ggd", name = "GGD mapping", engine = "ggd_aggressiverock_ggd" },
+  { id = "gm", name = "GM mapping", engine = "ggd_aggressiverock_gm" },
+  { id = "halpern", name = "Halpern mapping", engine = "ggd_aggressiverock_halpern" },
+]
+
+[[libraries]]
+id = "ggd-architects"
+name = "GGD One Kit Wonder: Architects"
+kits = [
+  { id = "default", name = "Default mapping (Invasion)", engine = "ggd_architects" },
+  { id = "ggd", name = "GGD mapping", engine = "ggd_architects_ggd" },
+  { id = "gm", name = "GM mapping", engine = "ggd_architects_gm" },
+  { id = "halpern", name = "Halpern mapping", engine = "ggd_architects_halpern" },
+]
+
+[[libraries]]
+id = "ggd-benny-greb"
+name = "GGD Benny Greb"
+kits = [
+  { id = "default", name = "Default mapping (Benny)", engine = "ggd_bennygreb" },
+  { id = "gm", name = "GM mapping", engine = "ggd_bennygreb_gm" },
+]
+
+[[libraries]]
+id = "ggd-brutal"
+name = "GGD One Kit Wonder: Brutal"
+kits = [
+  { id = "default", name = "Default mapping (Invasion)", engine = "ggd_brutal" },
+  { id = "ggd", name = "GGD mapping", engine = "ggd_brutal_ggd" },
+  { id = "gm", name = "GM mapping", engine = "ggd_brutal_gm" },
+  { id = "halpern", name = "Halpern mapping", engine = "ggd_brutal_halpern" },
+]
+
+[[libraries]]
+id = "ggd-classic-rock"
+name = "GGD One Kit Wonder: Classic Rock"
+kits = [
+  { id = "default", name = "Default mapping (Invasion)", engine = "ggd_classicrock" },
+  { id = "ggd", name = "GGD mapping", engine = "ggd_classicrock_ggd" },
+  { id = "gm", name = "GM mapping", engine = "ggd_classicrock_gm" },
+  { id = "halpern", name = "Halpern mapping", engine = "ggd_classicrock_halpern" },
+]
+
+[[libraries]]
+id = "ggd-dry-and-funky"
+name = "GGD One Kit Wonder: Dry and Funky"
+kits = [
+  { id = "default", name = "Default mapping (Invasion)", engine = "ggd_dryfunky" },
+  { id = "ggd", name = "GGD mapping", engine = "ggd_dryfunky_ggd" },
+  { id = "gm", name = "GM mapping", engine = "ggd_dryfunky_gm" },
+  { id = "halpern", name = "Halpern mapping", engine = "ggd_dryfunky_halpern" },
+]
+
+[[libraries]]
+id = "ggd-groove-player"
+name = "GGD Groove Player and MIDI packs"
+kits = [
+  { id = "default", name = "Default map", engine = "ggd_grooveplayer" },
+]
+
+[[libraries]]
+id = "ggd-invasion"
+name = "GGD Invasion"
+kits = [
+  { id = "default", name = "Default mapping (Invasion)", engine = "ggd_invasion" },
+  { id = "ggd", name = "GGD mapping", engine = "ggd_invasion_ggd" },
+  { id = "gm", name = "GM mapping", engine = "ggd_invasion_gm" },
+  { id = "halpern", name = "Halpern mapping", engine = "ggd_invasion_halpern" },
+]
+
+[[libraries]]
+id = "ggd-metal"
+name = "GGD One Kit Wonder: Metal"
+kits = [
+  { id = "default", name = "Default mapping (Invasion)", engine = "ggd_metal" },
+  { id = "ggd", name = "GGD mapping", engine = "ggd_metal_ggd" },
+  { id = "gm", name = "GM mapping", engine = "ggd_metal_gm" },
+  { id = "halpern", name = "Halpern mapping", engine = "ggd_metal_halpern" },
+]
+
+[[libraries]]
+id = "ggd-modern-fusion"
+name = "GGD One Kit Wonder: Modern Fusion"
+kits = [
+  { id = "default", name = "Default mapping (Invasion)", engine = "ggd_modernfusion" },
+  { id = "ggd", name = "GGD mapping", engine = "ggd_modernfusion_ggd" },
+  { id = "gm", name = "GM mapping", engine = "ggd_modernfusion_gm" },
+  { id = "halpern", name = "Halpern mapping", engine = "ggd_modernfusion_halpern" },
+]
+
+[[libraries]]
+id = "ggd-modern-and-massive-2"
+name = "GGD Modern & Massive 2"
+kits = [
+  { id = "default", name = "Default map", engine = "ggd_modernmassive2" },
+]
+
+[[libraries]]
+id = "ggd-nu-metal"
+name = "GGD One Kit Wonder: Nu Metal"
+kits = [
+  { id = "default", name = "Default mapping (Invasion)", engine = "ggd_numetal" },
+  { id = "ggd", name = "GGD mapping", engine = "ggd_numetal_ggd" },
+  { id = "gm", name = "GM mapping", engine = "ggd_numetal_gm" },
+  { id = "halpern", name = "Halpern mapping", engine = "ggd_numetal_halpern" },
+]
+
+[[libraries]]
+id = "ggd-p4-matt-halpern"
+name = "GGD P4 Matt Halpern"
+kits = [
+  { id = "default", name = "Default mapping (Invasion)", engine = "ggd_p4_halpern" },
+]
+
+[[libraries]]
+id = "ggd-p5-matt-halpern"
+name = "GGD P5 Matt Halpern"
+kits = [
+  { id = "default", name = "Default mapping (PV)", engine = "ggd_p5_halpern" },
+  { id = "ggd", name = "GGD mapping", engine = "ggd_p5_halpern_ggd" },
+  { id = "gm", name = "GM mapping", engine = "ggd_p5_halpern_gm" },
+  { id = "halpern", name = "Halpern mapping", engine = "ggd_p5_halpern_halpern" },
+]
+
+[[libraries]]
+id = "ggd-pop-punk"
+name = "GGD One Kit Wonder: Pop Punk"
+kits = [
+  { id = "default", name = "Default mapping (Invasion)", engine = "ggd_poppunk" },
+  { id = "ggd", name = "GGD mapping", engine = "ggd_poppunk_ggd" },
+  { id = "gm", name = "GM mapping", engine = "ggd_poppunk_gm" },
+  { id = "halpern", name = "Halpern mapping", engine = "ggd_poppunk_halpern" },
+]
+
+[[libraries]]
+id = "goran-grooves-handy-drums"
+name = "Goran Grooves Handy Drums"
+kits = [
+  { id = "default", name = "Default map", engine = "goran_grooves_handy" },
+]
+
+[[libraries]]
+id = "guitar-pro"
+name = "Guitar Pro"
+kits = [
+  { id = "default", name = "Default map", engine = "guitar_pro" },
+]
+
+[[libraries]]
+id = "hertz-drums"
+name = "Hertz Drums"
+kits = [
+  { id = "default", name = "Default map", engine = "hertz" },
+]
+
+[[libraries]]
+id = "hertz-drums-2"
+name = "Hertz Drums 2"
+kits = [
+  { id = "default", name = "Default map", engine = "hertz2" },
+]
+
+[[libraries]]
+id = "impact-xt"
+name = "Impact XT (Studio One)"
+kits = [
+  { id = "default", name = "Default map", engine = "impact_xt" },
+  { id = "roomy-rock", name = "TM Roomy Rock Kit", engine = "impact_xt_roomyrock" },
+]
+
+[[libraries]]
+id = "klangmacht-drums"
+name = "Klangmacht Drums"
+kits = [
+  { id = "default", name = "Default map", engine = "klangmacht" },
+]
+
+[[libraries]]
+id = "korg-volca-beats"
+name = "Korg volca beats"
+kits = [
+  { id = "default", name = "Default map", engine = "korg_volcabeats" },
+]
+
+[[libraries]]
+id = "mdl-tone-ultimate-heavy-drums"
+name = "MDL Tone Ultimate Heavy Drums"
+kits = [
+  { id = "default", name = "Default map", engine = "mdltone_ultimateheavy" },
+]
+
+[[libraries]]
+id = "medeli-mz528"
+name = "Medeli MUZA MZ528"
+kits = [
+  { id = "default", name = "Default map", engine = "medeli_mz528" },
+]
+
+[[libraries]]
+id = "millenium-mps-1000"
+name = "Millenium MPS-1000"
+kits = [
+  { id = "default", name = "Default map", engine = "millenium_mps1000" },
+]
+
+[[libraries]]
+id = "millenium-mps-150"
+name = "Millenium MPS-150"
+kits = [
+  { id = "default", name = "Default map", engine = "millenium_mps150" },
+]
+
+[[libraries]]
+id = "mixwave-austin-archey"
+name = "MixWave Austin Archey"
+kits = [
+  { id = "default", name = "Default map", engine = "mixwave_archey" },
+]
+
+[[libraries]]
+id = "mixwave-mario-duplantier"
+name = "MixWave Mario Duplantier"
+kits = [
+  { id = "default", name = "Default map", engine = "mixwave_duplantier" },
+]
+
+[[libraries]]
+id = "mixwave-mario-duplantier-ii"
+name = "MixWave Mario Duplantier II"
+kits = [
+  { id = "default", name = "Default map", engine = "mixwave_duplantier2" },
+]
+
+[[libraries]]
+id = "mixwave-daniel-fang"
+name = "MixWave Daniel Fang"
+kits = [
+  { id = "default", name = "Default map", engine = "mixwave_fang" },
+]
+
+[[libraries]]
+id = "mixwave-aaron-gillespie"
+name = "MixWave Aaron Gillespie"
+kits = [
+  { id = "default", name = "Default map", engine = "mixwave_gillespie" },
+]
+
+[[libraries]]
+id = "mixwave-luke-holland"
+name = "MixWave Luke Holland"
+kits = [
+  { id = "default", name = "Default map", engine = "mixwave_holland" },
+]
+
+[[libraries]]
+id = "mixwave-mike-mangini"
+name = "MixWave Mike Mangini"
+kits = [
+  { id = "default", name = "Default map", engine = "mixwave_mangini" },
+]
+
+[[libraries]]
+id = "mixwave-thomas-pridgen"
+name = "MixWave Thomas Pridgen"
+kits = [
+  { id = "default", name = "Default map", engine = "mixwave_pridgen" },
+]
+
+[[libraries]]
+id = "mixwave-tony-royster-jr"
+name = "MixWave Tony Royster Jr"
+kits = [
+  { id = "default", name = "Default map", engine = "mixwave_royster" },
+]
+
+[[libraries]]
+id = "mixwave-aaron-sterling"
+name = "MixWave Aaron Sterling"
+kits = [
+  { id = "default", name = "Default map", engine = "mixwave_sterling" },
+]
+
+[[libraries]]
+id = "mixwave-brooks-wackerman"
+name = "MixWave Brooks Wackerman"
+kits = [
+  { id = "default", name = "Default map", engine = "mixwave_wackerman" },
+]
+
+[[libraries]]
+id = "mixwave-jay-weinberg"
+name = "MixWave Jay Weinberg"
+kits = [
+  { id = "default", name = "Default map", engine = "mixwave_weinberg" },
+]
+
+[[libraries]]
+id = "ml-drums"
+name = "ML Drums"
+kits = [
+  { id = "default", name = "Default map", engine = "ml_drums" },
+]
+
+[[libraries]]
+id = "ml-drums-free"
+name = "ML Drums Free"
+kits = [
+  { id = "default", name = "Default map", engine = "ml_drums_free" },
+]
+
+[[libraries]]
+id = "mt-power-drum-kit"
+name = "MT Power Drum Kit"
+kits = [
+  { id = "default", name = "Default map", engine = "mt_power" },
+]
+
+[[libraries]]
+id = "musescore-4"
+name = "MuseScore Studio 4"
+kits = [
+  { id = "default", name = "Default map", engine = "musescore4" },
+]
+
+[[libraries]]
+id = "ni-butch-vig-drums"
+name = "NI Butch Vig Drums"
+kits = [
+  { id = "default", name = "Default map", engine = "ni_butchvig" },
+]
+
+[[libraries]]
+id = "ni-studio-drummer"
+name = "NI Studio Drummer"
+kits = [
+  { id = "default", name = "Default map", engine = "ni_studiodrummer" },
+]
+
+[[libraries]]
+id = "odeholm-drums"
+name = "Odeholm Drums"
+kits = [
+  { id = "default", name = "Default map", engine = "odeholm" },
+  { id = "alt", name = "Alt map", engine = "odeholm_alt" },
+]
+
+[[libraries]]
+id = "perfect-drums"
+name = "Perfect Drums"
+kits = [
+  { id = "default", name = "Default map", engine = "perfectdrums" },
+]
+
+[[libraries]]
+id = "prenc-kinglake-drums"
+name = "Prenc Audio Kinglake Drums"
+kits = [
+  { id = "default", name = "Default map", engine = "prenc_kinglake" },
+]
+
+[[libraries]]
+id = "red-pack-ds-drum"
+name = "Red Pack Drums: DS Drum"
+kits = [
+  { id = "default", name = "Default map", engine = "redpack_dsdrum" },
+]
+
+[[libraries]]
+id = "roland-td-07"
+name = "Roland TD-07"
+kits = [
+  { id = "default", name = "Default map", engine = "roland_td07" },
+]
+
+[[libraries]]
+id = "roland-td-1"
+name = "Roland TD-1"
+kits = [
+  { id = "default", name = "Default map", engine = "roland_td1" },
+]
+
+[[libraries]]
+id = "roland-td-17"
+name = "Roland TD-17"
+kits = [
+  { id = "default", name = "Default map", engine = "roland_td17" },
+]
+
+[[libraries]]
+id = "roland-td-25"
+name = "Roland TD-25"
+kits = [
+  { id = "default", name = "Default map", engine = "roland_td25" },
+]
+
+[[libraries]]
+id = "roland-td-27"
+name = "Roland TD-27"
+kits = [
+  { id = "default", name = "Default map", engine = "roland_td27" },
+]
+
+[[libraries]]
+id = "roland-td-30"
+name = "Roland TD-30"
+kits = [
+  { id = "default", name = "Default map", engine = "roland_td30" },
+]
+
+[[libraries]]
+id = "roland-tr-08"
+name = "Roland TR-08"
+kits = [
+  { id = "default", name = "Default map", engine = "roland_tr08" },
+]
+
+[[libraries]]
+id = "roland-tr-09"
+name = "Roland TR-09"
+kits = [
+  { id = "default", name = "Default map", engine = "roland_tr09" },
+]
+
+[[libraries]]
+id = "roland-tr-6s"
+name = "Roland TR-6S"
+kits = [
+  { id = "default", name = "Default map", engine = "roland_tr6s" },
+]
+
+[[libraries]]
+id = "roland-tr-8"
+name = "Roland TR-8"
+kits = [
+  { id = "default", name = "Default map", engine = "roland_tr8" },
+]
+
+[[libraries]]
+id = "roland-tr-8s"
+name = "Roland TR-8S"
+kits = [
+  { id = "default", name = "Default map", engine = "roland_tr8s" },
+]
+
+[[libraries]]
+id = "room-sound-kurt-ballou-vol-1"
+name = "Room Sound Kurt Ballou Signature Series Drums Vol. 1"
+kits = [
+  { id = "default", name = "Default map", engine = "roomsound_ballou_vol1" },
+]
+
+[[libraries]]
+id = "room-sound-kurt-ballou-vol-2"
+name = "Room Sound Kurt Ballou Signature Series Drums Vol. 2"
+kits = [
+  { id = "default", name = "Default map", engine = "roomsound_ballou" },
+]
+
+[[libraries]]
+id = "room-sound-blasting-room"
+name = "Room Sound The Blasting Room"
+kits = [
+  { id = "default", name = "Default map", engine = "roomsound_blastingroom" },
+]
+
+[[libraries]]
+id = "rs-drums-fairview"
+name = "RS Drums Fairview"
+kits = [
+  { id = "default", name = "Default map", engine = "rsdrums_fairview" },
+]
+
+[[libraries]]
+id = "rs-drums-monarch"
+name = "RS Drums Monarch"
+kits = [
+  { id = "default", name = "Default map", engine = "rsdrums_monarch" },
+  { id = "gm", name = "GM mapping", engine = "rsdrums_monarch_gm" },
+]
+
+[[libraries]]
+id = "rs-drums-simen-sandnes"
+name = "RS Drums Progressive Prodigy: Simen Sandnes"
+kits = [
+  { id = "default", name = "Default map", engine = "rsdrums_sandnes" },
+]
+
+[[libraries]]
+id = "simmons-sd600"
+name = "Simmons SD600"
+kits = [
+  { id = "default", name = "Default map", engine = "simmons_sd600" },
+]
+
+[[libraries]]
+id = "simmons-titan-20"
+name = "Simmons Titan 20"
+kits = [
+  { id = "default", name = "Default map", engine = "simmons_titan20" },
+]
+
+[[libraries]]
+id = "simmons-titan-50"
+name = "Simmons Titan 50"
+kits = [
+  { id = "default", name = "Default map", engine = "simmons_titan50" },
+]
+
+[[libraries]]
+id = "simmons-titan-70"
+name = "Simmons Titan 70"
+kits = [
+  { id = "default", name = "Default map", engine = "simmons_titan70" },
+]
+
+[[libraries]]
+id = "solemn-tones-mjolnir"
+name = "Solemn Tones Mjolnir Drums"
+kits = [
+  { id = "default", name = "Default map", engine = "solemntones_mjolnir" },
+]
+
+[[libraries]]
+id = "soniccouture-sun-drums"
+name = "Soniccouture Sun Drums"
+kits = [
+  { id = "default", name = "Default map", engine = "soniccouture_sun" },
+]
+
+[[libraries]]
+id = "spectre-ele-master-kit"
+name = "Spectre Digital Extinction Level Event Master Kit"
+kits = [
+  { id = "default", name = "Default map", engine = "spectre_ele_masterkit" },
+]
+
+[[libraries]]
+id = "ugritone-kvlt-drums-ii"
+name = "Ugritone KVLT Drums II"
+kits = [
+  { id = "default", name = "Default map", engine = "ugritone" },
+]
+
+[[libraries]]
+id = "ujam-virtual-drummer"
+name = "UJAM Virtual Drummer"
+kits = [
+  { id = "default", name = "Default map", engine = "ujam_heavy" },
+]
+
+[[libraries]]
+id = "yamaha-dtx402"
+name = "Yamaha DTX402"
+kits = [
+  { id = "default", name = "Default map", engine = "yamaha_dtx402" },
+]
+
+[[libraries]]
+id = "zoom-rt-223"
+name = "Zoom RT-223"
+kits = [
+  { id = "default", name = "Default map", engine = "zoom_rt223" },
+]

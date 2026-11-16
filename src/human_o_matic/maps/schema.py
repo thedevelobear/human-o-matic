@@ -21,7 +21,8 @@ type Confidence = Literal["high", "medium", "low"]
 the canonical name an interpretation. `low`: inferred."""
 type Source = Literal["standard", "mapping", "inferred", "checked"]
 """What backs an articulation's name. `standard`: a published standard names the note, as
-General MIDI does. `mapping`: the library's own note mapping names it. `inferred`: it is worked
+General MIDI does. `mapping`: a published note mapping names it, the library's own or
+drumverter's (ADR 0137). `inferred`: it is worked
 out from where the library puts the note, and nothing names it. `checked`: it was confirmed in
 the instrument itself."""
 type MidiNumber = Annotated[int, Field(ge=0, le=127)]
