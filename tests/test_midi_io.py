@@ -225,6 +225,18 @@ def test_96_ppq_is_rescaled_by_exactly_ten() -> None:
     assert header(midi_bytes(song))[2] == 960
 
 
+def test_keep_ppq_reads_and_writes_a_file_at_its_own_resolution() -> None:
+    data = build(track((0, on(36)), (1, off(36)), (95, on(38)), (97, off(38)), (98, end())), ppq=96)
+
+    song = parse_midi(data, keep_ppq=True)
+    written = midi_bytes(song, keep_ppq=True)
+
+    assert (song.ppq, song.source_ppq, song.track_ends) == (96, 96, (98,))
+    assert [(n.start, n.end) for n in song.notes] == [(0, 1), (95, 97)]
+    assert header(written)[2] == 96
+    assert parse_midi(written, keep_ppq=True) == song
+
+
 def test_384_ppq_is_rescaled_by_three_to_1152() -> None:
     song = parse_midi(build(track((0, on(36)), (1, off(36)), (5, end())), ppq=384))
 
