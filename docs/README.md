@@ -33,7 +33,7 @@ What was decided, specifically enough to check the code against.
 | Plan | Status |
 |---|---|
 | [2026-11-08-human-o-matic](plans/2026-11-08-human-o-matic.md) | Active. The app, milestone by milestone. |
-| [2026-11-13-website](plans/2026-11-13-website.md) | Done. M7, the website, built after M4's gate and before M5: PRs 1 to 7 merged, and the site deployed. M8's Remap tab is added to its sections 5, 6 and 12. |
+| [2026-11-13-website](plans/2026-11-13-website.md) | Done. M7, the website, built after M4's gate and before M5: PRs 1 to 7 merged, and the site deployed. M8's Remap tab is added to its sections 5, 6 and 12, and the favicon, a follow-up, to sections 5, 9, 12 and 14. |
 
 ### Research
 | Page | Compares |
@@ -184,3 +184,4 @@ What was decided, specifically enough to check the code against.
 | [0138](decisions/0138-the-built-in-maps-add-102-libraries-from-drumverter-and-six-inferred-maps-follow-it.md) | 102 libraries are added from drumverter's note maps, six inferred maps follow it, and `gm`, the maker-based maps, `ggd-matt-halpern`, `garageband-drums` and `iof-drummer` are not built from it | Accepted |
 | [0139](decisions/0139-krimh-drums-follows-the-instrument-s-own-mapping-page-an-octave-lower-than-the-guide-was-read.md) | `krimh-drums` follows the instrument's own mapping page, Kick Main on C0, note 24, every note 12 lower than the guide's keyboard was read, high where the page's name is direct | Accepted |
 | [0140](decisions/0140-the-maker-based-maps-take-drumverter-s-names-for-the-notes-they-left-out-as-unclear.md) | The maker-based maps take drumverter's names, at medium, for the notes they left out as unclear: Counterkit's 64 and 65, NI Drum Lab's 62 and 63 and Logic's 75 | Accepted |
+| [0141](decisions/0141-the-favicon-is-the-mascot-without-its-arm-on-the-page-s-mesh-in-favicon-svg.md) | The favicon is the page's mascot without its arm, its strokes thicker and its vent line left out, on a rounded square of the page's mesh, in `favicon.svg`, with no PNG or ICO | Proposed |
