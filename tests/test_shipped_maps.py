@@ -37,10 +37,12 @@ SHIPPED = {
     "ggd-matt-halpern": ("default",),
 } | FROM_DRUMVERTER
 NEW_IN_M3 = {
-    # library: (articulations, pitches, the notes of its mapping it leaves out) (ADR 0055)
-    "counterkit": (20, 20, (64, 65)),
-    "ni-drum-lab": (32, 37, (62, 63)),
-    "krimh-drums": (44, 50, (29, 49)),
+    # library: (articulations, pitches, the notes of its mapping it leaves out) (ADR 0055).
+    # Counterkit's 64 and 65 and NI Drum Lab's 62 and 63 take drumverter's names (ADR 0140), and
+    # Krimh Drums follows the instrument's mapping page (ADR 0139).
+    "counterkit": (22, 22, ()),
+    "ni-drum-lab": (32, 39, ()),
+    "krimh-drums": (44, 50, (17, 37)),
     "ggd-matt-halpern": (22, 22, ()),
 }
 
@@ -134,14 +136,15 @@ def test_the_sleep_token_map_has_its_67_pitches_as_57_articulations() -> None:
     assert (SLEEP_TOKEN.pieces("tom"), SLEEP_TOKEN.pieces("crash")) == (3, 4)
 
 
-def test_logic_pro_drums_has_its_published_mapping_but_note_32_as_27_articulations() -> None:
+def test_logic_pro_drums_has_its_published_mapping_but_note_32_and_drumverter_s_sticks() -> None:
     pitches = [binding.note for entry in LOGIC.articulations for binding in entry.bindings]
-    found = [LOGIC.resolve(pitch, 100, 9) for pitch in (35, 33, 50, 52, 59, 70)]
+    found = [LOGIC.resolve(pitch, 100, 9) for pitch in (35, 33, 50, 52, 59, 70, 75)]
 
-    assert len(LOGIC.articulations) == 27
-    assert len(pitches) == len(set(pitches)) == 29
-    assert set(pitches) == set(range(28, 55)) - {30, 32} | {56, 57, 59, 70}
+    assert len(LOGIC.articulations) == 28
+    assert len(pitches) == len(set(pitches)) == 30
+    assert set(pitches) == set(range(28, 55)) - {30, 32} | {56, 57, 59, 70, 75}
     assert all(entry.source == "mapping" for entry in LOGIC.articulations)
+    assert LOGIC.articulation("sticks.hit").confidence == "medium"
     assert [entry and entry.name for entry in found] == [
         "kick.hit",
         "hat.pedal",
@@ -149,6 +152,7 @@ def test_logic_pro_drums_has_its_published_mapping_but_note_32_as_27_articulatio
         "ride.1.crash",
         "ride.1.bow.alt",
         "maracas.hit",
+        "sticks.hit",
     ]
     assert (LOGIC.write("kick.hit").pitch, LOGIC.write("hat.pedal").pitch) == (36, 44)
     # A tom's edge goes to its tom, re-spread by register, on a kit without edges.
@@ -181,12 +185,15 @@ def test_sleep_token_ii_s_groove_pack_kit_is_inferred_throughout() -> None:
     }
 
 
-def test_krimh_drums_is_low_confidence_throughout_and_the_inferred_map_is_inferred() -> None:
-    # Krimh Drums' mapping gives no note numbers, so each rests on reading its kick at 36.
+def test_krimh_drums_follows_the_instrument_s_page_and_the_inferred_map_is_inferred() -> None:
+    # The instrument's mapping page puts Kick Main on C0, note 24 (ADR 0139).
     krimh = MAPS.kit("krimh-drums")
     assert {(entry.source, entry.confidence) for entry in krimh.articulations} == {
-        ("mapping", "low")
+        ("mapping", "high"),
+        ("mapping", "medium"),
     }
+    assert (krimh.write("kick.hit").pitch, krimh.write("ride.1.bow").pitch) == (24, 62)
+    assert all(binding.note < 89 for entry in krimh.articulations for binding in entry.bindings)
     ggd = MAPS.kit("ggd-matt-halpern")
     assert {(entry.source, entry.confidence) for entry in ggd.articulations} == {
         ("inferred", "low")
