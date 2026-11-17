@@ -1,6 +1,6 @@
 # 0137. Drumverter's published note maps are a source for the built-in maps, and a maker's own map wins
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-16
 
 - **The source:** drumverter (drumverter.com), a free converter of drum MIDI between drum engines, publishes a note map of each engine it supports, as `engines/<id>.toml` in its source code (github.com/nullcrimson/remidi), 160 at the pinned commit, and as a `.txt` file per engine on its drum maps page for all of them but its own "MidiRemap Standard" layout. The `.txt` files hold the same notes as the 159 engines they map. `tools/drumverter_maps.py` reads the source's `engines/` at one commit, pinned with the archive's SHA-256 in `tools/drumverter_maps.toml` ([ADR 0004](0004-exact-dependency-versions.md)), into the gitignored `build/drumverter/`, and writes each listed library's `data/maps/<library>.toml`. Its `--check` writes nothing and exits 1 when a committed map differs. A map it writes says so in its header, and is changed there, not by hand.

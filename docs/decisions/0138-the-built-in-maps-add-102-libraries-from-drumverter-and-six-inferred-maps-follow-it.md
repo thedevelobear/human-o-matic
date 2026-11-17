@@ -1,6 +1,6 @@
 # 0138. The built-in maps add 102 libraries from drumverter's note maps, and six inferred maps follow it
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-16
 
 - **Six inferred maps change** to drumverter's, built as [ADR 0137](0137-drumverter-s-published-note-maps-are-a-source-for-the-built-in-maps-and-a-maker-s-own-map-wins.md) sets:

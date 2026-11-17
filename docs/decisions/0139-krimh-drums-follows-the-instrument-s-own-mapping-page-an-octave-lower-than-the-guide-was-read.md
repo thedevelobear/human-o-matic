@@ -1,6 +1,6 @@
 # 0139. Krimh Drums follows the instrument's own mapping page, an octave lower than the guide was read
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-17
 
 - `krimh-drums` is written from the instrument's own mapping page, its "Mapping Preset" for Krimh Drums. The page names each note, with C3 as note 60, so Kick Main, C0, is note 24. Every note is 12 lower than [ADR 0055](0055-m3-adds-maps-for-four-drum-libraries.md)'s reading, which counted the guide's keyboard, drawn with no note numbers, from 36. The names and their layout are the guide's, unchanged.

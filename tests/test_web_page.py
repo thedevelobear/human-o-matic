@@ -2,14 +2,16 @@
 request kind has a form, each HTML page has `lang`, a label on every input, alt text on every image
 and no inline script or style, the page's JavaScript keeps nothing in the browser's storage, writes
 no number of the vocabulary, applies a round only as the page moves on, and keeps its drafts
-until the song is opened again; and the feedback form (PR 6), the page's only request with a body,
-has exactly the website plan's six fields in the copy Netlify Forms reads."""
+until the song is opened again; the feedback form (PR 6), the page's only request with a body,
+has exactly the website plan's six fields in the copy Netlify Forms reads; and the favicon is the
+mascot without its arm (ADR 0141)."""
 
 import gzip
 import re
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import get_args
+from xml.etree import ElementTree
 
 import pytest
 
@@ -131,15 +133,17 @@ SCRIPTS = {
     "check.html": [{"type": "module", "src": "js/check.js"}],
     "index.html": [{"type": "module", "src": "js/app.js"}],
 }
+ICON = {"rel": "icon", "href": "favicon.svg", "type": "image/svg+xml"}
 LINKS = {
-    "check.html": [],
+    "check.html": [ICON],
     "index.html": [
+        ICON,
         {"rel": "stylesheet", "href": FONTS},
         {"rel": "stylesheet", "href": "tailwind.css"},
     ],
 }
-"""What each page loads (ADR 0126): of others', Google Fonts' stylesheet alone, and the rest its own
-files, Tailwind's CSS among them."""
+"""What each page loads (ADRs 0126 and 0141): of others', Google Fonts' stylesheet alone, and the
+rest its own files, Tailwind's CSS and the favicon among them."""
 
 
 @pytest.mark.parametrize("path", PAGES, ids=lambda path: path.name)
@@ -173,6 +177,33 @@ def test_every_drawing_of_the_page_is_hidden_from_assistive_technology() -> None
     assert [attributes for attributes in drawings if attributes.get("aria-hidden") != "true"] == []
     # The owner's mascot, defined once, on the loading view and in the top bar.
     assert uses.count("#mascot") == 2
+
+
+FAVICON = static_dir() / "favicon.svg"
+ARM = (
+    '<path d="M43 37C48 33 50 27 49 21"',
+    '<rect x="41" y="6"',
+    '<rect x="45" y="6"',
+    '<rect x="44" y="14"',
+    '<circle cx="48" cy="22"',
+)
+"""The start of the mascot's first five elements in `index.html`: its arm, the floppy disk it holds
+and the hand's circle, which the favicon leaves out (ADR 0141)."""
+
+
+def test_the_favicon_is_the_mascot_without_its_arm_and_names_nothing_outside_itself() -> None:
+    text = FAVICON.read_text(encoding="utf-8")
+    root = ElementTree.fromstring(text)
+    ids = {element.get("id") for element in root.iter()}
+
+    assert root.tag == "{http://www.w3.org/2000/svg}svg"
+    assert all(part in INDEX.read_text(encoding="utf-8") for part in ARM)
+    assert [part for part in ARM if part in text] == []
+    assert [name for element in root.iter() for name in element.attrib if "href" in name] == []
+    # Its only references are to its own gradients.
+    urls = re.findall(r"url\(([^)]*)\)", text)
+    assert urls
+    assert [url for url in urls if not url.startswith("#") or url[1:] not in ids] == []
 
 
 def test_the_page_shows_the_loading_view_alone_until_the_engine_is_ready() -> None:

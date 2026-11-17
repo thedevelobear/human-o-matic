@@ -1,6 +1,6 @@
 # 0140. The maker-based maps take drumverter's names for the notes they left out as unclear
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-17
 
 - Where a map written from its maker's own mapping left a note out because the mapping names it unclearly, and drumverter names it, the map takes drumverter's name, at `medium` ([ADR 0137](0137-drumverter-s-published-note-maps-are-a-source-for-the-built-in-maps-and-a-maker-s-own-map-wins.md)):

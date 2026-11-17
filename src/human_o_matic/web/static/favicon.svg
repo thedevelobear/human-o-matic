@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- The page's mascot without its arm or the CRT's vent line, its strokes thicker, on its
+       iridescent mesh, so it reads at 16 px (ADR 0141). -->
+  <defs>
+    <linearGradient id="dusk" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1C2340"/>
+      <stop offset="0.48" stop-color="#4A2C5E"/>
+      <stop offset="1" stop-color="#E2587A"/>
+    </linearGradient>
+    <radialGradient id="amber" cx="35.2" cy="54.4" r="64.8" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F6C270"/>
+      <stop offset="0.5" stop-color="#F6C270" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="magenta" cx="52.5" cy="12.8" r="73.3" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E2587A"/>
+      <stop offset="0.55" stop-color="#E2587A" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="sunset" cx="11.5" cy="16" r="71.1" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F28D35"/>
+      <stop offset="0.52" stop-color="#F28D35" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="crt-screen" x1="15" y1="29" x2="41" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F28D35"/>
+      <stop offset="55%" stop-color="#E2587A"/>
+      <stop offset="100%" stop-color="#76C893"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#dusk)"/>
+  <rect width="64" height="64" rx="14" fill="url(#amber)"/>
+  <rect width="64" height="64" rx="14" fill="url(#magenta)"/>
+  <rect width="64" height="64" rx="14" fill="url(#sunset)"/>
+  <g transform="translate(-7.2 -27.3) scale(1.4)">
+    <rect x="11" y="25" width="34" height="27" rx="6" fill="#FFFFFF" stroke="#141218" stroke-width="3"/>
+    <rect x="15" y="29" width="26" height="16" rx="3.5" fill="url(#crt-screen)" stroke="#141218" stroke-width="2.4"/>
+    <ellipse cx="24" cy="36.5" rx="2.6" ry="4.2" fill="#141218"/>
+    <path d="M24.8 34.2L26.5 35.5L24.8 36.8Z" fill="#FFFFFF"/>
+    <ellipse cx="32" cy="36.5" rx="2.6" ry="4.2" fill="#141218"/>
+    <path d="M32.8 34.2L34.5 35.5L32.8 36.8Z" fill="#FFFFFF"/>
+    <path d="M26.5 41.5C27.5 42.8 29.5 42.8 30.5 41.5" stroke="#141218" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="34" cy="48.5" r="1.8" fill="#141218"/>
+    <circle cx="38" cy="48.5" r="1.8" fill="#141218"/>
+    <rect x="14" y="52" width="28" height="8" rx="2.5" fill="#F7F3EB" stroke="#141218" stroke-width="2.6"/>
+    <line x1="18" y1="55.5" x2="29" y2="55.5" stroke="#141218" stroke-width="2" stroke-linecap="round"/>
+    <rect x="33" y="54.5" width="4" height="2.5" rx="0.8" fill="#52B788" stroke="#141218" stroke-width="1"/>
+  </g>
+</svg>
