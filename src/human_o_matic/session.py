@@ -343,8 +343,16 @@ def load_song(session: Session, answers: RenderAnswers | None = None) -> Loaded:
     """The session's song, read from its file again, with its answers or `answers`.
 
     Raises `SessionError` when the file can't be read or has changed since the session was
-    opened, and what `read_song` raises for `answers` that don't fit the song.
+    opened, or a kit it names is no longer built in, and what `read_song` raises for `answers`
+    that don't fit the song.
     """
+    try:
+        kits = find_kit(session.from_map), find_kit(session.to_map)
+    except KeyError as error:
+        raise SessionError(
+            f"session {session.id}'s kit is no longer built in ({error.args[0]}); open the file "
+            "in a new session"
+        ) from error
     path = Path(session.midi_path)
     try:
         data = path.read_bytes()
@@ -357,8 +365,7 @@ def load_song(session: Session, answers: RenderAnswers | None = None) -> Loaded:
         )
     return read_song(
         data,
-        find_kit(session.from_map),
-        find_kit(session.to_map),
+        *kits,
         track=session.track,
         bpm=session.bpm,
         answers=session.answers if answers is None else answers,

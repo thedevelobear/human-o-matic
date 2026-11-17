@@ -629,6 +629,18 @@ def test_a_changed_input_file_is_refused(tools: Tools, tmp_path: Path) -> None:
         tools.render(session_id)
 
 
+def test_a_session_whose_kit_is_no_longer_built_in_is_a_tool_error(
+    tools: Tools, tmp_path: Path
+) -> None:
+    # As `ni-abbey-road/default` became, when the library's kits were renamed (ADR 0138).
+    session_id = ready(tools, tmp_path)
+    session = tools.store.load(session_id)
+    tools.store.save(session.model_copy(update={"to_map": "ni-abbey-road/default"}))
+
+    with pytest.raises(ToolError, match=r"kit is no longer built in .*open the file in a new"):
+        tools.render(session_id)
+
+
 def notes_in(value: object, notes: int) -> list[str]:
     """Where a reply holds something like a note list: an object with a pitch or tick and a
     velocity, or a list as long as the song's notes."""
