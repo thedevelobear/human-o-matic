@@ -1,8 +1,11 @@
 """tools/drumverter_maps.py: how drumverter's note maps are named in the vocabulary, and the maps
 it built (ADRs 0137 and 0138). Its download isn't run here: the engines are written in code."""
 
+from pathlib import Path
+
 import pytest
 
+import drumverter_maps
 from drumverter_maps import Engine, Note, named, read_pins
 from human_o_matic.maps.loader import built_in_maps, built_in_vocabulary
 from human_o_matic.resources import data_dir
@@ -152,3 +155,16 @@ def test_addictive_drums_2_is_high_only_where_xln_s_keymap_names_the_same_stroke
     assert not {"hat.closed", "crash.1.hit", "snare.center"} & high
     # XLN's Cymbal 6 is the kit's fifth crash, as drumverter names no fifth.
     assert kit.write("crash.5.hit").pitch == 93
+
+
+def test_a_changed_archive_is_refused_and_nothing_is_written(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    source = read_pins().source
+    (tmp_path / source.file_name).write_bytes(b"not drumverter's archive")
+    monkeypatch.setattr(drumverter_maps, "DOWNLOADS", tmp_path)
+    monkeypatch.setattr(drumverter_maps, "MAPS", tmp_path / "maps")
+
+    assert drumverter_maps.main([]) == 1
+    assert "SHA-256" in capsys.readouterr().err
+    assert list(tmp_path.iterdir()) == []
