@@ -194,10 +194,37 @@ def test_krimh_drums_follows_the_instrument_s_page_and_the_inferred_map_is_infer
     }
     assert (krimh.write("kick.hit").pitch, krimh.write("ride.1.bow").pitch) == (24, 62)
     assert all(binding.note < 89 for entry in krimh.articulations for binding in entry.bindings)
+    # The page's second notes are only read, after the note written.
+    notes = {entry.name: [b.note for b in entry.bindings] for entry in krimh.articulations}
+    assert notes["kick.hit"] == [24, 22]
+    assert notes["hat.2.closed"] == [82, 70]
+    assert notes["hat.2.open.three_quarter"] == [86, 87, 71]
+    # Medium where the page's name is interpreted: an opening, an open tip, the pedal opened, and
+    # the crashes and chinas numbered from their left and right.
+    medium = {entry.name for entry in krimh.articulations if entry.confidence == "medium"}
+    interpreted = ("hat.open", "hat.2.open", "hat.pedal.splash", "crash.", "china.")
+    assert medium == {name for name in notes if name.startswith(interpreted)}
+    assert {"kick.2.hit", "snare.center.wires_off", "tom.4.hit", "hat.closed.tip"} <= (
+        notes.keys() - medium
+    )
     ggd = MAPS.kit("ggd-matt-halpern")
     assert {(entry.source, entry.confidence) for entry in ggd.articulations} == {
         ("inferred", "low")
     }
+
+
+def test_the_notes_the_maker_based_maps_left_out_read_as_drumverter_names_them() -> None:
+    # ADR 0140: at medium, the maker's other names kept.
+    counterkit, drum_lab = MAPS.kit("counterkit"), MAPS.kit("ni-drum-lab")
+    for pitch, name in ((64, "hat.variable"), (65, "hat.variable.tip")):
+        (match,) = counterkit.read(pitch, 100, 9)
+        (binding,) = match.articulation.bindings
+        assert (match.articulation.name, match.articulation.confidence) == (name, "medium")
+        assert binding.cc is not None and binding.cc.mode == "shape"
+    center = drum_lab.articulation("snare.center")
+    assert ([b.note for b in center.bindings], center.confidence) == ([38, 62, 63], "medium")
+    assert all(drum_lab.resolve(pitch, 100, 9) == center for pitch in (62, 63))
+    assert drum_lab.write("snare.center").pitch == 38
 
 
 @pytest.mark.parametrize("kit", KITS, ids=lambda kit: kit.ref)
