@@ -1,6 +1,6 @@
 # 0141. The favicon is the mascot without its arm, on the page's mesh, in `favicon.svg`
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-17
 
 - The site's favicon is `favicon.svg`, beside the page, linked from `index.html` and `check.html` as `<link rel="icon" href="favicon.svg" type="image/svg+xml">`. The CSP's `img-src 'self'` allows it.
