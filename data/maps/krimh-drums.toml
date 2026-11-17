@@ -1,5 +1,5 @@
-# Krimh Drums, from the instrument's own mapping page, its "Mapping Preset" for Krimh Drums, as
-# the owner read it there (ADR 0139): 51 notes, of which 50 are named here as 44 articulations.
+# Krimh Drums, from the instrument's own mapping page, its "Mapping Preset" for Krimh Drums (ADR
+# 0139): 51 notes, of which 50 are named here as 44 articulations.
 # Its note names count C3 as note 60, so its main kick, C0, is note 24. Where an articulation has
 # several notes, the first is the one written and the others are only read, as the page's second
 # notes are. Confidence is high where the page's name gives the canonical name directly, and medium
@@ -167,8 +167,8 @@ name = "Default map"
   source = "mapping"
   confidence = "medium"
 
-  # Two crashes on each side, read as crashes 1 to 4, each with its choke. The mapping names the
-  # choke on 71 as the second crash's, which is read as the fourth's, by its place.
+  # Crash 1 and Crash 2, each on the left and the right, read as crashes 1 to 4, each with its
+  # choke.
   [[kits.articulations]]
   name = "crash.1.hit"
   notes = [52]
