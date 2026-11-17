@@ -1,6 +1,6 @@
 # 0055. M3 adds maps for Counterkit, NI Drum Lab, Krimh Drums and GGD Matt Halpern Signature Pack
 
-- **Status:** Accepted
+- **Status:** Accepted. Its Krimh Drums numbering, read from the guide's keyboard, is amended by [ADR 0139](0139-krimh-drums-follows-the-instrument-s-own-mapping-page-an-octave-lower-than-the-guide-was-read.md), and its notes left out of Counterkit and NI Drum Lab by [ADR 0140](0140-the-maker-based-maps-take-drumverter-s-names-for-the-notes-they-left-out-as-unclear.md)
 - **Date:** 2026-11-10
 
 - Four libraries join the built-in maps, each with one kit, `default`: Counterkit (`counterkit`), NI Drum Lab (`ni-drum-lab`), Krimh Drums (`krimh-drums`) and GGD Matt Halpern Signature Pack (`ggd-matt-halpern`). Their ids follow [ADR 0023](0023-built-in-library-ids.md). Krimh Drums Free has the same note mapping as Krimh Drums, so `krimh-drums` serves both.

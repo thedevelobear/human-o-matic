@@ -1,12 +1,12 @@
 """The built-in maps in `data/maps/`. They are in the repository, so these are ordinary tests."""
 
 from collections import Counter
-from itertools import product
 
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+from drumverter_maps import read_pins
 from human_o_matic.maps.convert import DROP, Row, convert
 from human_o_matic.maps.kit import DrumKit
 from human_o_matic.maps.loader import built_in_maps
@@ -21,28 +21,28 @@ SLEEP_TOKEN = MAPS.kit("sleep-token-ii", "default")
 LOGIC = MAPS.kit("logic-pro-drums", "default")
 DRUMMER = MAPS.kit("iof-drummer", "default")
 FOUR_FOUR = TimeSignatureMap(960, [])
+FROM_DRUMVERTER = {
+    library.id: tuple(kit.id for kit in library.kits) for library in read_pins().libraries
+}
+"""The libraries tools/drumverter_maps.py builds from drumverter's note maps (ADR 0137)."""
 SHIPPED = {
     "gm": ("default",),
     "sleep-token-ii": ("default", "groove-pack"),
     "iof-drummer": ("default", "old"),
-    "ezdrummer-3": ("default",),
-    "superior-drummer-3": ("default",),
-    "addictive-drums-2": ("default",),
-    "ssd5": ("default",),
-    "ggd-modern-and-massive": ("default",),
-    "ni-abbey-road": ("default",),
     "logic-pro-drums": ("default",),
     "garageband-drums": ("default",),
     "counterkit": ("default",),
     "ni-drum-lab": ("default",),
     "krimh-drums": ("default",),
     "ggd-matt-halpern": ("default",),
-}
+} | FROM_DRUMVERTER
 NEW_IN_M3 = {
-    # library: (articulations, pitches, the notes of its mapping it leaves out) (ADR 0055)
-    "counterkit": (20, 20, (64, 65)),
-    "ni-drum-lab": (32, 37, (62, 63)),
-    "krimh-drums": (44, 50, (29, 49)),
+    # library: (articulations, pitches, the notes of its mapping it leaves out) (ADR 0055).
+    # Counterkit's 64 and 65 and NI Drum Lab's 62 and 63 take drumverter's names (ADR 0140), and
+    # Krimh Drums follows the instrument's mapping page (ADR 0139).
+    "counterkit": (22, 22, ()),
+    "ni-drum-lab": (32, 39, ()),
+    "krimh-drums": (44, 50, (17, 37)),
     "ggd-matt-halpern": (22, 22, ()),
 }
 
@@ -86,6 +86,7 @@ def test_the_shipped_maps_load_one_library_per_file() -> None:
     kits = {library.id: tuple(kit.id for kit in library.kits) for library in MAPS.libraries}
 
     assert kits == SHIPPED
+    assert len(SHIPPED) == 117
     assert len(sorted((data_dir() / "maps").glob("*.toml"))) == len(SHIPPED)
     assert all(library.schema_version == 1 for library in MAPS.libraries)
 
@@ -135,14 +136,15 @@ def test_the_sleep_token_map_has_its_67_pitches_as_57_articulations() -> None:
     assert (SLEEP_TOKEN.pieces("tom"), SLEEP_TOKEN.pieces("crash")) == (3, 4)
 
 
-def test_logic_pro_drums_has_its_published_mapping_but_note_32_as_27_articulations() -> None:
+def test_logic_pro_drums_has_its_published_mapping_but_note_32_and_drumverter_s_sticks() -> None:
     pitches = [binding.note for entry in LOGIC.articulations for binding in entry.bindings]
-    found = [LOGIC.resolve(pitch, 100, 9) for pitch in (35, 33, 50, 52, 59, 70)]
+    found = [LOGIC.resolve(pitch, 100, 9) for pitch in (35, 33, 50, 52, 59, 70, 75)]
 
-    assert len(LOGIC.articulations) == 27
-    assert len(pitches) == len(set(pitches)) == 29
-    assert set(pitches) == set(range(28, 55)) - {30, 32} | {56, 57, 59, 70}
+    assert len(LOGIC.articulations) == 28
+    assert len(pitches) == len(set(pitches)) == 30
+    assert set(pitches) == set(range(28, 55)) - {30, 32} | {56, 57, 59, 70, 75}
     assert all(entry.source == "mapping" for entry in LOGIC.articulations)
+    assert LOGIC.articulation("sticks.hit").confidence == "medium"
     assert [entry and entry.name for entry in found] == [
         "kick.hit",
         "hat.pedal",
@@ -150,6 +152,7 @@ def test_logic_pro_drums_has_its_published_mapping_but_note_32_as_27_articulatio
         "ride.1.crash",
         "ride.1.bow.alt",
         "maracas.hit",
+        "sticks.hit",
     ]
     assert (LOGIC.write("kick.hit").pitch, LOGIC.write("hat.pedal").pitch) == (36, 44)
     # A tom's edge goes to its tom, re-spread by register, on a kit without edges.
@@ -182,16 +185,47 @@ def test_sleep_token_ii_s_groove_pack_kit_is_inferred_throughout() -> None:
     }
 
 
-def test_krimh_drums_is_low_confidence_throughout_and_the_inferred_map_is_inferred() -> None:
-    # Krimh Drums' mapping gives no note numbers, so each rests on reading its kick at 36.
+def test_krimh_drums_follows_the_instrument_s_page_and_the_inferred_map_is_inferred() -> None:
+    # The instrument's mapping page puts Kick Main on C0, note 24 (ADR 0139).
     krimh = MAPS.kit("krimh-drums")
     assert {(entry.source, entry.confidence) for entry in krimh.articulations} == {
-        ("mapping", "low")
+        ("mapping", "high"),
+        ("mapping", "medium"),
     }
+    assert (krimh.write("kick.hit").pitch, krimh.write("ride.1.bow").pitch) == (24, 62)
+    assert all(binding.note < 89 for entry in krimh.articulations for binding in entry.bindings)
+    # The page's second notes are only read, after the note written.
+    notes = {entry.name: [b.note for b in entry.bindings] for entry in krimh.articulations}
+    assert notes["kick.hit"] == [24, 22]
+    assert notes["hat.2.closed"] == [82, 70]
+    assert notes["hat.2.open.three_quarter"] == [86, 87, 71]
+    # Medium where the page's name is interpreted: an opening, an open tip, the pedal opened, and
+    # the crashes and chinas numbered from their left and right.
+    medium = {entry.name for entry in krimh.articulations if entry.confidence == "medium"}
+    interpreted = ("hat.open", "hat.2.open", "hat.pedal.splash", "crash.", "china.")
+    assert medium == {name for name in notes if name.startswith(interpreted)}
+    assert {"kick.2.hit", "snare.center.wires_off", "tom.4.hit", "hat.closed.tip"} <= (
+        notes.keys() - medium
+    )
     ggd = MAPS.kit("ggd-matt-halpern")
     assert {(entry.source, entry.confidence) for entry in ggd.articulations} == {
         ("inferred", "low")
     }
+
+
+def test_the_notes_the_maker_based_maps_left_out_read_as_drumverter_names_them() -> None:
+    # ADR 0140: at medium, the maker's other names kept.
+    counterkit, drum_lab = MAPS.kit("counterkit"), MAPS.kit("ni-drum-lab")
+    for pitch, name in ((64, "hat.variable"), (65, "hat.variable.tip")):
+        (match,) = counterkit.read(pitch, 100, 9)
+        (binding,) = match.articulation.bindings
+        assert (match.articulation.name, match.articulation.confidence) == (name, "medium")
+        assert binding.cc is not None
+        assert binding.cc.mode == "shape"
+    center = drum_lab.articulation("snare.center")
+    assert ([b.note for b in center.bindings], center.confidence) == ([38, 62, 63], "medium")
+    assert all(drum_lab.resolve(pitch, 100, 9) == center for pitch in (62, 63))
+    assert drum_lab.write("snare.center").pitch == 38
 
 
 @pytest.mark.parametrize("kit", KITS, ids=lambda kit: kit.ref)
@@ -260,10 +294,13 @@ def check_fallback_order(row: Row, source: DrumKit, target: DrumKit) -> None:
                 assert step.used == vocabulary.default(asked.family, asked.piece).text, step
 
 
-@pytest.mark.parametrize(("source", "target"), list(product(KITS, KITS)), ids=lambda kit: kit.ref)
-def test_converting_between_shipped_maps_never_changes_family(
-    source: DrumKit, target: DrumKit
-) -> None:
+@pytest.mark.parametrize("source", KITS, ids=lambda kit: kit.ref)
+def test_converting_between_shipped_maps_never_changes_family(source: DrumKit) -> None:
+    for target in KITS:
+        check_conversion(source, target)
+
+
+def check_conversion(source: DrumKit, target: DrumKit) -> None:
     notes = every_binding_note(source)
 
     conversion = convert(notes, source, target, FOUR_FOUR)
@@ -369,8 +406,10 @@ def test_random_hits_never_change_family(data: st.DataObject) -> None:
     check_report(conversion.rows, source, target)
 
 
-@pytest.mark.parametrize("target", KITS, ids=lambda kit: kit.ref)
-def test_note_39_of_the_default_layout_is_a_snare_on_every_kit_and_never_a_flam(
+@pytest.mark.parametrize(
+    "target", [kit for kit in KITS if kit.pieces("snare")], ids=lambda kit: kit.ref
+)
+def test_note_39_of_the_default_layout_is_a_snare_on_every_kit_with_one_and_never_a_flam(
     target: DrumKit,
 ) -> None:
     hit = note(39)

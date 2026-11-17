@@ -178,7 +178,7 @@ def test_a_note_takes_the_target_s_pitch_and_keeps_its_tick_length_and_velocity_
     result = remap(song, find_kit("gm"), find_kit("ezdrummer-3"))
     (note,) = [note for note in result.song.notes if note.track == 1]
 
-    assert (note.pitch, note.start, note.end, note.velocity, note.release) == (61, 5, 8, 77, 12)
+    assert (note.pitch, note.start, note.end, note.velocity, note.release) == (22, 5, 8, 77, 12)
     assert note.channel == 9
     assert result.song.ppq == 96
 
@@ -289,16 +289,16 @@ def test_the_tool_writes_the_remap_at_the_file_s_own_resolution_and_keeps_no_ses
 ) -> None:
     source = tmp_path / "song.mid"
     source.write_bytes(song_bytes([(0, 10, 36, 100, 64), (48, 10, 42, 70, 64)], ppq=96))
-    output = tmp_path / "song-ezd.mid"
+    output = tmp_path / "song-gb.mid"
 
-    reply: Json = tools.remap(str(source), "gm", "ezdrummer-3", str(output))
+    reply: Json = tools.remap(str(source), "gm", "garageband-drums", str(output))
 
     assert reply["output"] == str(output)
     assert reply["decisions"] == []
     summary = reply["summary"]
     assert (summary["kit"], summary["to_kit"], summary["ppq"]) == (
         "gm/default",
-        "ezdrummer-3/default",
+        "garageband-drums/default",
         96,
     )
     assert (summary["track"], summary["notes"], summary["written"], summary["dropped"]) == (
@@ -312,7 +312,7 @@ def test_the_tool_writes_the_remap_at_the_file_s_own_resolution_and_keeps_no_ses
     written = parse_midi(output.read_bytes(), keep_ppq=True)
     assert [(n.pitch, n.start, n.velocity) for n in written.notes if n.track == 1] == [
         (36, 0, 100),
-        (61, 48, 70),
+        (42, 48, 70),
     ]
     assert not (tmp_path / "sessions").exists()
 

@@ -1,8 +1,8 @@
-# Counterkit, from the library's own note mapping (ADR 0055): 22 notes, of which 20 are named here
-# as 20 articulations. Its note names count C3 as note 60. Confidence is high where the mapping's
-# name gives the canonical name directly, and medium where it had to be interpreted. Two hi-hat
-# strokes on notes 64 and 65 are left out until their names are understood, so a note on them is
-# asked about.
+# Counterkit, from the library's own note mapping (ADR 0055): 22 notes, all named here as 22
+# articulations. Its note names count C3 as note 60. Confidence is high where the mapping's name
+# gives the canonical name directly, and medium where it had to be interpreted. Notes 64 and 65,
+# two hi-hat strokes the mapping names unclearly, take drumverter's names, a controller-shaped hat's
+# edge and tip strokes, at medium confidence (ADR 0140).
 schema = 1
 id = "counterkit"
 name = "Counterkit"
@@ -64,6 +64,20 @@ name = "Default map"
   notes = [63]
   source = "mapping"
   confidence = "high"
+
+  [[kits.articulations]]
+  name = "hat.variable"
+  notes = [64]
+  cc = { mode = "shape" }
+  source = "mapping"
+  confidence = "medium"
+
+  [[kits.articulations]]
+  name = "hat.variable.tip"
+  notes = [65]
+  cc = { mode = "shape" }
+  source = "mapping"
+  confidence = "medium"
 
   [[kits.articulations]]
   name = "crash.1.hit"

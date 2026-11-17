@@ -159,7 +159,7 @@ def test_an_answered_pitch_brings_its_family_to_the_hit_types(tmp_path: Path) ->
 
 
 def test_notes_read_through_low_confidence_names_are_counted(tmp_path: Path) -> None:
-    kit = built_in_maps().kit("ezdrummer-3")
+    kit = built_in_maps().kit("garageband-drums")
     song = drum_file(tmp_path, [(0, KICK, 100), (PPQ, SNARE, 100), (2 * PPQ, SNARE, 100)])
 
     result = normalize(song, kit)
