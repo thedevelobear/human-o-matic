@@ -220,7 +220,8 @@ def test_the_notes_the_maker_based_maps_left_out_read_as_drumverter_names_them()
         (match,) = counterkit.read(pitch, 100, 9)
         (binding,) = match.articulation.bindings
         assert (match.articulation.name, match.articulation.confidence) == (name, "medium")
-        assert binding.cc is not None and binding.cc.mode == "shape"
+        assert binding.cc is not None
+        assert binding.cc.mode == "shape"
     center = drum_lab.articulation("snare.center")
     assert ([b.note for b in center.bindings], center.confidence) == ([38, 62, 63], "medium")
     assert all(drum_lab.resolve(pitch, 100, 9) == center for pitch in (62, 63))
