@@ -1,10 +1,11 @@
 # Logic Pro Drums, from the GM Standard input mapping of Drum Kit Designer that Apple's Logic Pro
-# User Guide publishes (ADR 0135): 30 notes, of which 29 are named here as 27 articulations. Its
-# note names count C3 as note 60. Where an articulation has two notes, the first is the one written
-# and the second is only read. Confidence is high where the mapping's name gives the canonical name
-# directly, and medium where it had to be interpreted. Note 32, a rimshot on the snare's edge, is
-# left out until the vocabulary has a name for it, so a note on it is asked about, and note 55,
-# which the mapping leaves blank, is left out too.
+# User Guide publishes (ADR 0135): 30 notes, of which 29 are named here as 27 articulations, with
+# note 75, which the figure doesn't show, as sticks, as drumverter names it, at medium confidence
+# (ADR 0140). Its note names count C3 as note 60. Where an articulation has two notes, the first is
+# the one written and the second is only read. Confidence is high where the mapping's name gives
+# the canonical name directly, and medium where it had to be interpreted. Note 32, a rimshot on the
+# snare's edge, is left out until the vocabulary has a name for it, so a note on it is asked about,
+# and note 55, which the mapping leaves blank, is left out too.
 schema = 1
 id = "logic-pro-drums"
 name = "Logic Pro Drums"
@@ -174,3 +175,9 @@ name = "Default map"
   notes = [70]
   source = "mapping"
   confidence = "medium"       # its shaker, read as maracas
+
+  [[kits.articulations]]
+  name = "sticks.hit"
+  notes = [75]
+  source = "mapping"
+  confidence = "medium"
